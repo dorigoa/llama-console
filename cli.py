@@ -19,7 +19,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--listen-port", type=int, default=443, help="Port where llama-server listens")
     parser.add_argument("--tensor-split", dest="tensorsplit", default="7,10", help="Tensor split passed to llama-server")
     parser.add_argument("--split-mode", dest="splitmode", default="layer", help="Tensor split passed to llama-server", choices=['none','layer','row','tensor'])
-    parser.add_argument("--context-size", dest="ctxsize", default="0", help="Override the default context size embedded in the model", choices=['4096','8192','16384','32768','65536','131072','262144'])
+    parser.add_argument("--context-size", dest="ctxsize", default="0", help="Override the default context size embedded in the model", choices=['4096','8192','16384','24576','32768','49152','65536','98304','131072','196608','262144'])
     parser.add_argument("--threads", type=int, default=6, help="Number of CPU threads for llama-server")
     parser.add_argument("--threads-batch", type=int, default=8, help="Number of batch CPU threads for llama-server")
     #parser.add_argument("--parallel", type=int, default=1, help="Number of parallel sequences for llama-server")
