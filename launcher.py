@@ -17,7 +17,8 @@ def build_llama_command( llama_server_bin: str,
                         sslkeyfile,
                         sslcertfile,
                         tensorsplit,
-                        splitmode) -> list[str]:
+                        splitmode,
+                        ctxsize) -> list[str]:
     #server = config.server
     #rpc = config.rpc
 
@@ -37,7 +38,7 @@ def build_llama_command( llama_server_bin: str,
             "--tensor-split", tensorsplit,
             "-ngl", "auto",
             "--fit", "on",
-            "-c", "0",
+            "-c", ctxsize,
             "-t", "6",
             "-tb", "8",
             "--parallel", "1",

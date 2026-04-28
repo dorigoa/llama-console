@@ -77,7 +77,8 @@ def main() -> int:
                                         str(args.sslkey),
                                         str(args.sslcert),
                                         args.tensorsplit,
-                                        args.splitmode )
+                                        args.splitmode,
+                                        args.ctxsize )
     launcher.print_command( cmd )
     
     subprocess.run( cmd, check=True )
