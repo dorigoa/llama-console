@@ -15,7 +15,9 @@ def build_llama_command( llama_server_bin: str,
                         mmproj_file: str,
                         devices: str,
                         sslkeyfile,
-                        sslcertfile) -> list[str]:
+                        sslcertfile,
+                        tensorsplit,
+                        splitmode) -> list[str]:
     #server = config.server
     #rpc = config.rpc
 
@@ -31,8 +33,8 @@ def build_llama_command( llama_server_bin: str,
             "-m", str(gguf_file),
             "--rpc", f"{rpc_server}:{rpc_port}",
             "--device", devices,
-            "--split-mode","layer",
-            "--tensor-split", "1,1",
+            "--split-mode", splitmode,
+            "--tensor-split", tensorsplit,
             "-ngl", "auto",
             "--fit", "on",
             "-c", "0",
