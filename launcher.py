@@ -23,12 +23,12 @@ def build_llama_command(
     *,
     listen_host: str | None = None,
     listen_port: int | str | None = None,
-    use_sudo: bool = True,
+    #use_sudo: bool = True,
 ) -> list[str]:
     cmd: list[str] = []
 
-    if use_sudo:
-        cmd.append("sudo")
+    #if use_sudo:
+    #    cmd.append("sudo")
 
     cmd.extend([
         llama_server_bin,

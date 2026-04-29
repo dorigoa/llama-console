@@ -2,7 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import json
+import os
+import signal
+import shutil
 import ssl
+import subprocess
 from pathlib import Path
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
@@ -18,8 +22,25 @@ settings = Settings()
 logger = setup_console_logging()
 
 def ui_log(message: str) -> None:
-    """Write to NiceGUI log widget and to stdout logging."""
-    log_area.push(message)
+    """Best-effort write to the NiceGUI log widget.
+
+    NiceGUI elements are bound to the browser client that created them. If the
+    browser is refreshed/closed while background callbacks are still emitting
+    log messages, the element may belong to a deleted client. In that case the
+    message has already gone through the normal Python logger via emit(); the UI
+    sink must silently drop it instead of producing a secondary traceback.
+    """
+    try:
+        # log_area is created later at module load time. During very early
+        # startup, or after the owning browser client has been deleted, this
+        # push may legitimately fail. Logging must never break control actions
+        # such as stopping/killing llama-server.
+        log_area.push(message)
+    except (NameError, RuntimeError):
+        return
+    except Exception as exc:
+        logger.debug("Ignoring NiceGUI log sink failure: %s", exc)
+        return
 
 
 def configured_model_path(configured: Any) -> str:
@@ -87,6 +108,208 @@ def _local_llama_base_urls() -> list[str]:
         f"http://127.0.0.1:{port}",
         f"http://localhost:{port}",
     ]
+
+
+def _resolve_command(name: str, fallback_paths: tuple[str, ...] = ()) -> Optional[str]:
+    """Return an executable path even when NiceGUI/systemd/launchd has a minimal PATH."""
+    found = shutil.which(name)
+    if found:
+        return found
+
+    for candidate in fallback_paths:
+        if os.path.exists(candidate) and os.access(candidate, os.X_OK):
+            return candidate
+
+    return None
+
+
+def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
+    """Run a small local inspection command without raising on non-zero exit."""
+    return subprocess.run(
+        args,
+        text=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        timeout=5,
+        check=False,
+    )
+
+
+def _parse_pid_lines(output: str) -> list[int]:
+    """Parse one PID per line, preserving order and removing duplicates."""
+    pids: list[int] = []
+    seen: set[int] = set()
+    for line in output.splitlines():
+        try:
+            pid = int(line.strip())
+        except ValueError:
+            continue
+        if pid > 0 and pid not in seen:
+            pids.append(pid)
+            seen.add(pid)
+    return pids
+
+
+def find_listening_pids_on_port(port: int) -> list[int]:
+    """Return local PIDs listening on the given TCP port.
+
+    macOS GUI apps often run with a reduced PATH, so this function resolves
+    absolute paths before invoking lsof/ss. lsof is the primary method on macOS
+    and also works on most Linux systems. ss is Linux-only fallback.
+    """
+    lsof_path = _resolve_command("lsof", ("/usr/sbin/lsof", "/usr/bin/lsof", "/bin/lsof"))
+    if lsof_path:
+        try:
+            lsof = _run_command([lsof_path, "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"])
+            pids = _parse_pid_lines(lsof.stdout)
+            if pids:
+                return pids
+            if lsof.stderr.strip():
+                emit(f"lsof returned no listener on port {port}: {lsof.stderr.strip()}", ui_log)
+        except Exception as exc:
+            emit(f"lsof lookup failed: {exc}", ui_log)
+    else:
+        emit("lsof not found; cannot use primary listener lookup", ui_log)
+
+    # ss is normally Linux-only. Do not try it on macOS; the resulting
+    # FileNotFoundError is noise and does not help find the process.
+    if os.uname().sysname.lower() == "linux":
+        ss_path = _resolve_command("ss", ("/usr/sbin/ss", "/usr/bin/ss", "/bin/ss", "/sbin/ss"))
+        if ss_path:
+            try:
+                ss = _run_command([ss_path, "-H", "-ltnp", f"sport = :{port}"])
+                pids: list[int] = []
+                seen: set[int] = set()
+                for token in ss.stdout.replace(',', ' ').split():
+                    if not token.startswith('pid='):
+                        continue
+                    try:
+                        pid = int(token.removeprefix('pid='))
+                    except ValueError:
+                        continue
+                    if pid > 0 and pid not in seen:
+                        pids.append(pid)
+                        seen.add(pid)
+                if pids:
+                    return pids
+                if ss.stderr.strip():
+                    emit(f"ss returned no listener on port {port}: {ss.stderr.strip()}", ui_log)
+            except Exception as exc:
+                emit(f"ss lookup failed: {exc}", ui_log)
+        else:
+            emit("ss not found; skipping Linux fallback listener lookup", ui_log)
+
+    # Last-resort fallback for this application: find processes whose command
+    # line looks like llama-server and mentions the configured port. This is
+    # intentionally permissive because the GUI is for restricted expert users.
+    return find_llama_server_pids_by_command_line(port)
+
+
+def find_llama_server_pids_by_command_line(port: int, *, require_port: bool = True) -> list[int]:
+    """Best-effort fallback: find llama-server processes from the process table.
+
+    If require_port=False, return every visible llama-server PID except this
+    GUI process. This is used only after the HTTP probe already confirmed that
+    a local llama-server is alive.
+    """
+    ps_path = _resolve_command("ps", ("/bin/ps", "/usr/bin/ps"))
+    if not ps_path:
+        emit("ps not found; cannot inspect process table", ui_log)
+        return []
+
+    try:
+        ps = _run_command([ps_path, "axo", "pid=,command="])
+    except Exception as exc:
+        emit(f"ps lookup failed: {exc}", ui_log)
+        return []
+
+    current_pid = os.getpid()
+    pids: list[int] = []
+    seen: set[int] = set()
+    port_tokens = {str(port), f":{port}"}
+
+    for line in ps.stdout.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            pid_text, command = line.split(None, 1)
+            pid = int(pid_text)
+        except ValueError:
+            continue
+
+        command_lower = command.lower()
+        if pid == current_pid:
+            continue
+        if "llama-server" not in command_lower:
+            continue
+        if require_port and not any(token in command for token in port_tokens):
+            continue
+        if pid > 0 and pid not in seen:
+            pids.append(pid)
+            seen.add(pid)
+
+    mode = f"for port {port}" if require_port else "without port filtering"
+    if pids:
+        emit(f"Found llama-server PIDs by command-line fallback {mode}: {pids}", ui_log)
+    else:
+        emit(f"No llama-server process found by command-line fallback {mode}", ui_log)
+
+    return pids
+
+def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple[list[int], list[str]]:
+    """Terminate, then force-kill if required. Returns affected PIDs and error strings."""
+    import time
+
+    current_pid = os.getpid()
+    targets = [pid for pid in pids if pid != current_pid]
+    killed: list[int] = []
+    errors: list[str] = []
+
+    if not targets:
+        return killed, ["No killable PID found"]
+
+    for pid in targets:
+        try:
+            os.kill(pid, signal.SIGTERM)
+        except ProcessLookupError:
+            killed.append(pid)
+        except PermissionError as exc:
+            errors.append(f"PID {pid}: permission denied while sending SIGTERM: {exc}")
+        except OSError as exc:
+            errors.append(f"PID {pid}: failed to send SIGTERM: {exc}")
+
+    end_time = time.monotonic() + terminate_timeout
+    while time.monotonic() < end_time:
+        alive: list[int] = []
+        for pid in targets:
+            if pid in killed:
+                continue
+            try:
+                os.kill(pid, 0)
+                alive.append(pid)
+            except ProcessLookupError:
+                killed.append(pid)
+            except PermissionError:
+                alive.append(pid)
+        if not alive:
+            return killed, errors
+        time.sleep(0.2)
+
+    for pid in targets:
+        if pid in killed:
+            continue
+        try:
+            os.kill(pid, signal.SIGKILL)
+            killed.append(pid)
+        except ProcessLookupError:
+            killed.append(pid)
+        except PermissionError as exc:
+            errors.append(f"PID {pid}: permission denied while sending SIGKILL: {exc}")
+        except OSError as exc:
+            errors.append(f"PID {pid}: failed to send SIGKILL: {exc}")
+
+    return killed, errors
 
 
 def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
@@ -190,17 +413,26 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
     if running:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
+        chat_url = await get_browser_based_llama_url()
+
         status_label.set_text("llama-server status: already running")
         status_detail_label.set_text(
             f"Detected endpoint: {base_url} | Model: {display_model} | "
             "Note: this process was not started by this GUI instance."
         )
+        set_link_target(status_chat_link, chat_url)
+        status_chat_link.visible = True
+        status_chat_button.visible = True
+
         emit(f"Detected already-running llama-server at {base_url}", ui_log)
         emit(f"Detected model: {display_model}", ui_log)
+        emit(f"Chat URL: {chat_url}", ui_log)
         return True
 
     status_label.set_text("llama-server status: not detected")
     status_detail_label.set_text(f"No server answered on local port {settings.llama_server_port}")
+    status_chat_link.visible = False
+    status_chat_button.visible = False
     if verbose:
         emit(f"No existing llama-server detected. Last probe error: {error}", ui_log)
     return False
@@ -219,10 +451,15 @@ async def get_browser_based_llama_url() -> str:
     return str(await ui.run_javascript(js))
 
 
+def set_link_target(link: ui.link, url: str) -> None:
+    """Update a NiceGUI link target and visible text."""
+    link.set_text(url)
+    link.props(f'href="{url}"')
+
+
 def open_chat_dialog(model_name: str, chat_url: str) -> None:
     chat_model_label.set_text(f"Model: {model_name}")
-    chat_url_link.set_text(chat_url)
-    chat_url_link.props(f'href="{chat_url}"')
+    set_link_target(chat_url_link, chat_url)
     chat_dialog.open()
 
 
@@ -332,31 +569,81 @@ class LlamaManager:
                 self._reader_task = None
 
     async def stop_server(self) -> None:
-        if not self.is_running():
-            msg = "No GUI-started server active"
+        if self.is_running():
+            assert self.process is not None
+            emit("Stopping GUI-started llama-server...", ui_log)
+            status_label.set_text("llama-server status: stopping")
+            self.process.terminate()
+
+            try:
+                await asyncio.wait_for(self.process.wait(), timeout=10)
+                emit("GUI-started llama-server terminated", ui_log)
+            except asyncio.TimeoutError:
+                emit("GUI-started llama-server did not terminate; killing it", ui_log)
+                self.process.kill()
+                await self.process.wait()
+                emit("GUI-started llama-server killed", ui_log)
+
+            status_label.set_text("llama-server status: stopped")
+            status_detail_label.set_text("Stopped GUI-started process")
+            status_chat_link.visible = False
+            status_chat_button.visible = False
+            ui.notify("Server stopped", type="info")
+            return
+
+        # No asyncio subprocess handle exists: the server was likely started outside this GUI
+        # or by a previous GUI instance. Kill the process listening on the configured port anyway.
+        port = settings.llama_server_port
+        emit(f"No GUI-started process handle; looking for external listener on TCP port {port}...", ui_log)
+        status_label.set_text("llama-server status: stopping external process")
+        status_detail_label.set_text(f"Searching for listener on TCP port {port}")
+
+        pids = await asyncio.to_thread(find_listening_pids_on_port, port)
+
+        if not pids:
+            # If HTTP probing still sees llama-server, kill visible llama-server
+            # processes even when the listener PID lookup failed. This covers
+            # macOS setups where lsof is restricted/unavailable, or where the
+            # server uses its default port and the port is not visible in argv.
+            still_running, _, base_url, _ = await asyncio.to_thread(probe_existing_llama_server_sync)
+            if still_running:
+                emit(
+                    f"Listener PID lookup failed, but llama-server still responds at {base_url}; "
+                    "falling back to all visible llama-server processes",
+                    ui_log,
+                )
+                pids = await asyncio.to_thread(find_llama_server_pids_by_command_line, port, require_port=False)
+
+        if not pids:
+            msg = f"No killable llama-server process found for TCP port {port}"
             emit(msg, ui_log)
-            status_label.set_text("llama-server status: no GUI-started process")
-            status_detail_label.set_text(
-                "If llama-server was started outside this GUI, stop it from the shell/process manager."
-            )
+            status_label.set_text("llama-server status: not detected")
+            status_detail_label.set_text(msg)
+            status_chat_link.visible = False
+            status_chat_button.visible = False
             ui.notify(msg, type="warning")
             return
 
-        assert self.process is not None
-        emit("Stopping llama-server...", ui_log)
-        status_label.set_text("llama-server status: stopping")
-        self.process.terminate()
+        emit(f"Killing external llama-server PIDs for port {port}: {pids}", ui_log)
+        killed, errors = await asyncio.to_thread(kill_pids_sync, pids)
 
-        try:
-            await asyncio.wait_for(self.process.wait(), timeout=10)
-            emit("llama-server terminated", ui_log)
-        except asyncio.TimeoutError:
-            emit("llama-server did not terminate; killing it", ui_log)
-            self.process.kill()
-            await self.process.wait()
-            emit("llama-server killed", ui_log)
+        for err in errors:
+            emit(err, ui_log)
 
-        ui.notify("Server stopped", type="info")
+        still_running, _, _, _ = await asyncio.to_thread(probe_existing_llama_server_sync)
+        if still_running:
+            msg = "Requested kill, but llama-server is still responding"
+            status_label.set_text("llama-server status: still running")
+            status_detail_label.set_text(msg)
+            ui.notify(msg, type="negative")
+            return
+
+        status_label.set_text("llama-server status: stopped")
+        status_detail_label.set_text(f"Stopped external listener on port {port}; PIDs: {killed or pids}")
+        status_chat_link.visible = False
+        status_chat_button.visible = False
+        ui.notify("External server stopped", type="info")
+
 
 
 manager = LlamaManager()
@@ -385,7 +672,16 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ui.label("llama-server status").classes("text-subtitle1")
         status_label = ui.label("llama-server status: not checked yet").classes("font-bold")
         status_detail_label = ui.label("Startup detection pending...").classes("text-sm text-gray-600")
-        ui.button("Recheck status", on_click=detect_existing_llama_server, icon="refresh").classes("mt-2")
+        status_chat_link = ui.link("", target="_blank").classes("text-blue-600 underline break-all")
+        status_chat_link.visible = False
+        with ui.row().classes("gap-2 mt-2"):
+            ui.button("Recheck status", on_click=detect_existing_llama_server, icon="refresh")
+            status_chat_button = ui.button(
+                "Open chat",
+                on_click=lambda: ui.run_javascript(f"window.open('{status_chat_link.text}', '_blank')"),
+                icon="open_in_new",
+            )
+            status_chat_button.visible = False
 
     with ui.card().classes("w-full p-4"):
         ui.label("Select a model").classes("text-subtitle1")

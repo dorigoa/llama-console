@@ -54,7 +54,7 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         listen_host=kwargs.get("listen_host", settings.llama_server_host),
         listen_port=kwargs.get("listen_port", settings.llama_server_port),
-        use_sudo=kwargs.get("use_sudo", True),
+        #use_sudo=kwargs.get("use_sudo", True),
     )
 
     emit(f"Command: {launcher.format_command(cmd)}", log_sink)
@@ -77,7 +77,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--context-size", dest="ctxsize", default=settings.llama_param["ctxsize"])
     parser.add_argument("--ssl-key-file", dest="sslkey", type=Path, default=Path(settings.llama_param["sslkeyfile"]))
     parser.add_argument("--ssl-cert-file", dest="sslcert", type=Path, default=Path(settings.llama_param["sslcertfile"]))
-    parser.add_argument("--no-sudo", action="store_true")
+    #parser.add_argument("--no-sudo", action="store_true", required=False, default=True)
     parser.add_argument("--skip-ssl-check", action="store_true")
     return parser.parse_args()
 
@@ -97,7 +97,7 @@ def main() -> int:
         ctxsize=args.ctxsize,
         sslkey=args.sslkey,
         sslcert=args.sslcert,
-        use_sudo=not args.no_sudo,
+        #use_sudo=not args.no_sudo,
         skip_ssl_check=args.skip_ssl_check,
     )
     subprocess.run(cmd, check=True)
