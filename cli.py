@@ -51,7 +51,7 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(ssl_cert),
         str(kwargs.get("tensorsplit", settings.llama_param["tensorsplit"])),
         str(kwargs.get("splitmode", settings.llama_param["defaultsplitmode"])),
-        str(kwargs.get("ctxsize", settings.llama_param["ctxsize"])),
+        str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         listen_host=kwargs.get("listen_host", settings.llama_server_host),
         listen_port=kwargs.get("listen_port", settings.llama_server_port),
         use_sudo=kwargs.get("use_sudo", True),
