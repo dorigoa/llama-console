@@ -42,9 +42,18 @@ def is_llama_ready_log_line(text: str) -> bool:
     return any(marker in lowered for marker in LLAMA_READY_LOG_MARKERS)
 
 
+#def ui_log(message: str) -> None:
+#    """Write to NiceGUI log widget and to stdout logging."""
+#    log_area.push(message)
+
 def ui_log(message: str) -> None:
-    """Write to NiceGUI log widget and to stdout logging."""
-    log_area.push(message)
+    """Write to NiceGUI log widget if the browser client still exists."""
+    try:
+        log_area.push(str(message))
+    except RuntimeError as exc:
+        if "client this element belongs to has been deleted" in str(exc):
+            return
+        raise
 
 
 def configured_model_path(configured: Any) -> str:
