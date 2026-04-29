@@ -91,7 +91,7 @@ class Settings:
         },
         "Gemma-4-E4B-it": {
             "path": "/Volumes/Home/gguf_models/Gemma-4-E4B-it/Gemma-4-E4B-it-Q8_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 262144,
         },
         "GPT-OSS-20B": {
             "path": "/Volumes/Home/gguf_models/GPT-OSS-20B/GPT-OSS-20B-MXFP4.gguf",
@@ -155,11 +155,11 @@ class Settings:
         },
         "Qwen3-30B-A3B-Q5_0": {
             "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q5_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 131072,
         },
         "Qwen3-30B-A3B-Q5_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q5_K_M.gguf",
-            "ctxsize": 0,
+            "ctxsize": 65536,
         },
         "Qwen3-30B-A3B-Q6_K": {
             "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q6_K.gguf",
@@ -167,11 +167,11 @@ class Settings:
         },
         "Qwen3-30B-A3B-Q8_0": {
             "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q8_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 32768,
         },
         "Qwen3-coder-30B-F16": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-F16.gguf",
-            "ctxsize": 0,
+            "ctxsize": 32768,
         },
         "Qwen3-coder-30B-Q4_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q4_K_M.gguf",
@@ -179,15 +179,15 @@ class Settings:
         },
         "Qwen3-coder-30B-Q5_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q5_K_M.gguf",
-            "ctxsize": 0,
+            "ctxsize": 131072,
         },
         "Qwen3-coder-30B-Q6_K": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q6_K.gguf",
-            "ctxsize": 0,
+            "ctxsize": 131072,
         },
         "Qwen3-coder-30B-Q8_0": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q8_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 65536,
         },
         "Qwen3.6-27B-Q4_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3.6-27B-Q4_K_M/Qwen3.6-27B-Q4_K_M.gguf",
@@ -199,7 +199,7 @@ class Settings:
         },
         "Qwen3.6-27B-Q8_0": {
             "path": "/Volumes/Home/gguf_models/Qwen3.6-27B-Q8_0/Qwen3.6-27B-Q8_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 131072,
         },
         "Qwen3.6-35B-A3B-Q4_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3.6-35B-A3B-Q4_K_M/Qwen3.6-35B-A3B-Q4_K_M.gguf",
@@ -207,11 +207,11 @@ class Settings:
         },
         "Qwen3.6-35B-A3B-Q6_K": {
             "path": "/Volumes/Home/gguf_models/Qwen3.6-35B-A3B-Q6_K/Qwen3.6-35B-A3B-Q6_K.gguf",
-            "ctxsize": 0,
+            "ctxsize": 131072,
         },
         "Qwen3.6-35B-A3B-Q8_0": {
             "path": "/Volumes/Home/gguf_models/Qwen3.6-35B-A3B-Q8_0/Qwen3.6-35B-A3B-Q8_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 65536,
         },
         "QwQ-32B-Q4_K_M": {
             "path": "/Volumes/Home/gguf_models/QwQ-32B-Q4_K_M/QwQ-32B-Q4_K_M.gguf",
@@ -219,11 +219,11 @@ class Settings:
         },
         "QwQ-32B-Q6_K": {
             "path": "/Volumes/Home/gguf_models/QwQ-32B-Q6_K/QwQ-32B-Q6_K.gguf",
-            "ctxsize": 0,
+            "ctxsize": 65536,
         },
         "QwQ-32B-Q8_0": {
             "path": "/Volumes/Home/gguf_models/QwQ-32B-Q8_0/QwQ-32B-Q8_0.gguf",
-            "ctxsize": 0,
+            "ctxsize": 32768,
         },
     })
 
