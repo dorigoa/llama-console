@@ -335,8 +335,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
         status_label.set_text("llama-server status: already running")
         status_detail_label.set_text(
-            f"Detected endpoint: {base_url} | Model: {display_model} | "
-            "Note: this process was not started by this GUI instance."
+            f"Detected endpoint: {base_url} | Model: {display_model} "
         )
         set_link_target(status_chat_link, chat_url)
         status_chat_link.visible = True
