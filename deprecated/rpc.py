@@ -6,6 +6,10 @@ import subprocess
 import socket
 import time
 
+from config import Settings
+
+settings = Settings()
+
 #from .config import RpcConfig
 #from .netcheck import tcp_connect
 
@@ -33,7 +37,7 @@ def ensure_remote_rpc( server: str, timeout: int, rpc_host: str, rpc_port: int )
     logger.info("Starting remote RPC...")
 
     remote_cmd = (
-        f"nohup /usr/local/bin/rpc-server "
+        f"nohup {settings.rpc_server_path} "
         f"--host '{rpc_host}' "
         f"--port '{rpc_port}' "
         "-c >/dev/null 2>&1 &"

@@ -7,6 +7,10 @@ import webbrowser
 from pathlib import Path
 from logzero import logger
 
+from config import Settings
+
+settings = Settings()
+
 #________________________________________________________________________________________
 def build_llama_command( llama_server_bin: str, 
                         rpc_server: str,
@@ -29,19 +33,19 @@ def build_llama_command( llama_server_bin: str,
     cmd.extend(
         [
             llama_server_bin,
-            "--host", "0.0.0.0",
-            "--port", "443",
+            "--host", settings.llama_server_host,
+            "--port", settings.llama_server_port,
             "-m", str(gguf_file),
             "--rpc", f"{rpc_server}:{rpc_port}",
             "--device", devices,
             "--split-mode", splitmode,
             "--tensor-split", tensorsplit,
-            "-ngl", "auto",
-            "--fit", "on",
+            "-ngl", settings.llama_param['ngl'],
+            "--fit", settings.llama_param['fit'],
             "-c", ctxsize,
-            "-t", "6",
-            "-tb", "8",
-            "--parallel", "1",
+            "-t", settings.llama_param['threads'],
+            "-tb", settings.llama_param['threadsbunch'],
+            "--parallel", settings.llama_param['parallel'],
             "--ssl-key-file", sslkeyfile,
             "--ssl-cert-file", sslcertfile,
         ]
