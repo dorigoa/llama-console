@@ -4,7 +4,6 @@ import asyncio
 import json
 import os
 import signal
-import ssl
 import subprocess
 from pathlib import Path
 from typing import Any, Optional
@@ -116,8 +115,8 @@ def _local_llama_base_urls() -> list[str]:
     """Return candidate local URLs for probing an already-running llama-server."""
     port = settings.llama_server_port
     return [
-        f"https://127.0.0.1:{port}",
-        f"https://localhost:{port}",
+        f"http://127.0.0.1:{port}",
+        f"http://localhost:{port}",
         f"http://127.0.0.1:{port}",
         f"http://localhost:{port}",
     ]
@@ -243,10 +242,7 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
     """Small blocking JSON GET helper. Run it via asyncio.to_thread()."""
     req = Request(url, headers={"Accept": "application/json"})
 
-    # Self-signed certificates are expected in this project; this probe is local only.
-    context = ssl._create_unverified_context() if url.startswith("https://") else None
-
-    with urlopen(req, timeout=timeout, context=context) as response:
+    with urlopen(req, timeout=timeout) as response:
         raw = response.read().decode("utf-8", errors="replace")
         if not raw:
             return {}
@@ -321,7 +317,7 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
                 payload = _json_get(url)
                 model = extractor(payload)
                 return True, model, base_url, None
-            except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, ssl.SSLError, OSError) as exc:
+            except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
                 last_error = f"{url}: {exc}"
                 continue
 
@@ -369,9 +365,8 @@ async def get_browser_based_llama_url() -> str:
     port = settings.llama_server_port
     js = f"""
         (() => {{
-            const protocol = window.location.protocol || 'https:';
             const hostname = window.location.hostname;
-            return `${{protocol}}//${{hostname}}:{port}/`;
+            return `http://${{hostname}}:{port}/`;
         }})()
     """
     return str(await ui.run_javascript(js))
@@ -673,12 +668,10 @@ ui.timer(0.5, detect_existing_llama_server, once=True)
 
 emit("GUI loaded", None)
 emit(f"settings.AVAILAble models: {len(settings.AVAILABLE_MODELS)}", None)
-emit(f"NiceGUI listening on {settings.ui_host}:{settings.ui_port}", None)
+emit(f"NiceGUI listening on http://{settings.ui_host}:{settings.ui_port}", None)
 
 ui.run(
     title=settings.UI_TITLE,
     host=settings.ui_host,
     port=settings.ui_port,
-    ssl_certfile=settings.ui_ssl_certfile,
-    ssl_keyfile=settings.ui_ssl_keyfile,
 )

@@ -3,7 +3,7 @@ from __future__ import annotations
 import socket
 import subprocess
 import time
-
+from pathlib import Path
 from config import Settings
 from logging_utils import emit, LogSink
 
@@ -30,6 +30,14 @@ def ensure_remote_rpc(server: str, timeout: int, rpc_host: str, rpc_port: int, l
         return
 
     emit(f"Starting remote RPC through SSH host {server}", log_sink)
+
+    remote_kill_cmd = (
+        f"killall -9 {Path(settings.rpc_server_path).name}"
+    )
+    emit(f"ssh {server} {remote_kill_cmd}", log_sink)
+    subprocess.run(["ssh", server, remote_kill_cmd], check=False)
+
+    time.sleep(3)
 
     remote_cmd = (
         f"nohup {settings.rpc_server_path} "

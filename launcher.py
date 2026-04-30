@@ -45,8 +45,8 @@ def build_llama_command(
         "-t", str(settings.llama_param["threads"]),
         "-tb", str(settings.llama_param["threadsbunch"]),
         "--parallel", str(settings.llama_param["parallel"]),
-        "--ssl-key-file", str(sslkeyfile),
-        "--ssl-cert-file", str(sslcertfile),
+        #"--ssl-key-file", str(sslkeyfile),
+        #"--ssl-cert-file", str(sslcertfile),
     ])
 
     if mmproj_file:
