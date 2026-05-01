@@ -667,11 +667,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 ui.timer(0.5, detect_existing_llama_server, once=True)
 
 emit("GUI loaded", None)
-emit(f"settings.AVAILAble models: {len(settings.AVAILABLE_MODELS)}", None)
+emit(f"Available models: {len(settings.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.ui_host}:{settings.ui_port}", None)
 
 ui.run(
     title=settings.UI_TITLE,
     host=settings.ui_host,
     port=settings.ui_port,
+    root_path='/console'
 )
