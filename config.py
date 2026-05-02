@@ -12,16 +12,16 @@ class ModelConfig(TypedDict):
 #_____________________________________________________________________________
 @dataclass
 class Settings:
-    UI_TITLE: str = "LLama Launcher"
+    UI_TITLE: str = "LLama Launcher by Alvise Dorigo (alvise72@gmail.com)"
 
-    ui_host: str = "0.0.0.0"
-    ui_port: int = 80
+    ui_host: str = "127.0.0.1"
+    ui_port: int = 8080
     
-    llama_server_host: str = "0.0.0.0"
-    llama_server_port: int = 8080#8443
+    llama_server_host: str = "127.0.0.1"
+    llama_server_port: int = 8088
 
     rpc_host: str = "192.168.20.2"
-    rpc_host_ssh: str = "192.168.1.190"
+    #rpc_host_ssh: str = "192.168.1.190"
     rpc_port: int = 50000
     openbrowser: bool = True
 

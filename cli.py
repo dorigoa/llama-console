@@ -21,7 +21,7 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
     model_folder = Path(model_folder).expanduser().resolve()
     emit(f"Selected model folder: {model_folder}", log_sink)
 
-    rpc_host_ssh = kwargs.get("rpc_host_ssh", settings.rpc_host_ssh)
+    rpc_host = kwargs.get("rpc_host", settings.rpc_host)
     rpc_server = kwargs.get("rpc_server", settings.rpc_host)
     rpc_port = int(kwargs.get("rpc_port", settings.rpc_port))
 
@@ -33,11 +33,11 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
     emit(f"GGUF model   : {files.gguf}", log_sink)
     emit(f"MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
 
-    if not kwargs.get("skip_ssl_check", False):
-        launcher.validate_ssl_files(ssl_key, ssl_cert)
-        emit("SSL files validated", log_sink)
+    #if not kwargs.get("skip_ssl_check", False):
+    #    launcher.validate_ssl_files(ssl_key, ssl_cert)
+    #    emit("SSL files validated", log_sink)
 
-    rpc.ensure_remote_rpc(rpc_host_ssh, 5, rpc_server, rpc_port, log_sink=log_sink)
+    rpc.ensure_remote_rpc(rpc_host, 5, rpc_server, rpc_port, log_sink=log_sink)
     gpus = devices.list_usable_devices(rpc_server, rpc_port, log_sink=log_sink)
 
     cmd = launcher.build_llama_command(
@@ -66,7 +66,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("model", type=Path, help="Model folder containing the GGUF model")
     parser.add_argument("--rpc-server", dest="rpc_server", default=settings.rpc_host)
     parser.add_argument("--rpc-port", dest="rpc_port", type=int, default=settings.rpc_port)
-    parser.add_argument("--rpc-host-ssh", dest="rpc_host_ssh", default=settings.rpc_host_ssh)
+    #parser.add_argument("--rpc-host-ssh", dest="rpc_host_ssh", default=settings.rpc_host_ssh)
     parser.add_argument("--listen-host", default=settings.llama_server_host)
     parser.add_argument("--listen-port", type=int, default=settings.llama_server_port)
     parser.add_argument("--tensor-split", dest="tensorsplit", default=settings.llama_param["tensorsplit"])
@@ -86,7 +86,7 @@ def main() -> int:
         args.model,
         rpc_server=args.rpc_server,
         rpc_port=args.rpc_port,
-        rpc_host_ssh=args.rpc_host_ssh,
+        #rpc_host_ssh=args.rpc_host_ssh,
         listen_host=args.listen_host,
         listen_port=args.listen_port,
         tensorsplit=args.tensorsplit,

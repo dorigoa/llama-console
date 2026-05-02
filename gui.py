@@ -612,13 +612,13 @@ with ui.dialog() as chat_dialog, ui.card().classes("w-full max-w-lg"):
 
 #_____________________________________________________________________________
 with ui.header().classes("items-center justify-between"):
-    ui.label("LLM Server Control Panel").classes("text-h6")
+    ui.label(settings.UI_TITLE).classes("text-h6")
     ui.button("Stop Server", on_click=manager.stop_server, icon="stop", color="red")
 
 #_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.card().classes("w-full p-4"):
-        ui.label("llama-server status").classes("text-subtitle1")
+        #ui.label("llama-server status").classes("text-subtitle1")
         status_label = ui.label("llama-server status: not checked yet").classes("font-bold")
         status_detail_label = ui.label("Startup detection pending...").classes("text-sm text-gray-600")
         status_chat_link = ui.link("", target="_blank").classes("text-blue-600 underline break-all")
@@ -674,5 +674,5 @@ ui.run(
     title=settings.UI_TITLE,
     host=settings.ui_host,
     port=settings.ui_port,
-    root_path='/console'
+    #root_path='/console'
 )

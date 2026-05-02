@@ -23,19 +23,19 @@ def tcp_connect(host: str, port: int, timeout_seconds: int = 2) -> bool:
 
 
 def ensure_remote_rpc(server: str, timeout: int, rpc_host: str, rpc_port: int, log_sink: LogSink = None) -> None:
-    emit(f"Checking remote RPC endpoint {rpc_host}:{rpc_port}", log_sink)
-
-    if tcp_connect(rpc_host, rpc_port, timeout):
-        emit("Remote RPC is already reachable", log_sink)
-        return
-
-    emit(f"Starting remote RPC through SSH host {server}", log_sink)
+    #emit(f"Checking remote RPC endpoint {rpc_host}:{rpc_port}", log_sink)
+    emit(f"Stopping any remotely running rpc-server...")
+    #if tcp_connect(rpc_host, rpc_port, timeout):
+    #    emit("Remote RPC is already reachable", log_sink)
+    #    return
 
     remote_kill_cmd = (
         f"killall -9 {Path(settings.rpc_server_path).name}"
     )
     emit(f"ssh {server} {remote_kill_cmd}", log_sink)
     subprocess.run(["ssh", server, remote_kill_cmd], check=False)
+
+    emit(f"Starting remote RPC through SSH host {server}", log_sink)
 
     time.sleep(3)
 
