@@ -25,8 +25,8 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
     rpc_server = kwargs.get("rpc_server", settings.rpc_host)
     rpc_port = int(kwargs.get("rpc_port", settings.rpc_port))
 
-    ssl_key = Path(kwargs.get("sslkey", settings.llama_param["sslkeyfile"]))
-    ssl_cert = Path(kwargs.get("sslcert", settings.llama_param["sslcertfile"]))
+    #ssl_key = Path(kwargs.get("sslkey", settings.llama_param["sslkeyfile"]))
+    #ssl_cert = Path(kwargs.get("sslcert", settings.llama_param["sslcertfile"]))
 
     files = model_finder.discover_model_files(model_folder)
     emit(f"Model name   : {files.model_name}", log_sink)
@@ -47,8 +47,8 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(files.gguf),
         str(files.mmproj) if files.mmproj else None,
         gpus,
-        str(ssl_key),
-        str(ssl_cert),
+        #str(ssl_key),
+        #str(ssl_cert),
         str(kwargs.get("tensorsplit", settings.llama_param["tensorsplit"])),
         str(kwargs.get("splitmode", settings.llama_param["defaultsplitmode"])),
         str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
@@ -75,8 +75,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--tensor-split", dest="tensorsplit", default=settings.llama_param["tensorsplit"])
     parser.add_argument("--split-mode", dest="splitmode", default=settings.llama_param["defaultsplitmode"], choices=settings.llama_param["splitmodes"])
     parser.add_argument("--context-size", dest="ctxsize", default=settings.llama_param["ctxsize"])
-    parser.add_argument("--ssl-key-file", dest="sslkey", type=Path, default=Path(settings.llama_param["sslkeyfile"]))
-    parser.add_argument("--ssl-cert-file", dest="sslcert", type=Path, default=Path(settings.llama_param["sslcertfile"]))
+    #parser.add_argument("--ssl-key-file", dest="sslkey", type=Path, default=Path(settings.llama_param["sslkeyfile"]))
+    #parser.add_argument("--ssl-cert-file", dest="sslcert", type=Path, default=Path(settings.llama_param["sslcertfile"]))
     #parser.add_argument("--no-sudo", action="store_true", required=False, default=True)
     parser.add_argument("--skip-ssl-check", action="store_true")
     return parser.parse_args()
@@ -95,8 +95,8 @@ def main() -> int:
         tensorsplit=args.tensorsplit,
         splitmode=args.splitmode,
         ctxsize=args.ctxsize,
-        sslkey=args.sslkey,
-        sslcert=args.sslcert,
+        #sslkey=args.sslkey,
+        #sslcert=args.sslcert,
         #use_sudo=not args.no_sudo,
         skip_ssl_check=args.skip_ssl_check,
     )

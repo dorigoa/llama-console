@@ -19,8 +19,8 @@ class Settings:
     # NiceGUI bind parameters
     ui_host: str = "0.0.0.0"
     ui_port: int = 80
-    ui_ssl_keyfile: str = "/Volumes/Home/dorigo_a/llama-server.key"
-    ui_ssl_certfile: str = "/Volumes/Home/dorigo_a/llama-server.crt"
+    #ui_ssl_keyfile: str = "/Volumes/Home/dorigo_a/llama-server.key"
+    #ui_ssl_certfile: str = "/Volumes/Home/dorigo_a/llama-server.crt"
 
     # llama-server bind parameters
     llama_server_host: str = "0.0.0.0"
