@@ -1,0 +1,4 @@
+PID_TO_KILL=$(/bin/ps -ef|/usr/bin/grep python|/usr/bin/grep gui|/usr/bin/grep -v bash|/usr/bin/awk '{print $2}')
+/bin/kill $PID_TO_KILL
+PID_TO_KILL=$(ps -ef|/usr/bin/grep openwebui|/usr/bin/grep -v grep|/usr/bin/grep -v bash|/usr/bin/awk '{t=t" "$2}END{print t}')
+/bin/kill $PID_TO_KILL
