@@ -12,7 +12,7 @@ from urllib.request import Request, urlopen
 
 from nicegui import ui
 
-from cli import get_llama_command
+from launcher import get_llama_command
 from config import Settings
 from logging_utils import emit, setup_console_logging
 
