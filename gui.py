@@ -25,7 +25,7 @@ LLAMA_READY_LOG_MARKERS = (
 )
 LLAMA_READY_TIMEOUT_SECONDS = 300
 
-
+#_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
     """Show a persistent, manually dismissible NiceGUI notification."""
     try:
@@ -34,17 +34,13 @@ def notify_user(message: str, *, type: str = "info") -> None:
         # Compatibility fallback for older NiceGUI versions without close_button.
         ui.notify(message, type=type, timeout=0)
 
-
+#_____________________________________________________________________________
 def is_llama_ready_log_line(text: str) -> bool:
     """Return True when llama-server output indicates that serving is actually ready."""
     lowered = text.lower()
     return any(marker in lowered for marker in LLAMA_READY_LOG_MARKERS)
 
-
-#def ui_log(message: str) -> None:
-#    """Write to NiceGUI log widget and to stdout logging."""
-#    log_area.push(message)
-
+#_____________________________________________________________________________
 def ui_log(message: str) -> None:
     """Write to NiceGUI log widget if the browser client still exists."""
     try:
@@ -54,7 +50,7 @@ def ui_log(message: str) -> None:
             return
         raise
 
-
+#_____________________________________________________________________________
 def configured_model_path(configured: Any) -> str:
     """Extract the main GGUF path/folder from one settings.AVAILABLE_MODELS value.
 
@@ -98,7 +94,7 @@ def configured_model_path(configured: Any) -> str:
 
     raise TypeError(f"Unsupported settings.AVAILABLE_MODELS entry: {configured!r}")
 
-
+#_____________________________________________________________________________
 def path_to_model_folder(path_string: str | Path) -> Path:
     """Accept either a GGUF file path or a model directory path."""
     p = Path(path_string).expanduser()
@@ -110,7 +106,7 @@ def path_to_model_folder(path_string: str | Path) -> Path:
 
     return p.resolve()
 
-
+#_____________________________________________________________________________
 def _local_llama_base_urls() -> list[str]:
     """Return candidate local URLs for probing an already-running llama-server."""
     port = settings.llama_server_port
@@ -121,7 +117,7 @@ def _local_llama_base_urls() -> list[str]:
         f"http://localhost:{port}",
     ]
 
-
+#_____________________________________________________________________________
 def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
     """Run a small local inspection command without raising on non-zero exit."""
     return subprocess.run(
@@ -133,7 +129,7 @@ def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
         check=False,
     )
 
-
+#_____________________________________________________________________________
 def _parse_pid_lines(output: str) -> list[int]:
     """Parse one PID per line, preserving order and removing duplicates."""
     pids: list[int] = []
@@ -148,7 +144,7 @@ def _parse_pid_lines(output: str) -> list[int]:
             seen.add(pid)
     return pids
 
-
+#_____________________________________________________________________________
 def find_listening_pids_on_port(port: int) -> list[int]:
     """Return local PIDs listening on the given TCP port.
 
@@ -182,7 +178,7 @@ def find_listening_pids_on_port(port: int) -> list[int]:
             seen.add(pid)
     return pids
 
-
+#_____________________________________________________________________________
 def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple[list[int], list[str]]:
     """Terminate, then force-kill if required. Returns affected PIDs and error strings."""
     import time
@@ -237,7 +233,7 @@ def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple
 
     return killed, errors
 
-
+#_____________________________________________________________________________
 def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
     """Small blocking JSON GET helper. Run it via asyncio.to_thread()."""
     req = Request(url, headers={"Accept": "application/json"})
@@ -248,7 +244,7 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
             return {}
         return json.loads(raw)
 
-
+#_____________________________________________________________________________
 def _extract_model_from_openai_models(payload: dict[str, Any]) -> Optional[str]:
     """Extract model id/name from /v1/models compatible response."""
     data = payload.get("data")
@@ -260,7 +256,7 @@ def _extract_model_from_openai_models(payload: dict[str, Any]) -> Optional[str]:
                 return model_id.strip()
     return None
 
-
+#_____________________________________________________________________________
 def _extract_model_from_props(payload: dict[str, Any]) -> Optional[str]:
     """Extract model id/path from llama.cpp /props response, if settings.AVAILAble."""
     for key in ("model_path", "model", "model_name", "model_alias"):
@@ -269,7 +265,7 @@ def _extract_model_from_props(payload: dict[str, Any]) -> Optional[str]:
             return value.strip()
     return None
 
-
+#_____________________________________________________________________________
 def _match_configured_model(detected_model: str) -> str:
     """Try to map llama-server reported model string to one settings.AVAILABLE_MODELS key."""
     detected = detected_model.strip()
@@ -299,7 +295,7 @@ def _match_configured_model(detected_model: str) -> str:
 
     return detected
 
-
+#_____________________________________________________________________________
 def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
     """Probe an already-running llama-server.
 
@@ -323,7 +319,7 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
 
     return False, None, None, last_error
 
-
+#_____________________________________________________________________________
 async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     """Detect a llama-server already running before this GUI launched it.
 
@@ -359,7 +355,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         emit(f"No existing llama-server detected. Last probe error: {error}", ui_log)
     return False
 
-
+#_____________________________________________________________________________
 async def get_browser_based_llama_url() -> str:
     """Build the llama-server chat URL from the browser-visible GUI URL."""
     port = settings.llama_server_port
@@ -371,19 +367,19 @@ async def get_browser_based_llama_url() -> str:
     """
     return str(await ui.run_javascript(js))
 
-
+#_____________________________________________________________________________
 def set_link_target(link: ui.link, url: str) -> None:
     """Update a NiceGUI link target and visible text."""
     link.set_text(url)
     link.props(f'href="{url}"')
 
-
+#_____________________________________________________________________________
 def open_chat_dialog(model_name: str, chat_url: str) -> None:
     chat_model_label.set_text(f"Model: {model_name}")
     set_link_target(chat_url_link, chat_url)
     chat_dialog.open()
 
-
+#_____________________________________________________________________________
 class LlamaManager:
     def __init__(self) -> None:
         self.process: Optional[asyncio.subprocess.Process] = None
@@ -600,6 +596,7 @@ manager = LlamaManager()
 
 ui.colors(primary="#6e93d6")
 
+#_____________________________________________________________________________
 with ui.dialog() as chat_dialog, ui.card().classes("w-full max-w-lg"):
     ui.label("llama-server is running").classes("text-h6")
     chat_model_label = ui.label("").classes("text-subtitle2")
@@ -613,10 +610,12 @@ with ui.dialog() as chat_dialog, ui.card().classes("w-full max-w-lg"):
             icon="open_in_new",
         )
 
+#_____________________________________________________________________________
 with ui.header().classes("items-center justify-between"):
     ui.label("LLM Server Control Panel").classes("text-h6")
     ui.button("Stop Server", on_click=manager.stop_server, icon="stop", color="red")
 
+#_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.card().classes("w-full p-4"):
         ui.label("llama-server status").classes("text-subtitle1")
@@ -670,6 +669,7 @@ emit("GUI loaded", None)
 emit(f"Available models: {len(settings.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.ui_host}:{settings.ui_port}", None)
 
+#_____________________________________________________________________________
 ui.run(
     title=settings.UI_TITLE,
     host=settings.ui_host,

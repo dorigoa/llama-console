@@ -7,7 +7,7 @@ from config import Settings
 
 settings = Settings()
 
-
+#_____________________________________________________________________________
 def build_llama_command(
     llama_server_bin: str,
     rpc_server: str,
@@ -54,11 +54,11 @@ def build_llama_command(
 
     return cmd
 
-
+#_____________________________________________________________________________
 def format_command(cmd: list[str]) -> str:
     return " ".join(shlex.quote(str(x)) for x in cmd)
 
-
+#_____________________________________________________________________________
 def validate_ssl_files(key_file: Path, cert_file: Path) -> None:
     missing = [str(p) for p in (key_file, cert_file) if not p.exists()]
     if missing:

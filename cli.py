@@ -10,7 +10,7 @@ from logging_utils import emit, LogSink, setup_console_logging
 
 settings = Settings()
 
-
+#_____________________________________________________________________________
 def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) -> list[str]:
     """Build the llama-server command without executing it."""
     import devices
@@ -47,20 +47,17 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(files.gguf),
         str(files.mmproj) if files.mmproj else None,
         gpus,
-        #str(ssl_key),
-        #str(ssl_cert),
         str(kwargs.get("tensorsplit", settings.llama_param["tensorsplit"])),
         str(kwargs.get("splitmode", settings.llama_param["defaultsplitmode"])),
         str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         listen_host=kwargs.get("listen_host", settings.llama_server_host),
         listen_port=kwargs.get("listen_port", settings.llama_server_port),
-        #use_sudo=kwargs.get("use_sudo", True),
     )
 
     emit(f"Command: {launcher.format_command(cmd)}", log_sink)
     return cmd
 
-
+#_____________________________________________________________________________
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Launch llama-server with automatic GGUF/mmproj discovery and remote RPC startup.",
@@ -81,7 +78,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--skip-ssl-check", action="store_true")
     return parser.parse_args()
 
-
+#_____________________________________________________________________________
 def main() -> int:
     setup_console_logging()
     args = parse_args()
@@ -95,14 +92,11 @@ def main() -> int:
         tensorsplit=args.tensorsplit,
         splitmode=args.splitmode,
         ctxsize=args.ctxsize,
-        #sslkey=args.sslkey,
-        #sslcert=args.sslcert,
-        #use_sudo=not args.no_sudo,
         skip_ssl_check=args.skip_ssl_check,
     )
     subprocess.run(cmd, check=True)
     return 0
 
-
+#_____________________________________________________________________________
 if __name__ == "__main__":
     sys.exit(main())

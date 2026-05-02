@@ -4,25 +4,19 @@ from dataclasses import dataclass, field
 
 from typing import TypedDict
 
-
-
+#_____________________________________________________________________________
 class ModelConfig(TypedDict):
     path: str
     ctxsize: int
 
-
-
+#_____________________________________________________________________________
 @dataclass
 class Settings:
     UI_TITLE: str = "LLama Launcher"
 
-    # NiceGUI bind parameters
     ui_host: str = "0.0.0.0"
     ui_port: int = 80
-    #ui_ssl_keyfile: str = "/Volumes/Home/dorigo_a/llama-server.key"
-    #ui_ssl_certfile: str = "/Volumes/Home/dorigo_a/llama-server.crt"
-
-    # llama-server bind parameters
+    
     llama_server_host: str = "0.0.0.0"
     llama_server_port: int = 8080#8443
 
