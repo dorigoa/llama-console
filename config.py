@@ -165,7 +165,7 @@ class Settings:
         },
         "Qwen3-coder-30B-F16": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-F16/Qwen3-coder-30B-F16.gguf",
-            "ctxsize": 32768,
+            "ctxsize": 16384,
         },
         "Qwen3-coder-30B-Q4_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q4_K_M/Qwen3-coder-30B-Q4_K_M.gguf",

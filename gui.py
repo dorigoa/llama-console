@@ -542,7 +542,7 @@ class LlamaManager:
             emit("Stopping GUI-started llama-server...", ui_log)
             status_label.set_text("llama-server status: stopping")
             self.process.terminate()
-
+            ui.notify("Initiated Stopping llama-server", type="info", timeout=0, close_button=True)
             try:
                 await asyncio.wait_for(self.process.wait(), timeout=10)
                 emit("GUI-started llama-server terminated", ui_log)
@@ -551,6 +551,18 @@ class LlamaManager:
                 self.process.kill()
                 await self.process.wait()
                 emit("GUI-started llama-server killed", ui_log)
+
+                # Further check: verify whether the process is still there (like a "zombie")
+                # if so, let's use killall -9
+                pids = await asyncio.to_thread(find_listening_pids_on_port, port)
+                if pids:
+                    emit("Process still running, forcing kill with killall -9", ui_log)
+                    #await asyncio.to_thread(os.system, "killall -9 llama-server")
+                    try:
+                        subprocess.run(["killall", "-9", "llama-server"], check=True, capture_output=True)
+                        emit("Force kill executed successfully", ui_log)
+                    except subprocess.CalledProcessError as e:
+                        emit(f"Failed to force kill: {e}", ui_log)
 
             status_label.set_text("llama-server status: stopped")
             status_detail_label.set_text("Stopped GUI-started process")
