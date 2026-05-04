@@ -164,24 +164,24 @@ class Settings:
             "ctxsize": 32768,
         },
         "Qwen3-coder-30B-F16": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-F16.gguf",
+            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-F16/Qwen3-coder-30B-F16.gguf",
             "ctxsize": 32768,
         },
         "Qwen3-coder-30B-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q4_K_M.gguf",
+            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q4_K_M/Qwen3-coder-30B-Q4_K_M.gguf",
             "ctxsize": 0,
         },
         "Qwen3-coder-30B-Q5_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q5_K_M.gguf",
+            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q5_K_M/Qwen3-coder-30B-Q5_K_M.gguf",
             "ctxsize": 131072,
         },
         "Qwen3-coder-30B-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q6_K.gguf",
+            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q6_K/Qwen3-coder-30B-Q6_K.gguf",
             "ctxsize": 131072,
         },
         "Qwen3-coder-30B-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B/Qwen3-coder-30B-Q8_0.gguf",
-            "ctxsize": 65536,
+            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q8_0/Qwen3-coder-30B-Q8_0.gguf",
+            "ctxsize": 131072,
         },
         "Qwen3.6-27B-Q4_K_M": {
             "path": "/Volumes/Home/gguf_models/Qwen3.6-27B-Q4_K_M/Qwen3.6-27B-Q4_K_M.gguf",
@@ -220,5 +220,6 @@ class Settings:
             "ctxsize": 32768,
         },
     })
+    DEFAULT_MODEL = "Devstral-Small-2-24B-Instruct-2512-F16"
 
 settings = Settings()

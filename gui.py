@@ -25,6 +25,8 @@ LLAMA_READY_LOG_MARKERS = (
 )
 LLAMA_READY_TIMEOUT_SECONDS = 300
 
+#global_display_model: str = ""
+
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
     """Show a persistent, manually dismissible NiceGUI notification."""
@@ -332,6 +334,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
     if running:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
+        #global_display_model = display_model
         chat_url = await get_browser_based_llama_url()
 
         if "127.0.0.1" not in str(chat_url):
@@ -641,8 +644,8 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
         model_select = ui.select(
             options=list(settings.AVAILABLE_MODELS.keys()),
-            value=None,
-            label="Select a model from the list...",
+            value=settings.DEFAULT_MODEL,
+            label="Select a model from the list below...",
         ).classes("w-full")
 
         async def start_selected_model() -> None:
