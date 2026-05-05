@@ -108,6 +108,95 @@ def path_to_model_folder(path_string: str | Path) -> Path:
 
     return p.resolve()
 
+
+#_____________________________________________________________________________
+def configured_context_size(configured: Any) -> int:
+    """Extract a per-model context size from model config, if present."""
+    if isinstance(configured, dict):
+        value = configured.get("ctxsize", 0)
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+#_____________________________________________________________________________
+def format_context_size(value: int) -> str:
+    """Human-readable label for context size values."""
+    if value >= 1024 and value % 1024 == 0:
+        return f"{value // 1024}k"
+    return str(value)
+
+#_____________________________________________________________________________
+# def configured_context_options() -> dict[str, int]:
+#     """Return NiceGUI select options for context sizes."""
+#     values = getattr(settings, "CONTEXT_SIZE_OPTIONS", [2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144])
+#     return {format_context_size(int(v)): int(v) for v in values}
+
+#_____________________________________________________________________________
+def configured_context_options() -> dict[int, str]:
+    """Return NiceGUI select options for context sizes.
+    NiceGUI expects dict options in the form {value: label}; therefore
+    the selected value remains the integer context size, while the UI
+    shows the compact label such as "32k".
+    """
+    values = getattr(settings, "CONTEXT_SIZE_OPTIONS", [
+        0,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768,
+        65536,
+        131072,
+        262144,
+    ])
+    return {int(v): format_context_size(int(v)) for v in values}
+
+#_____________________________________________________________________________
+def available_model_names() -> list[str]:
+    """Return model names discovered/configured for the model combo box."""
+    return sorted(settings.AVAILABLE_MODELS.keys(), key=str.lower)
+
+#_____________________________________________________________________________
+def default_model_name() -> Optional[str]:
+    """Return configured default model when valid, otherwise first discovered model."""
+    configured_default = getattr(settings, "DEFAULT_MODEL", "")
+    if configured_default in settings.AVAILABLE_MODELS:
+        return configured_default
+    names = available_model_names()
+    return names[0] if names else None
+
+#_____________________________________________________________________________
+def default_context_size_for_model(model_name: Optional[str]) -> int:
+    """Return model-specific ctxsize when configured, otherwise global default."""
+    if model_name and model_name in settings.AVAILABLE_MODELS:
+        model_ctx = configured_context_size(settings.AVAILABLE_MODELS[model_name])
+        if model_ctx > 0:
+            return model_ctx
+    return int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
+
+#_____________________________________________________________________________
+# def update_context_select_from_model() -> None:
+#     """Set context combo box to the selected model's configured/default context."""
+#     ctx = default_context_size_for_model(str(model_select.value) if model_select.value else None)
+#     valid_values = set(context_select.options.values())
+#     if ctx not in valid_values:
+#         ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
+#     context_select.value = ctx
+
+#_____________________________________________________________________________
+def update_context_select_from_model() -> None:
+    """Set context combo box to the selected model's configured/default context."""
+    ctx = default_context_size_for_model(str(model_select.value) if model_select.value else None)
+    valid_values = set(context_select.options.keys())
+
+    if ctx not in valid_values:
+        fallback_ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
+        ctx = fallback_ctx if fallback_ctx in valid_values else next(iter(valid_values))
+
+    context_select.value = ctx
+
 #_____________________________________________________________________________
 def _local_llama_base_urls() -> list[str]:
     """Return candidate local URLs for probing an already-running llama-server."""
@@ -397,7 +486,7 @@ class LlamaManager:
     def is_running(self) -> bool:
         return self.process is not None and self.process.returncode is None
 
-    async def start_server(self, model_name: str, configured: Any) -> bool:
+    async def start_server(self, model_name: str, configured: Any, context_size: int) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -426,6 +515,9 @@ class LlamaManager:
         emit(f"Selected model : {model_name}", ui_log)
         emit(f"Configured path: {configured_path}", ui_log)
         emit(f"Model folder   : {model_folder}", ui_log)
+        emit(f"Context size   : {context_size}", ui_log)
+
+        settings.llama_param["ctxsize"] = str(context_size)
 
         try:
             cmd = await asyncio.to_thread(get_llama_command, model_folder, ui_log)
@@ -655,10 +747,17 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ui.label("Select a model").classes("text-subtitle1")
 
         model_select = ui.select(
-            options=list(settings.AVAILABLE_MODELS.keys()),
-            value=settings.DEFAULT_MODEL,
+            options=available_model_names(),
+            value=default_model_name(),
             label="Select a model from the list below...",
+            on_change=lambda _: update_context_select_from_model(),
         ).classes("w-full")
+
+        context_select = ui.select(
+            options=configured_context_options(),
+            value=default_context_size_for_model(default_model_name()),
+            label="Context size (0 = auto, grabbed from the model)",
+        ).classes("w-full mt-4")
 
         async def start_selected_model() -> None:
             if not model_select.value:
@@ -666,9 +765,21 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Select a model!", type="warning")
                 return
 
+            if context_select.value is None:
+                emit("Start ignored: no context size selected", ui_log)
+                notify_user("Select a context size!", type="warning")
+                return
+            try:
+                context_size = int(context_select.value)
+            except (TypeError, ValueError):
+                emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
+                notify_user("Invalid context size!", type="warning")
+                return
+
             model_name = str(model_select.value)
+            context_size = int(context_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
-            started = await manager.start_server(model_name, configured)
+            started = await manager.start_server(model_name, configured, context_size)
 
             if started:
                 chat_url = await get_browser_based_llama_url()
@@ -685,6 +796,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 ui.timer(0.5, detect_existing_llama_server, once=True)
 
 emit("GUI loaded", None)
+emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
 emit(f"Available models: {len(settings.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.ui_host}:{settings.ui_port}", None)
 

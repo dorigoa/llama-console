@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from pathlib import Path
 
 from typing import TypedDict
 
@@ -8,6 +9,34 @@ from typing import TypedDict
 class ModelConfig(TypedDict):
     path: str
     ctxsize: int
+
+
+#_____________________________________________________________________________
+def discover_available_models(models_dir: str) -> dict[str, ModelConfig]:
+    """Return GGUF models discovered under models_dir.
+
+    Each immediate subdirectory is treated as one model. The model name shown in
+    the GUI is the last path component of the directory. The main model path is
+    selected as the first non-mmproj *.gguf file found in that directory.
+    """
+    root = Path(models_dir).expanduser()
+    models: dict[str, ModelConfig] = {}
+
+    if not root.is_dir():
+        return models
+
+    for model_dir in sorted((p for p in root.iterdir() if p.is_dir()), key=lambda p: p.name.lower()):
+        gguf_files = sorted(model_dir.glob("*.gguf"), key=lambda p: p.name.lower())
+        main_candidates = [p for p in gguf_files if "mmproj" not in p.name.lower()]
+        if not main_candidates:
+            continue
+
+        models[model_dir.name] = {
+            "path": str(main_candidates[0]),
+            "ctxsize": 0,
+        }
+
+    return models
 
 #_____________________________________________________________________________
 @dataclass
@@ -28,6 +57,20 @@ class Settings:
     rpc_server_path: str = "/usr/local/bin/rpc-server"
     llama_server_path: str = "/usr/local/bin/llama-server"
 
+    MODEL_BASE_DIR: str = "/Volumes/Home/gguf_models"
+    CONTEXT_SIZE_OPTIONS: list[int] = field(default_factory=lambda: [
+        0,
+        2048,
+        4096,
+        8192,
+        16384,
+        32768,
+        65536,
+        131072,
+        262144,
+    ])
+    DEFAULT_CONTEXT_SIZE: int = 0
+
     llama_param: dict = field(default_factory=lambda: {
         "fit": "on",
         "threads": "6",
@@ -38,188 +81,13 @@ class Settings:
         "defaultsplitmode": "layer",
         "tensorsplit": "7,11",
         "ctxsize": "0",
-        "sslkeyfile": "/Volumes/Home/dorigo_a/llama-server.key",
-        "sslcertfile": "/Volumes/Home/dorigo_a/llama-server.crt",
+        #"sslkeyfile": "/Volumes/Home/dorigo_a/llama-server.key",
+        #"sslcertfile": "/Volumes/Home/dorigo_a/llama-server.crt",
     })
 
-    AVAILABLE_MODELS: dict[str, ModelConfig]  = field(default_factory=lambda: {
-        "Devstral-Small-2-24B-Instruct-2512-F16": {
-            "path": "/Volumes/Home/gguf_models/Devstral-Small-2-24B-Instruct-2512-F16/Devstral-Small-2-24B-Instruct-2512-F16.gguf",
-            "ctxsize": 0,
-        },
-        "Devstral-Small-2-24B-Instruct-2512-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Devstral-Small-2-24B-Instruct-2512-Q4_K_M/Devstral-Small-2-24B-Instruct-2512-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Devstral-Small-2-24B-Instruct-2512-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Devstral-Small-2-24B-Instruct-2512-Q6_K/Devstral-Small-2-24B-Instruct-2512-Q6_K.gguf",
-            "ctxsize": 0,
-        },
-        "Devstral-Small-2-24B-Instruct-2512-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Devstral-Small-2-24B-Instruct-2512-Q8_0/Devstral-Small-2-24B-Instruct-2512-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Gemma-3-27B-it-QAT-Q4_0": {
-            "path": "/Volumes/Home/gguf_models/Gemma-3-27B-it-QAT-Q4_0/Gemma-3-27B-it-QAT-Q4_0.gguf",
-            "ctxsize": 0,
-        },
-        "Gemma-4-26B-A4B-it-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Gemma-4-26B-A4B-it-Q6_K/Gemma-4-26B-A4B-it-Q6_K.gguf",
-            "ctxsize": 0,
-        },
-        "Gemma-4-26B-A4B-it-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Gemma-4-26B-A4B-it-Q8_0/Gemma-4-26B-A4B-it-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Gemma-4-31B-it-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Gemma-4-31B-it-Q4_K_M/Gemma-4-31B-it-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Gemma-4-31B-it-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Gemma-4-31B-it-Q6_K/Gemma-4-31B-it-Q6_K.gguf",
-            "ctxsize": 65546,
-        },
-        "Gemma-4-31B-it-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Gemma-4-31B-it-Q8_0/Gemma-4-31B-it-Q8_0.gguf",
-            "ctxsize": 32768,
-        },
-        "Gemma-4-E4B-it": {
-            "path": "/Volumes/Home/gguf_models/Gemma-4-E4B-it/Gemma-4-E4B-it-Q8_0.gguf",
-            "ctxsize": 262144,
-        },
-        "GPT-OSS-20B": {
-            "path": "/Volumes/Home/gguf_models/GPT-OSS-20B/GPT-OSS-20B-MXFP4.gguf",
-            "ctxsize": 0,
-        },
-        "Granite-3.2-8b-instruct": {
-            "path": "/Volumes/Home/gguf_models/Granite-3.2-8b-instruct/Granite-3.2-8b-instruct-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Meta-Llama-3.1-8B-Instruct": {
-            "path": "/Volumes/Home/gguf_models/Meta-Llama-3.1-8B-Instruct/Meta-Llama-3.1-8B-Instruct-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Ministral-3-14B-Reasoning-2512-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Ministral-3-14B-Reasoning-2512-Q4_K_M/Ministral-3-14B-Reasoning-2512-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Ministral-3-14B-Reasoning-2512-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Ministral-3-14B-Reasoning-2512-Q6_K/Ministral-3-14B-Reasoning-2512-Q6_K.gguf",
-            "ctxsize": 0,
-        },
-        "Ministral-3-14B-Reasoning-2512-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Ministral-3-14B-Reasoning-2512-Q8_0/Ministral-3-14B-Reasoning-2512-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Mistral-Small-3.2-24B-Instruct-2506-F16": {
-            "path": "/Volumes/Home/gguf_models/Mistral-Small-3.2-24B-Instruct-2506-F16/Mistral-Small-3.2-24B-Instruct-2506-F16.gguf",
-            "ctxsize": 0,
-        },
-        "Mistral-Small-3.2-24B-Instruct-2506-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Mistral-Small-3.2-24B-Instruct-2506-Q8_0/Mistral-Small-3.2-24B-Instruct-2506-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Mistral-Small-3.2-24B-Instruct-2506": {
-            "path": "/Volumes/Home/gguf_models/Mistral-Small-3.2-24B-Instruct-2506/Mistral-Small-3.2-24B-Instruct-2506-F16.gguf",
-            "ctxsize": 0,
-        },
-        "NVIDIA-Nemotron-3-Nano-4B": {
-            "path": "/Volumes/Home/gguf_models/NVIDIA-Nemotron-3-Nano-4B/NVIDIA-Nemotron-3-Nano-4B-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Phi-4-reasoning-plus-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Phi-4-reasoning-plus-Q4_K_M/Phi-4-reasoning-plus-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Phi-4-reasoning-plus-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Phi-4-reasoning-plus-Q6_K/Phi-4-reasoning-plus-Q6_K.gguf",
-            "ctxsize": 0,
-        },
-        "Phi-4-reasoning-plus-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Phi-4-reasoning-plus-Q8_0/Phi-4-reasoning-plus-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3-14B": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-14B/Qwen3-14B-Q8_0.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3-30B-A3B-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3-30B-A3B-Q5_0": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q5_0.gguf",
-            "ctxsize": 131072,
-        },
-        "Qwen3-30B-A3B-Q5_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q5_K_M.gguf",
-            "ctxsize": 65536,
-        },
-        "Qwen3-30B-A3B-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q6_K.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3-30B-A3B-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-30B-A3B/Qwen3-30B-A3B-Q8_0.gguf",
-            "ctxsize": 32768,
-        },
-        "Qwen3-coder-30B-F16": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-F16/Qwen3-coder-30B-F16.gguf",
-            "ctxsize": 16384,
-        },
-        "Qwen3-coder-30B-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q4_K_M/Qwen3-coder-30B-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3-coder-30B-Q5_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q5_K_M/Qwen3-coder-30B-Q5_K_M.gguf",
-            "ctxsize": 131072,
-        },
-        "Qwen3-coder-30B-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q6_K/Qwen3-coder-30B-Q6_K.gguf",
-            "ctxsize": 131072,
-        },
-        "Qwen3-coder-30B-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Qwen3-coder-30B-Q8_0/Qwen3-coder-30B-Q8_0.gguf",
-            "ctxsize": 131072,
-        },
-        "Qwen3.6-27B-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3.6-27B-Q4_K_M/Qwen3.6-27B-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3.6-27B-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Qwen3.6-27B-Q6_K/Qwen3.6-27B-Q6_K.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3.6-27B-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Qwen3.6-27B-Q8_0/Qwen3.6-27B-Q8_0.gguf",
-            "ctxsize": 131072,
-        },
-        "Qwen3.6-35B-A3B-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/Qwen3.6-35B-A3B-Q4_K_M/Qwen3.6-35B-A3B-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "Qwen3.6-35B-A3B-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/Qwen3.6-35B-A3B-Q6_K/Qwen3.6-35B-A3B-Q6_K.gguf",
-            "ctxsize": 131072,
-        },
-        "Qwen3.6-35B-A3B-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/Qwen3.6-35B-A3B-Q8_0/Qwen3.6-35B-A3B-Q8_0.gguf",
-            "ctxsize": 65536,
-        },
-        "QwQ-32B-Q4_K_M": {
-            "path": "/Volumes/Home/gguf_models/QwQ-32B-Q4_K_M/QwQ-32B-Q4_K_M.gguf",
-            "ctxsize": 0,
-        },
-        "QwQ-32B-Q6_K": {
-            "path": "/Volumes/Home/gguf_models/QwQ-32B-Q6_K/QwQ-32B-Q6_K.gguf",
-            "ctxsize": 65536,
-        },
-        "QwQ-32B-Q8_0": {
-            "path": "/Volumes/Home/gguf_models/QwQ-32B-Q8_0/QwQ-32B-Q8_0.gguf",
-            "ctxsize": 32768,
-        },
-    })
-    DEFAULT_MODEL = "Devstral-Small-2-24B-Instruct-2512-F16"
+    AVAILABLE_MODELS: dict[str, ModelConfig] = field(
+        default_factory=lambda: discover_available_models(Settings.MODEL_BASE_DIR)
+    )
+    DEFAULT_MODEL: str = ""
 
 settings = Settings()
