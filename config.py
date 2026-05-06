@@ -59,6 +59,7 @@ class Settings:
     PERSIST_FILE = "persist.json"
 
     MODEL_BASE_DIR: str = "/Volumes/Home/gguf_models"
+    
     CONTEXT_SIZE_OPTIONS: list[int] = field(default_factory=lambda: [
         0,
         2048,
@@ -89,6 +90,7 @@ class Settings:
         "defaultsplitmode": "layer",
         "tensorsplit": "6,12",
         "ctxsize": "0",
+        "temperature": 0.3
         #"sslkeyfile": "/Volumes/Home/dorigo_a/llama-server.key",
         #"sslcertfile": "/Volumes/Home/dorigo_a/llama-server.crt",
     })
