@@ -9,6 +9,7 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
+from persist import JsonParams
 
 from nicegui import ui
 
@@ -24,7 +25,7 @@ LLAMA_READY_LOG_MARKERS = (
 )
 LLAMA_READY_TIMEOUT_SECONDS = 300
 
-#global_display_model: str = ""
+params = JsonParams( settings.persist_file )
 
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
@@ -127,12 +128,6 @@ def format_context_size(value: int) -> str:
     return str(value)
 
 #_____________________________________________________________________________
-# def configured_context_options() -> dict[str, int]:
-#     """Return NiceGUI select options for context sizes."""
-#     values = getattr(settings, "CONTEXT_SIZE_OPTIONS", [2048, 4096, 8192, 16384, 32768, 65536, 131072, 262144])
-#     return {format_context_size(int(v)): int(v) for v in values}
-
-#_____________________________________________________________________________
 def configured_context_options() -> dict[int, str]:
     """Return NiceGUI select options for context sizes.
     NiceGUI expects dict options in the form {value: label}; therefore
@@ -140,23 +135,7 @@ def configured_context_options() -> dict[int, str]:
     shows the compact label such as "32k".
     """
     values = settings.CONTEXT_SIZE_OPTIONS #getattr(settings, "CONTEXT_SIZE_OPTIONS", [
-    #     0,
-    #     2048,
-    #     3072,
-    #     4096,
-    #     6144,
-    #     8192,
-    #     12288,
-    #     16384,
-    #     24576,
-    #     32768,
-    #     49152
-    #     65536,
-    #     98304
-    #     131072,
-    #     196608,
-    #     262144,
-    # ])
+    
     return {int(v): format_context_size(int(v)) for v in values}
 
 #_____________________________________________________________________________
@@ -166,10 +145,6 @@ def available_model_names() -> list[str]:
 
 #_____________________________________________________________________________
 def default_model_name() -> Optional[str]:
-    """Return configured default model when valid, otherwise first discovered model."""
-    #configured_default = getattr(settings, "DEFAULT_MODEL", "")
-    #if configured_default in settings.AVAILABLE_MODELS:
-    #    return configured_default
     names = available_model_names()
     return names[0] if names else None
 
@@ -514,10 +489,7 @@ class LlamaManager:
         emit(f"Model folder   : {model_folder}", ui_log)
         emit(f"Context size   : {context_size}", ui_log)
 
-#        settings.llama_param["ctxsize"] = str(context_size)
-
         try:
-            #cmd = await asyncio.to_thread(get_llama_command, model_folder, ui_log)
             emit(f"Context size   : {context_size}", ui_log)
             cmd = await asyncio.to_thread(
                 get_llama_command,
@@ -527,7 +499,6 @@ class LlamaManager:
             )
 
             emit("Launching llama-server process...", ui_log)
-
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -543,7 +514,7 @@ class LlamaManager:
 
             self._ready_event = asyncio.Event()
             self._ready_reason = None
-            self._reader_task = asyncio.create_task(self._read_process_output(model_name, self.process))
+            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, self.process))
 
             await asyncio.sleep(0.5)
             if self.process.returncode is not None:
@@ -594,7 +565,7 @@ class LlamaManager:
             notify_user(msg, type="negative")
             return False
 
-    async def _read_process_output(self, model_name: str, process: asyncio.subprocess.Process) -> None:
+    async def _read_process_output(self, model_name: str, context_size: int, process: asyncio.subprocess.Process) -> None:
         assert process.stdout is not None
 
         try:
@@ -611,6 +582,7 @@ class LlamaManager:
                             self._ready_reason = text
                             self._ready_event.set()
                             emit(f"llama-server readiness confirmed by log line: {text}", ui_log)
+                            params.save_param(model_name, f"{context_size}")
 
             return_code = await process.wait()
             emit(f"llama-server exited with return code {return_code}", ui_log)
@@ -648,8 +620,6 @@ class LlamaManager:
                 await self.process.wait()
                 emit("GUI-started llama-server killed", ui_log)
 
-                # Further check: verify whether the process is still there (like a "zombie")
-                # if so, let's use killall -9
                 pids = await asyncio.to_thread(find_listening_pids_on_port, port)
                 if pids:
                     emit("Process still running, forcing kill with killall -9", ui_log)
@@ -667,8 +637,6 @@ class LlamaManager:
             notify_user("Server stopped", type="info")
             return
 
-        # No asyncio subprocess handle exists: the server was likely started outside this GUI
-        # or by a previous GUI instance. Kill the process listening on the configured port anyway.
         port = settings.llama_server_port
         emit(f"No GUI-started process handle; looking for external listener on TCP port {port}...", ui_log)
         status_label.set_text("llama-server status: stopping external process")
@@ -733,7 +701,6 @@ with ui.header().classes("items-center justify-between"):
 #_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.card().classes("w-full p-4"):
-        #ui.label("llama-server status").classes("text-subtitle1")
         status_label = ui.label("llama-server status: not checked yet").classes("font-bold")
         status_detail_label = ui.label("Startup detection pending...").classes("text-sm text-gray-600")
         status_chat_link = ui.link("", target="_blank").classes("text-blue-600 underline break-all")
@@ -774,11 +741,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Select a context size!", type="warning")
                 return
             try:
-                #_context_size = str(context_select.value)
-                #if _context_size.endswith(("k", "K")):
-                #    _context_size = _context_size[:-1]
-                #    context_size = _context_size*1024
-                #else:
                 context_size = int(context_select.value)
             except (TypeError, ValueError):
                 emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
@@ -786,10 +748,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 return
 
             model_name = str(model_select.value)
-            
-            
-		    
-#            context_size = int(context_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
             started = await manager.start_server(model_name, configured, context_size)
 
@@ -803,8 +761,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     ui.label("Server Logs").classes("text-subtitle2")
     log_area = ui.log().classes("w-full h-96 font-mono text-xs bg-black text-green-400")
 
-# Run detection once when the page is ready. ui.timer keeps the callback attached
-# to the page instead of running it as a raw background task with no UI context.
 ui.timer(0.5, detect_existing_llama_server, once=True)
 
 emit("GUI loaded", None)
@@ -817,5 +773,4 @@ ui.run(
     title=settings.UI_TITLE,
     host=settings.ui_host,
     port=settings.ui_port,
-    #root_path='/console'
 )

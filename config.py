@@ -56,6 +56,8 @@ class Settings:
     rpc_server_path: str = "/usr/local/bin/rpc-server"
     llama_server_path: str = "/usr/local/bin/llama-server"
 
+    PERSIST_FILE = "persist.json"
+
     MODEL_BASE_DIR: str = "/Volumes/Home/gguf_models"
     CONTEXT_SIZE_OPTIONS: list[int] = field(default_factory=lambda: [
         0,
