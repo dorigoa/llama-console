@@ -777,7 +777,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 return
 
             model_name = str(model_select.value)
-            context_size = int(context_select.value)
+            _context_size = context_select.value
+            if _context_size.endswith(("k", "K")):
+		    _context_size = _context_size[:-1]
+		    context_size = _context_size*1024
+		    
+#            context_size = int(context_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
             started = await manager.start_server(model_name, configured, context_size)
 
