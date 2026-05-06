@@ -158,15 +158,53 @@ def default_context_size_for_model(model_name: Optional[str]) -> int:
     return settings.DEFAULT_CONTEXT_SIZE#int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
 
 #_____________________________________________________________________________
+def persisted_context_size_for_model(model_name: Optional[str]) -> Optional[int]:
+    """Return the context size stored in persist.json for model_name, if present and valid."""
+    if not model_name:
+        return None
+
+    try:
+        persisted = params.load_params()
+    except Exception as exc:
+        emit(f"Could not load persisted parameters from {settings.PERSIST_FILE}: {exc}", None)
+        return None
+
+    if model_name not in persisted:
+        return None
+
+    try:
+        return int(persisted[model_name])
+    except (TypeError, ValueError):
+        emit(f"Ignoring invalid persisted context size for {model_name!r}: {persisted[model_name]!r}", None)
+        return None
+
+#_____________________________________________________________________________
+def selected_context_size_for_model(model_name: Optional[str]) -> int:
+    """Return persisted ctxsize when available, otherwise configured/default ctxsize."""
+    persisted_ctx = persisted_context_size_for_model(model_name)
+    if persisted_ctx is not None:
+        return persisted_ctx
+    return default_context_size_for_model(model_name)
+
+#_____________________________________________________________________________
+def normalize_context_size_for_select(ctx: int) -> int:
+    """Return a context size accepted by the context select widget."""
+    valid_values = set(configured_context_options().keys())
+
+    if ctx in valid_values:
+        return ctx
+
+    fallback_ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
+    if fallback_ctx in valid_values:
+        return fallback_ctx
+
+    return next(iter(valid_values))
+
+#_____________________________________________________________________________
 def update_context_select_from_model() -> None:
-    """Set context combo box to the selected model's configured/default context."""
-    ctx = default_context_size_for_model(str(model_select.value) if model_select.value else None)
-    valid_values = set(context_select.options.keys())
-
-    if ctx not in valid_values:
-        fallback_ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
-        ctx = fallback_ctx if fallback_ctx in valid_values else next(iter(valid_values))
-
+    """Set context combo box from persist.json, then config/default fallback."""
+    model_name = str(model_select.value) if model_select.value else None
+    ctx = normalize_context_size_for_select(selected_context_size_for_model(model_name))
     context_select.value = ctx
 
 #_____________________________________________________________________________
@@ -726,7 +764,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
         context_select = ui.select(
             options=configured_context_options(),
-            value=default_context_size_for_model(default_model_name()),
+            value=normalize_context_size_for_select(selected_context_size_for_model(default_model_name())),
             label="Context size (0 = auto, grabbed from the model)",
         ).classes("w-full mt-4")
 
