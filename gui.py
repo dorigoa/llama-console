@@ -761,7 +761,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Select a context size!", type="warning")
                 return
             try:
-                _context_size = context_select.value
+                _context_size = str(context_select.value)
                 if _context_size.endswith(("k", "K")):
                     _context_size = _context_size[:-1]
                     context_size = _context_size*1024
