@@ -508,10 +508,17 @@ class LlamaManager:
         emit(f"Model folder   : {model_folder}", ui_log)
         emit(f"Context size   : {context_size}", ui_log)
 
-        settings.llama_param["ctxsize"] = str(context_size)
+#        settings.llama_param["ctxsize"] = str(context_size)
 
         try:
-            cmd = await asyncio.to_thread(get_llama_command, model_folder, ui_log)
+            #cmd = await asyncio.to_thread(get_llama_command, model_folder, ui_log)
+            emit(f"Context size   : {context_size}", ui_log)
+            cmd = await asyncio.to_thread(
+                get_llama_command,
+                model_folder,
+                ui_log,
+                ctxsize=context_size,
+            )
 
             emit("Launching llama-server process...", ui_log)
 
@@ -761,13 +768,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Select a context size!", type="warning")
                 return
             try:
-                _context_size = str(context_select.value)
-                if _context_size.endswith(("k", "K")):
-                    _context_size = _context_size[:-1]
-                    context_size = _context_size*1024
-                else:
-                    context_size = int(_context_size)
-#                context_size = int(context_select.value)
+                #_context_size = str(context_select.value)
+                #if _context_size.endswith(("k", "K")):
+                #    _context_size = _context_size[:-1]
+                #    context_size = _context_size*1024
+                #else:
+                context_size = int(context_select.value)
             except (TypeError, ValueError):
                 emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
                 notify_user("Invalid context size!", type="warning")
