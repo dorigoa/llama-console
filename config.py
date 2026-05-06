@@ -60,15 +60,22 @@ class Settings:
     CONTEXT_SIZE_OPTIONS: list[int] = field(default_factory=lambda: [
         0,
         2048,
+        3072,
         4096,
+        6144,
         8192,
+        12288,
         16384,
+        24576,
         32768,
+        49152,
         65536,
+        98304,
         131072,
+        196608,
         262144,
     ])
-    DEFAULT_CONTEXT_SIZE: int = 0
+    DEFAULT_CONTEXT_SIZE: int = 32768
 
     llama_param: dict = field(default_factory=lambda: {
         "fit": "on",

@@ -13,10 +13,9 @@ from urllib.request import Request, urlopen
 from nicegui import ui
 
 from launcher import get_llama_command
-from config import Settings
+from config import settings
 from logging_utils import emit, setup_console_logging
 
-settings = Settings()
 logger = setup_console_logging()
 
 LLAMA_READY_LOG_MARKERS = (
@@ -140,17 +139,24 @@ def configured_context_options() -> dict[int, str]:
     the selected value remains the integer context size, while the UI
     shows the compact label such as "32k".
     """
-    values = getattr(settings, "CONTEXT_SIZE_OPTIONS", [
-        0,
-        2048,
-        4096,
-        8192,
-        16384,
-        32768,
-        65536,
-        131072,
-        262144,
-    ])
+    values = settings.CONTEXT_SIZE_OPTIONS #getattr(settings, "CONTEXT_SIZE_OPTIONS", [
+    #     0,
+    #     2048,
+    #     3072,
+    #     4096,
+    #     6144,
+    #     8192,
+    #     12288,
+    #     16384,
+    #     24576,
+    #     32768,
+    #     49152
+    #     65536,
+    #     98304
+    #     131072,
+    #     196608,
+    #     262144,
+    # ])
     return {int(v): format_context_size(int(v)) for v in values}
 
 #_____________________________________________________________________________
@@ -161,9 +167,9 @@ def available_model_names() -> list[str]:
 #_____________________________________________________________________________
 def default_model_name() -> Optional[str]:
     """Return configured default model when valid, otherwise first discovered model."""
-    configured_default = getattr(settings, "DEFAULT_MODEL", "")
-    if configured_default in settings.AVAILABLE_MODELS:
-        return configured_default
+    #configured_default = getattr(settings, "DEFAULT_MODEL", "")
+    #if configured_default in settings.AVAILABLE_MODELS:
+    #    return configured_default
     names = available_model_names()
     return names[0] if names else None
 
@@ -174,7 +180,7 @@ def default_context_size_for_model(model_name: Optional[str]) -> int:
         model_ctx = configured_context_size(settings.AVAILABLE_MODELS[model_name])
         if model_ctx > 0:
             return model_ctx
-    return int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
+    return settings.DEFAULT_CONTEXT_SIZE#int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
 
 #_____________________________________________________________________________
 def update_context_select_from_model() -> None:

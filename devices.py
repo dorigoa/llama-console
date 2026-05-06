@@ -3,10 +3,10 @@ from __future__ import annotations
 import subprocess
 from collections.abc import Callable
 
-from config import Settings
+from config import settings
 from logging_utils import emit, LogSink
 
-settings = Settings()
+#settings = Settings()
 
 
 class DeviceDiscoveryError(RuntimeError):

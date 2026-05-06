@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import shlex
 from pathlib import Path
-from config import Settings
+from config import settings
 from logging_utils import emit, LogSink, setup_console_logging
 
-settings = Settings()
+#settings = Settings()
 
 #_____________________________________________________________________________
 def build_llama_command(

@@ -4,10 +4,10 @@ import socket
 import subprocess
 import time
 from pathlib import Path
-from config import Settings
+from config import settings
 from logging_utils import emit, LogSink
 
-settings = Settings()
+#settings = Settings()
 
 
 class RpcStartupError(RuntimeError):
