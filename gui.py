@@ -25,7 +25,7 @@ LLAMA_READY_LOG_MARKERS = (
 )
 LLAMA_READY_TIMEOUT_SECONDS = 300
 
-params = JsonParams( settings.persist_file )
+params = JsonParams( settings.PERSIST_FILE )
 
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
