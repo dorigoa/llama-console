@@ -39,6 +39,7 @@ def build_llama_command(
         "-t", str(settings.llama_param["threads"]),
         "-tb", str(settings.llama_param["threadsbunch"]),
         "--parallel", str(settings.llama_param["parallel"]),
+        "--temperature", settings.llama_param["temperature"],
     ])
 
     if mmproj_file:
