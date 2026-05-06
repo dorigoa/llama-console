@@ -50,7 +50,6 @@ class Settings:
     llama_server_port: int = 8088
 
     rpc_host: str = "192.168.20.2"
-    #rpc_host_ssh: str = "192.168.1.190"
     rpc_port: int = 50000
     openbrowser: bool = True
 
@@ -88,6 +87,6 @@ class Settings:
     AVAILABLE_MODELS: dict[str, ModelConfig] = field(
         default_factory=lambda: discover_available_models(Settings.MODEL_BASE_DIR)
     )
-    DEFAULT_MODEL: str = ""
+    #DEFAULT_MODEL: str = ""
 
 settings = Settings()

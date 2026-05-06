@@ -177,15 +177,6 @@ def default_context_size_for_model(model_name: Optional[str]) -> int:
     return int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
 
 #_____________________________________________________________________________
-# def update_context_select_from_model() -> None:
-#     """Set context combo box to the selected model's configured/default context."""
-#     ctx = default_context_size_for_model(str(model_select.value) if model_select.value else None)
-#     valid_values = set(context_select.options.values())
-#     if ctx not in valid_values:
-#         ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
-#     context_select.value = ctx
-
-#_____________________________________________________________________________
 def update_context_select_from_model() -> None:
     """Set context combo box to the selected model's configured/default context."""
     ctx = default_context_size_for_model(str(model_select.value) if model_select.value else None)
@@ -770,17 +761,21 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Select a context size!", type="warning")
                 return
             try:
-                context_size = int(context_select.value)
+                _context_size = context_select.value
+                if _context_size.endswith(("k", "K")):
+                    _context_size = _context_size[:-1]
+                    context_size = _context_size*1024
+                else:
+                    context_size = int(_context_size)
+#                context_size = int(context_select.value)
             except (TypeError, ValueError):
                 emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
                 notify_user("Invalid context size!", type="warning")
                 return
 
             model_name = str(model_select.value)
-            _context_size = context_select.value
-            if _context_size.endswith(("k", "K")):
-                    _context_size = _context_size[:-1]
-                    context_size = _context_size*1024
+            
+            
 		    
 #            context_size = int(context_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
