@@ -87,7 +87,7 @@ class Settings:
         "ngl": "auto",
         "splitmodes": ["none", "layer", "row", "tensor"],
         "defaultsplitmode": "layer",
-        "tensorsplit": "7,11",
+        "tensorsplit": "6,12",
         "ctxsize": "0",
         #"sslkeyfile": "/Volumes/Home/dorigo_a/llama-server.key",
         #"sslcertfile": "/Volumes/Home/dorigo_a/llama-server.crt",
