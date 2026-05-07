@@ -496,7 +496,7 @@ class LlamaManager:
     def is_running(self) -> bool:
         return self.process is not None and self.process.returncode is None
 
-    async def start_server(self, model_name: str, configured: Any, context_size: int) -> bool:
+    async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -526,15 +526,16 @@ class LlamaManager:
         emit(f"Configured path: {configured_path}", ui_log)
         emit(f"Model folder   : {model_folder}", ui_log)
         emit(f"Context size   : {context_size}", ui_log)
+        emit(f"Temperature    : {temperature}", ui_log)
 
         try:
-            emit(f"Context size   : {context_size}", ui_log)
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 model_folder,
                 ui_log,
                 ctxsize=context_size,
             )
+            cmd.extend(["--temp", f"{temperature:.1f}"])
 
             emit("Launching llama-server process...", ui_log)
             self.process = await asyncio.create_subprocess_exec(
@@ -755,18 +756,29 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.card().classes("w-full p-4"):
         ui.label("Select a model").classes("text-subtitle1")
 
-        model_select = ui.select(
-            options=available_model_names(),
-            value=default_model_name(),
-            label="Select a model from the list below...",
-            on_change=lambda _: update_context_select_from_model(),
-        ).classes("w-full")
+        with ui.row().classes("w-full gap-4 mt-4 items-end"):
 
-        context_select = ui.select(
-            options=configured_context_options(),
-            value=normalize_context_size_for_select(selected_context_size_for_model(default_model_name())),
-            label="Context size (0 = auto, grabbed from the model)",
-        ).classes("w-full mt-4")
+            model_select = ui.select(
+                options=available_model_names(),
+                value=default_model_name(),
+                label="Select a model from the list below...",
+                on_change=lambda _: update_context_select_from_model(),
+            ).classes("flex-1")
+
+            model_list_refresh = ui.button("Refresh List", on_click=None, icon="refresh").classes("mt-4")
+
+        with ui.row().classes("w-full gap-4 mt-4 items-end"):
+            context_select = ui.select(
+                options=configured_context_options(),
+                value=normalize_context_size_for_select(selected_context_size_for_model(default_model_name())),
+                label="Context size (0 = auto, grabbed from the model)",
+            ).classes("flex-[2]")
+
+            temperature_select = ui.select(
+                options=[f"{i / 10:.1f}" for i in range(1, 11)],
+                value="0.2",
+                label="Temperature",
+            ).classes("flex-[1]")
 
         async def start_selected_model() -> None:
             if not model_select.value:
@@ -785,9 +797,20 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Invalid context size!", type="warning")
                 return
 
+            if temperature_select.value is None:
+                emit("Start ignored: no temperature selected", ui_log)
+                notify_user("Select a temperature!", type="warning")
+                return
+            try:
+                temperature = float(temperature_select.value)
+            except (TypeError, ValueError):
+                emit(f"Start ignored: invalid temperature: {temperature_select.value!r}", ui_log)
+                notify_user("Invalid temperature!", type="warning")
+                return
+
             model_name = str(model_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
-            started = await manager.start_server(model_name, configured, context_size)
+            started = await manager.start_server(model_name, configured, context_size, temperature)
 
             if started:
                 chat_url = await get_browser_based_llama_url()
@@ -796,7 +819,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
         ui.button("Start Server", on_click=start_selected_model, icon="play_arrow").classes("mt-4")
 
-    ui.label("Server Logs").classes("text-subtitle2")
+    async def clear_log() -> None:
+        log_area.clear()
+
+    with ui.row().classes("w-full gap-4 mt-4 items-end"):
+        ui.label("Server Logs").classes("flex-1")
+        clear_log = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
     log_area = ui.log().classes("w-full h-96 font-mono text-xs bg-black text-green-400")
 
 ui.timer(0.5, detect_existing_llama_server, once=True)
