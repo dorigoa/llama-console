@@ -735,7 +735,7 @@ with ui.dialog() as chat_dialog, ui.card().classes("w-full max-w-lg"):
 #_____________________________________________________________________________
 with ui.header().classes("items-center justify-between"):
     ui.label(settings.UI_TITLE).classes("text-h6")
-    ui.button("Stop Server", on_click=manager.stop_server, icon="stop", color="red")
+    ui.button("Stop Model", on_click=manager.stop_server, icon="stop", color="red")
 
 #_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
@@ -771,7 +771,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             context_select = ui.select(
                 options=configured_context_options(),
                 value=normalize_context_size_for_select(selected_context_size_for_model(default_model_name())),
-                label="Context size (0 = auto, grabbed from the model)",
+                label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
             temperature_select = ui.select(
@@ -817,7 +817,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 emit(f"Chat URL: {chat_url}", ui_log)
                 open_chat_dialog(model_name, chat_url)
 
-        ui.button("Start Server", on_click=start_selected_model, icon="play_arrow").classes("mt-4")
+        ui.button("Launch Model", on_click=start_selected_model, icon="play_arrow").classes("mt-4")
 
     async def clear_log() -> None:
         log_area.clear()
