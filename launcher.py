@@ -8,6 +8,20 @@ from logging_utils import emit, LogSink, setup_console_logging
 #settings = Settings()
 
 #_____________________________________________________________________________
+# def build_llama_command(
+#     llama_server_bin: str,
+#     rpc_server: str,
+#     rpc_port: int,
+#     gguf_file: str,
+#     mmproj_file: str | None,
+#     devices: str,
+#     tensorsplit: str,
+#     splitmode: str,
+#     ctxsize: str,
+#     *,
+#     listen_host: str | None = None,
+#     listen_port: int | str | None = None,
+# ) -> list[str]:
 def build_llama_command(
     llama_server_bin: str,
     rpc_server: str,
@@ -18,6 +32,7 @@ def build_llama_command(
     tensorsplit: str,
     splitmode: str,
     ctxsize: str,
+    temperature: str | float | None = None,
     *,
     listen_host: str | None = None,
     listen_port: int | str | None = None,
@@ -39,13 +54,17 @@ def build_llama_command(
         "-t", str(settings.llama_param["threads"]),
         "-tb", str(settings.llama_param["threadsbunch"]),
         "--parallel", str(settings.llama_param["parallel"]),
-        "--temperature", settings.llama_param["temperature"],
+        #"--temperature", settings.llama_param["temperature"],
     ])
+
+    if temperature is not None:
+        cmd.extend(["--temp", f"{float(temperature):.1f}"])
 
     if mmproj_file:
         cmd.extend(["--mmproj", str(mmproj_file)])
 
-    return cmd
+    #return cmd
+    return [str(arg) for arg in cmd]
 
 #_____________________________________________________________________________
 def format_command(cmd: list[str]) -> str:
@@ -91,6 +110,7 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(kwargs.get("tensorsplit", settings.llama_param["tensorsplit"])),
         str(kwargs.get("splitmode", settings.llama_param["defaultsplitmode"])),
         str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
+        kwargs.get("temperature", None),
         listen_host=kwargs.get("listen_host", settings.llama_server_host),
         listen_port=kwargs.get("listen_port", settings.llama_server_port),
     )

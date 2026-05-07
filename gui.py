@@ -10,10 +10,10 @@ from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from persist import JsonParams
-
+import re
 from nicegui import ui
 
-from launcher import get_llama_command
+from launcher import get_llama_command, format_command
 from config import settings
 from logging_utils import emit, setup_console_logging
 
@@ -496,7 +496,7 @@ class LlamaManager:
     def is_running(self) -> bool:
         return self.process is not None and self.process.returncode is None
 
-    async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float) -> bool:
+    async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float, shard_balance: str) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -527,15 +527,30 @@ class LlamaManager:
         emit(f"Model folder   : {model_folder}", ui_log)
         emit(f"Context size   : {context_size}", ui_log)
         emit(f"Temperature    : {temperature}", ui_log)
+        emit(f"Sharding       : {shard_balance}", ui_log)
 
         try:
+            # cmd = await asyncio.to_thread(
+            #     get_llama_command,
+            #     model_folder,
+            #     ui_log,
+            #     ctxsize=context_size,
+            # )
+            # cmd.extend(["--temp", f"{temperature:.1f}"])
+            # cmd.extend(["--tensor-split", f"{str(shard_balance)}"])
+            # #emit(f"Command: {launcher.format_command(cmd)}", log_sink)
+
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 model_folder,
                 ui_log,
                 ctxsize=context_size,
+                temperature=temperature,
+                tensorsplit=shard_balance,
             )
-            cmd.extend(["--temp", f"{temperature:.1f}"])
+
+            cmd = [str(arg) for arg in cmd]
+            emit(f"Final command: {format_command(cmd)}", ui_log)
 
             emit("Launching llama-server process...", ui_log)
             self.process = await asyncio.create_subprocess_exec(
@@ -780,6 +795,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 label="Temperature",
             ).classes("flex-[1]")
 
+        shard_balance = ui.input(
+                #options=[f"{i / 10:.1f}" for i in range(1, 11)],
+                value="6,12",
+                label="Shard balance",
+            ).classes("flex-[1]")
+
         async def start_selected_model() -> None:
             if not model_select.value:
                 emit("Start ignored: no model selected", ui_log)
@@ -808,9 +829,20 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Invalid temperature!", type="warning")
                 return
 
+            if not shard_balance.value:
+                _shard_balance = settings.llama_param['tensorsplit']
+            else:
+                _shard_balance = shard_balance.value
+
+            #pattern = r"\d+,\d+"
+            pattern = r"\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+"
+            
+            if not re.match(pattern, _shard_balance):
+                _shard_balance = settings.llama_param['tensorsplit']
+
             model_name = str(model_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
-            started = await manager.start_server(model_name, configured, context_size, temperature)
+            started = await manager.start_server(model_name, configured, context_size, temperature, _shard_balance)
 
             if started:
                 chat_url = await get_browser_based_llama_url()
