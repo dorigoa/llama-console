@@ -43,18 +43,20 @@ def discover_available_models(models_dir: str) -> dict[str, ModelConfig]:
 class Settings:
     UI_TITLE: str = "LLama Launcher by Alvise Dorigo (alvise72@gmail.com)"
 
-    ui_host: str = "127.0.0.1"
-    ui_port: int = 8080
+    UI_HOST: str = "127.0.0.1"
+    UI_PORT: int = 8080
     
-    llama_server_host: str = "127.0.0.1"
-    llama_server_port: int = 8088
+    LLAMA_SERVER_HOST: str = "127.0.0.1"
+    LLAMA_SERVER_PORT: int = 8088
 
-    rpc_host: str = "192.168.20.2"
-    rpc_port: int = 50000
-    openbrowser: bool = True
+    RPC_HOST: str = "192.168.20.2"
+    RPC_PORT: int = 50000
+    RPC_CACHE_PATH: str = "/Volumes/Home/llama.cpp/"
+    
+    OPENBROWSER: bool = True
 
-    rpc_server_path: str = "/usr/local/bin/rpc-server"
-    llama_server_path: str = "/usr/local/bin/llama-server"
+    RPC_SERVER_PATH: str = "/usr/local/bin/rpc-server"
+    LLAMA_SERVER_PATH: str = "/usr/local/bin/llama-server"
 
     PERSIST_FILE = "persist.json"
 
@@ -80,7 +82,7 @@ class Settings:
     ])
     DEFAULT_CONTEXT_SIZE: int = 32768
 
-    llama_param: dict = field(default_factory=lambda: {
+    LLAMA_PARAM: dict = field(default_factory=lambda: {
         "fit": "on",
         "threads": "6",
         "threadsbunch": "8",

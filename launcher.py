@@ -11,7 +11,7 @@ from logging_utils import emit, LogSink, setup_console_logging
 # def build_llama_command(
 #     llama_server_bin: str,
 #     rpc_server: str,
-#     rpc_port: int,
+#     RPC_PORT: int,
 #     gguf_file: str,
 #     mmproj_file: str | None,
 #     devices: str,
@@ -25,7 +25,7 @@ from logging_utils import emit, LogSink, setup_console_logging
 def build_llama_command(
     llama_server_bin: str,
     rpc_server: str,
-    rpc_port: int,
+    RPC_PORT: int,
     gguf_file: str,
     mmproj_file: str | None,
     devices: str,
@@ -41,20 +41,20 @@ def build_llama_command(
 
     cmd.extend([
         llama_server_bin,
-        "--host", str(listen_host or settings.llama_server_host),
-        "--port", str(listen_port or settings.llama_server_port),
+        "--host", str(listen_host or settings.LLAMA_SERVER_HOST),
+        "--port", str(listen_port or settings.LLAMA_SERVER_PORT),
         "-m", str(gguf_file),
-        "--rpc", f"{rpc_server}:{rpc_port}",
+        "--rpc", f"{rpc_server}:{RPC_PORT}",
         "--device", str(devices),
         "--split-mode", str(splitmode),
         "--tensor-split", str(tensorsplit),
-        "-ngl", str(settings.llama_param["ngl"]),
-        "--fit", str(settings.llama_param["fit"]),
+        "-ngl", str(settings.LLAMA_PARAM["ngl"]),
+        "--fit", str(settings.LLAMA_PARAM["fit"]),
         "-c", str(ctxsize),
-        "-t", str(settings.llama_param["threads"]),
-        "-tb", str(settings.llama_param["threadsbunch"]),
-        "--parallel", str(settings.llama_param["parallel"]),
-        #"--temperature", settings.llama_param["temperature"],
+        "-t", str(settings.LLAMA_PARAM["threads"]),
+        "-tb", str(settings.LLAMA_PARAM["threadsbunch"]),
+        "--parallel", str(settings.LLAMA_PARAM["parallel"]),
+        #"--temperature", settings.LLAMA_PARAM["temperature"],
     ])
 
     if temperature is not None:
@@ -88,31 +88,31 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
     model_folder = Path(model_folder).expanduser().resolve()
     emit(f"Selected model folder: {model_folder}", log_sink)
 
-    rpc_host = kwargs.get("rpc_host", settings.rpc_host)
-    rpc_server = kwargs.get("rpc_server", settings.rpc_host)
-    rpc_port = int(kwargs.get("rpc_port", settings.rpc_port))
+    RPC_HOST = kwargs.get("RPC_HOST", settings.RPC_HOST)
+    rpc_server = kwargs.get("rpc_server", settings.RPC_HOST)
+    RPC_PORT = int(kwargs.get("RPC_PORT", settings.RPC_PORT))
 
     files = model_finder.discover_model_files(model_folder)
     emit(f"Model name   : {files.model_name}", log_sink)
     emit(f"GGUF model   : {files.gguf}", log_sink)
     emit(f"MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
 
-    rpc.ensure_remote_rpc(rpc_host, 5, rpc_server, rpc_port, log_sink=log_sink)
-    gpus = devices.list_usable_devices(rpc_server, rpc_port, log_sink=log_sink)
+    rpc.ensure_remote_rpc(RPC_HOST, 5, rpc_server, RPC_PORT, log_sink=log_sink)
+    gpus = devices.list_usable_devices(rpc_server, RPC_PORT, log_sink=log_sink)
 
     cmd = launcher.build_llama_command(
-        settings.llama_server_path,
+        settings.LLAMA_SERVER_PATH,
         rpc_server,
-        rpc_port,
+        RPC_PORT,
         str(files.gguf),
         str(files.mmproj) if files.mmproj else None,
         gpus,
-        str(kwargs.get("tensorsplit", settings.llama_param["tensorsplit"])),
-        str(kwargs.get("splitmode", settings.llama_param["defaultsplitmode"])),
+        str(kwargs.get("tensorsplit", settings.LLAMA_PARAM["tensorsplit"])),
+        str(kwargs.get("splitmode", settings.LLAMA_PARAM["defaultsplitmode"])),
         str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         kwargs.get("temperature", None),
-        listen_host=kwargs.get("listen_host", settings.llama_server_host),
-        listen_port=kwargs.get("listen_port", settings.llama_server_port),
+        listen_host=kwargs.get("listen_host", settings.LLAMA_SERVER_HOST),
+        listen_port=kwargs.get("listen_port", settings.LLAMA_SERVER_PORT),
     )
 
     emit(f"Command: {launcher.format_command(cmd)}", log_sink)

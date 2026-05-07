@@ -210,7 +210,7 @@ def update_context_select_from_model() -> None:
 #_____________________________________________________________________________
 def _local_llama_base_urls() -> list[str]:
     """Return candidate local URLs for probing an already-running llama-server."""
-    port = settings.llama_server_port
+    port = settings.LLAMA_SERVER_PORT
     return [
         f"http://127.0.0.1:{port}",
         f"http://localhost:{port}",
@@ -427,7 +427,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     This updates permanent UI elements. It intentionally does not use notify_user().
     """
     status_label.set_text("llama-server status: checking...")
-    status_detail_label.set_text(f"Probe target: local port {settings.llama_server_port}")
+    status_detail_label.set_text(f"Probe target: local port {settings.LLAMA_SERVER_PORT}")
 
     running, detected_model, base_url, error = await asyncio.to_thread(probe_existing_llama_server_sync)
 
@@ -454,7 +454,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         return True
 
     status_label.set_text("llama-server status: not detected")
-    status_detail_label.set_text(f"No server answered on local port {settings.llama_server_port}")
+    status_detail_label.set_text(f"No server answered on local port {settings.LLAMA_SERVER_PORT}")
     status_chat_link.visible = False
     status_chat_button.visible = False
     if verbose:
@@ -464,7 +464,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 #_____________________________________________________________________________
 async def get_browser_based_llama_url() -> str:
     """Build the llama-server chat URL from the browser-visible GUI URL."""
-    port = settings.llama_server_port
+    port = settings.LLAMA_SERVER_PORT
     js = f"""
         (() => {{
             const hostname = window.location.hostname;
@@ -691,7 +691,7 @@ class LlamaManager:
             notify_user("Server stopped", type="info")
             return
 
-        port = settings.llama_server_port
+        port = settings.LLAMA_SERVER_PORT
         emit(f"No GUI-started process handle; looking for external listener on TCP port {port}...", ui_log)
         status_label.set_text("llama-server status: stopping external process")
         status_detail_label.set_text(f"Searching for listener on TCP port {port}")
@@ -830,7 +830,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 return
 
             if not shard_balance.value:
-                _shard_balance = settings.llama_param['tensorsplit']
+                _shard_balance = settings.LLAMA_PARAM['tensorsplit']
             else:
                 _shard_balance = shard_balance.value
 
@@ -838,7 +838,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             pattern = r"\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+"
             
             if not re.match(pattern, _shard_balance):
-                _shard_balance = settings.llama_param['tensorsplit']
+                _shard_balance = settings.LLAMA_PARAM['tensorsplit']
 
             model_name = str(model_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
@@ -864,11 +864,11 @@ ui.timer(0.5, detect_existing_llama_server, once=True)
 emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
 emit(f"Available models: {len(settings.AVAILABLE_MODELS)}", None)
-emit(f"NiceGUI listening on http://{settings.ui_host}:{settings.ui_port}", None)
+emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
 
 #_____________________________________________________________________________
 ui.run(
     title=settings.UI_TITLE,
-    host=settings.ui_host,
-    port=settings.ui_port,
+    host=settings.UI_HOST,
+    port=settings.UI_PORT,
 )
