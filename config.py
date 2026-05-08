@@ -81,6 +81,7 @@ class Settings:
         262144,
     ])
     DEFAULT_CONTEXT_SIZE: int = 32768
+    DEFAULT_TEMP: float = 0.8
 
     LLAMA_PARAM: dict = field(default_factory=lambda: {
         "fit": "on",

@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from persist import JsonParams
+from persist_dict import JsonParams
 import re
 from nicegui import ui
 
@@ -121,6 +121,17 @@ def configured_context_size(configured: Any) -> int:
     return 0
 
 #_____________________________________________________________________________
+def configured_temp(configured: Any) -> float:
+    """Extract a per-model temperature from model config, if present."""
+    if isinstance(configured, dict):
+        value = configured.get("temp", 0)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+#_____________________________________________________________________________
 def format_context_size(value: int) -> str:
     """Human-readable label for context size values."""
     if value >= 1024 and value % 1024 == 0:
@@ -158,7 +169,16 @@ def default_context_size_for_model(model_name: Optional[str]) -> int:
     return settings.DEFAULT_CONTEXT_SIZE#int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
 
 #_____________________________________________________________________________
-def persisted_context_size_for_model(model_name: Optional[str]) -> Optional[int]:
+def default_temp_for_model(model_name: Optional[str]) -> float:
+    """Return model-specific ctxsize when configured, otherwise global default."""
+    if model_name and model_name in settings.AVAILABLE_MODELS:
+        model_temp = configured_temp(settings.AVAILABLE_MODELS[model_name])
+        if model_temp > 0:
+            return model_temp
+    return settings.DEFAULT_TEMP
+
+#_____________________________________________________________________________
+def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Optional[dict]:
     """Return the context size stored in persist.json for model_name, if present and valid."""
     if not model_name:
         return None
@@ -173,18 +193,19 @@ def persisted_context_size_for_model(model_name: Optional[str]) -> Optional[int]
         return None
 
     try:
-        return int(persisted[model_name])
+        #return int(persisted[model_name])
+        return persisted[model_name]
     except (TypeError, ValueError):
         emit(f"Ignoring invalid persisted context size for {model_name!r}: {persisted[model_name]!r}", None)
         return None
 
 #_____________________________________________________________________________
-def selected_context_size_for_model(model_name: Optional[str]) -> int:
+def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float]:
     """Return persisted ctxsize when available, otherwise configured/default ctxsize."""
-    persisted_ctx = persisted_context_size_for_model(model_name)
-    if persisted_ctx is not None:
-        return persisted_ctx
-    return default_context_size_for_model(model_name)
+    persisted_data = persisted_data_for_model(model_name)
+    if persisted_data is not None:
+        return persisted_data['context_size'], persisted_data['temperature']
+    return default_context_size_for_model(model_name), default_temp_for_model(model_name)
 
 #_____________________________________________________________________________
 def normalize_context_size_for_select(ctx: int) -> int:
@@ -201,11 +222,14 @@ def normalize_context_size_for_select(ctx: int) -> int:
     return next(iter(valid_values))
 
 #_____________________________________________________________________________
-def update_context_select_from_model() -> None:
+def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
-    ctx = normalize_context_size_for_select(selected_context_size_for_model(model_name))
+    ctx, temp = selected_data_for_model(model_name)
+    ctx = normalize_context_size_for_select(ctx)
+    #print(f"Loaded params for model: {ctx}, {temp}")
     context_select.value = ctx
+    temperature_select.value = f"{float(temp):.1f}"#temp
 
 #_____________________________________________________________________________
 def _local_llama_base_urls() -> list[str]:
@@ -568,7 +592,7 @@ class LlamaManager:
 
             self._ready_event = asyncio.Event()
             self._ready_reason = None
-            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, self.process))
+            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, temperature, self.process))
 
             await asyncio.sleep(0.5)
             if self.process.returncode is not None:
@@ -619,7 +643,10 @@ class LlamaManager:
             notify_user(msg, type="negative")
             return False
 
-    async def _read_process_output(self, model_name: str, context_size: int, process: asyncio.subprocess.Process) -> None:
+    async def _read_process_output(self, model_name: str, 
+                                   context_size: int, 
+                                   temperature: float,
+                                   process: asyncio.subprocess.Process) -> None:
         assert process.stdout is not None
 
         try:
@@ -636,7 +663,11 @@ class LlamaManager:
                             self._ready_reason = text
                             self._ready_event.set()
                             emit(f"llama-server readiness confirmed by log line: {text}", ui_log)
-                            params.save_param(model_name, f"{context_size}")
+                            model_persist_data = {
+                                "context_size": context_size,
+                                "temperature": temperature
+                            }
+                            params.save_param(model_name, model_persist_data)
 
             return_code = await process.wait()
             emit(f"llama-server exited with return code {return_code}", ui_log)
@@ -777,7 +808,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 options=available_model_names(),
                 value=default_model_name(),
                 label="Select a model from the list below...",
-                on_change=lambda _: update_context_select_from_model(),
+                on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
 
             model_list_refresh = ui.button("Refresh List", on_click=None, icon="refresh").classes("mt-4")
@@ -785,7 +816,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
             context_select = ui.select(
                 options=configured_context_options(),
-                value=normalize_context_size_for_select(selected_context_size_for_model(default_model_name())),
+                value=normalize_context_size_for_select(selected_data_for_model(default_model_name())),
                 label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
