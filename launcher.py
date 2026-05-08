@@ -5,23 +5,6 @@ from pathlib import Path
 from config import settings
 from logging_utils import emit, LogSink, setup_console_logging
 
-#settings = Settings()
-
-#_____________________________________________________________________________
-# def build_llama_command(
-#     llama_server_bin: str,
-#     rpc_server: str,
-#     RPC_PORT: int,
-#     gguf_file: str,
-#     mmproj_file: str | None,
-#     devices: str,
-#     tensorsplit: str,
-#     splitmode: str,
-#     ctxsize: str,
-#     *,
-#     listen_host: str | None = None,
-#     listen_port: int | str | None = None,
-# ) -> list[str]:
 def build_llama_command(
     llama_server_bin: str,
     rpc_server: str,
@@ -32,7 +15,9 @@ def build_llama_command(
     tensorsplit: str,
     splitmode: str,
     ctxsize: str,
-    temperature: str | float | None = None,
+    temperature: str | float | None ,
+    top_p: float,
+    top_k: int,
     *,
     listen_host: str | None = None,
     listen_port: int | str | None = None,
@@ -49,6 +34,8 @@ def build_llama_command(
         "--split-mode", str(splitmode),
         "--tensor-split", str(tensorsplit),
         "-ngl", str(settings.LLAMA_PARAM["ngl"]),
+        "--top-p", top_p,
+        "--top-k", top_k,
         "--fit", str(settings.LLAMA_PARAM["fit"]),
         "-c", str(ctxsize),
         "-t", str(settings.LLAMA_PARAM["threads"]),
@@ -111,6 +98,8 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(kwargs.get("splitmode", settings.LLAMA_PARAM["defaultsplitmode"])),
         str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         kwargs.get("temperature", None),
+        kwargs.get("top_p", None),
+        kwargs.get("top_k", None),
         listen_host=kwargs.get("listen_host", settings.LLAMA_SERVER_HOST),
         listen_port=kwargs.get("listen_port", settings.LLAMA_SERVER_PORT),
     )

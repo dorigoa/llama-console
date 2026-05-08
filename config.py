@@ -82,6 +82,8 @@ class Settings:
     ])
     DEFAULT_CONTEXT_SIZE: int = 32768
     DEFAULT_TEMP: float = 0.8
+    DEFAULT_TOP_P: float = 0.9
+    DEFAULT_TOP_K: int   = 40
 
     LLAMA_PARAM: dict = field(default_factory=lambda: {
         "fit": "on",
@@ -93,14 +95,13 @@ class Settings:
         "defaultsplitmode": "layer",
         "tensorsplit": "6,12",
         "ctxsize": "0",
-        "temperature": 0.3
-        #"sslkeyfile": "/Volumes/Home/dorigo_a/llama-server.key",
-        #"sslcertfile": "/Volumes/Home/dorigo_a/llama-server.crt",
+        "temperature": 0.3,
+        "top_p": 0.8,
+        "top_k": 40
     })
 
     AVAILABLE_MODELS: dict[str, ModelConfig] = field(
         default_factory=lambda: discover_available_models(Settings.MODEL_BASE_DIR)
     )
-    #DEFAULT_MODEL: str = ""
-
+    
 settings = Settings()

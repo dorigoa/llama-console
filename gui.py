@@ -132,6 +132,28 @@ def configured_temp(configured: Any) -> float:
     return 0
 
 #_____________________________________________________________________________
+def configured_top_p(configured: Any) -> float:
+    """Extract a per-model top_p from model config, if present."""
+    if isinstance(configured, dict):
+        value = configured.get("top_p", 0)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+#_____________________________________________________________________________
+def configured_top_k(configured: Any) -> float:
+    """Extract a per-model top_p from model config, if present."""
+    if isinstance(configured, dict):
+        value = configured.get("top_k", 0)
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0
+    return 0
+
+#_____________________________________________________________________________
 def format_context_size(value: int) -> str:
     """Human-readable label for context size values."""
     if value >= 1024 and value % 1024 == 0:
@@ -170,12 +192,30 @@ def default_context_size_for_model(model_name: Optional[str]) -> int:
 
 #_____________________________________________________________________________
 def default_temp_for_model(model_name: Optional[str]) -> float:
-    """Return model-specific ctxsize when configured, otherwise global default."""
+    """Return model-specific temperature when configured, otherwise global default."""
     if model_name and model_name in settings.AVAILABLE_MODELS:
         model_temp = configured_temp(settings.AVAILABLE_MODELS[model_name])
         if model_temp > 0:
             return model_temp
     return settings.DEFAULT_TEMP
+
+#_____________________________________________________________________________
+def default_top_p_for_model(model_name: Optional[str]) -> float:
+    """Return model-specific top_p when configured, otherwise global default."""
+    if model_name and model_name in settings.AVAILABLE_MODELS:
+        model_top_p = configured_temp(settings.AVAILABLE_MODELS[model_name])
+        if model_top_p > 0:
+            return model_top_p
+    return settings.DEFAULT_TOP_P
+
+#_____________________________________________________________________________
+def default_top_k_for_model(model_name: Optional[str]) -> float:
+    """Return model-specific top_k when configured, otherwise global default."""
+    if model_name and model_name in settings.AVAILABLE_MODELS:
+        model_top_k = configured_temp(settings.AVAILABLE_MODELS[model_name])
+        if model_top_k > 0:
+            return model_top_k
+    return settings.DEFAULT_TOP_K
 
 #_____________________________________________________________________________
 def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Optional[dict]:
@@ -200,12 +240,12 @@ def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Opti
         return None
 
 #_____________________________________________________________________________
-def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float]:
+def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, float, int]:
     """Return persisted ctxsize when available, otherwise configured/default ctxsize."""
     persisted_data = persisted_data_for_model(model_name)
     if persisted_data is not None:
-        return persisted_data['context_size'], persisted_data['temperature']
-    return default_context_size_for_model(model_name), default_temp_for_model(model_name)
+        return persisted_data['context_size'], persisted_data['temperature'], persisted_data['top_p'], persisted_data['top_k']
+    return default_context_size_for_model(model_name), default_temp_for_model(model_name), default_top_p_for_model( model_name ), default_top_k_for_model( model_name )
 
 #_____________________________________________________________________________
 def normalize_context_size_for_select(ctx: int) -> int:
@@ -225,11 +265,17 @@ def normalize_context_size_for_select(ctx: int) -> int:
 def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
-    ctx, temp = selected_data_for_model(model_name)
+    ctx, temp, top_p, top_k = selected_data_for_model(model_name)
+    #ctx, temp, top_p = selected_data_for_model(model_name)
     ctx = normalize_context_size_for_select(ctx)
     #print(f"Loaded params for model: {ctx}, {temp}")
-    context_select.value = ctx
-    temperature_select.value = f"{float(temp):.1f}"#temp
+    #context_select.value = ctx
+    context_select.set_value( ctx )
+    #temperature_select.value = f"{float(temp):.1f}"#temp
+    temperature_select.set_value(f"{float(temp):.1f}")
+    top_p_input.set_value(f"{float(top_p):.1f}")
+    top_k_input.set_value(f"{int(top_k)}")
+
 
 #_____________________________________________________________________________
 def _local_llama_base_urls() -> list[str]:
@@ -520,14 +566,13 @@ class LlamaManager:
     def is_running(self) -> bool:
         return self.process is not None and self.process.returncode is None
 
-    async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float, shard_balance: str) -> bool:
+    async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float, top_p: float, top_k: int, shard_balance: str) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
             notify_user(msg, type="warning")
             return False
 
-        # Prevent accidental second instance if llama-server is already running outside this GUI process.
         if await detect_existing_llama_server(verbose=False):
             msg = "llama-server is already active on the configured port"
             emit(msg, ui_log)
@@ -551,18 +596,11 @@ class LlamaManager:
         emit(f"Model folder   : {model_folder}", ui_log)
         emit(f"Context size   : {context_size}", ui_log)
         emit(f"Temperature    : {temperature}", ui_log)
+        emit(f"Top_p          : {top_p}", ui_log)
+        emit(f"Top_k          : {top_k}", ui_log)
         emit(f"Sharding       : {shard_balance}", ui_log)
 
         try:
-            # cmd = await asyncio.to_thread(
-            #     get_llama_command,
-            #     model_folder,
-            #     ui_log,
-            #     ctxsize=context_size,
-            # )
-            # cmd.extend(["--temp", f"{temperature:.1f}"])
-            # cmd.extend(["--tensor-split", f"{str(shard_balance)}"])
-            # #emit(f"Command: {launcher.format_command(cmd)}", log_sink)
 
             cmd = await asyncio.to_thread(
                 get_llama_command,
@@ -570,6 +608,8 @@ class LlamaManager:
                 ui_log,
                 ctxsize=context_size,
                 temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
                 tensorsplit=shard_balance,
             )
 
@@ -592,7 +632,7 @@ class LlamaManager:
 
             self._ready_event = asyncio.Event()
             self._ready_reason = None
-            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, temperature, self.process))
+            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, temperature, top_p, top_k, self.process))
 
             await asyncio.sleep(0.5)
             if self.process.returncode is not None:
@@ -646,6 +686,8 @@ class LlamaManager:
     async def _read_process_output(self, model_name: str, 
                                    context_size: int, 
                                    temperature: float,
+                                   top_p: float,
+                                   top_k: int,
                                    process: asyncio.subprocess.Process) -> None:
         assert process.stdout is not None
 
@@ -665,7 +707,9 @@ class LlamaManager:
                             emit(f"llama-server readiness confirmed by log line: {text}", ui_log)
                             model_persist_data = {
                                 "context_size": context_size,
-                                "temperature": temperature
+                                "temperature": temperature,
+                                "top_p": top_p,
+                                "top_k": top_k
                             }
                             params.save_param(model_name, model_persist_data)
 
@@ -814,16 +858,29 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             model_list_refresh = ui.button("Refresh List", on_click=None, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
+            ctx, temp, top_p, top_k = selected_data_for_model(default_model_name())
             context_select = ui.select(
                 options=configured_context_options(),
-                value=normalize_context_size_for_select(selected_data_for_model(default_model_name())),
+                value=normalize_context_size_for_select( ctx ),
                 label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
             temperature_select = ui.select(
                 options=[f"{i / 10:.1f}" for i in range(1, 11)],
-                value="0.2",
+                value=f"{float(temp):.1f}",
                 label="Temperature",
+            ).classes("flex-[1]")
+
+            top_p_input = ui.input(
+                #options=[f"{i / 10:.1f}" for i in range(1, 11)],
+                value="0.9",
+                label="Top_p",
+            ).classes("flex-[1]")
+            
+            top_k_input = ui.input(
+                #options=[f"{i / 10:.1f}" for i in range(1, 11)],
+                value="40",
+                label="Top_k",
             ).classes("flex-[1]")
 
         shard_balance = ui.input(
@@ -849,23 +906,47 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Invalid context size!", type="warning")
                 return
 
-            if temperature_select.value is None:
-                emit("Start ignored: no temperature selected", ui_log)
-                notify_user("Select a temperature!", type="warning")
-                return
+            #if temperature_select.value is None:
+            #    emit("Start ignored: no temperature selected", ui_log)
+            #    notify_user("Select a temperature!", type="warning")
+            #    return
+            
+            if top_p_input.value is None:
+                emit("Start ignored: no Top_p selected", ui_log)
+                notify_user("Input a Top_p between 0 and 1 (1 decimal digit)", type="warning")
+
+            if top_k_input.value is None:
+                emit("Start ignored: no Top_k selected", ui_log)
+                notify_user("Input a Top_k integer between 20 and 100", type="warning")
+
             try:
                 temperature = float(temperature_select.value)
             except (TypeError, ValueError):
                 emit(f"Start ignored: invalid temperature: {temperature_select.value!r}", ui_log)
                 notify_user("Invalid temperature!", type="warning")
                 return
+            
+            try:
+                top_p = float(top_p_input.value)
+            except (TypeError, ValueError):
+                emit(f"Start ignored: invalid Top_p: {top_p_input.value!r}", ui_log)
+                notify_user("Invalid Top_p!", type="warning")
+                return
+            
+            try:
+                top_k = int(top_k_input.value)
+            except (TypeError, ValueError):
+                emit(f"Start ignored: invalid Top_k: {top_k_input.value!r}", ui_log)
+                notify_user("Invalid Top_k!", type="warning")
+                return
+            
+
 
             if not shard_balance.value:
                 _shard_balance = settings.LLAMA_PARAM['tensorsplit']
             else:
                 _shard_balance = shard_balance.value
 
-            #pattern = r"\d+,\d+"
             pattern = r"\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+"
             
             if not re.match(pattern, _shard_balance):
@@ -873,7 +954,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
             model_name = str(model_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
-            started = await manager.start_server(model_name, configured, context_size, temperature, _shard_balance)
+            started = await manager.start_server(model_name, configured, context_size, temperature, top_p, top_k, _shard_balance)
 
             if started:
                 chat_url = await get_browser_based_llama_url()
