@@ -1,6 +1,8 @@
 from typing import Any, Optional
+from dataclasses import dataclass, field
 from typing import TypedDict
 from pathlib import Path
+
 from config import settings
 
 #_____________________________________________________________________________
@@ -55,8 +57,8 @@ def discover_available_models(models_dir: str) -> dict[str, ModelConfig]:
 #_____________________________________________________________________________
 def default_context_size_for_model(model_name: Optional[str]) -> int:
     """Return model-specific ctxsize when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_ctx = _get_configured_value( settings.AVAILABLE_MODELS[model_name], "ctxsize", int, "8192")
+    if model_name and model_name in AVAILABLE_MODELS:
+        model_ctx = _get_configured_value( AVAILABLE_MODELS[model_name], "ctxsize", int, "8192")
         if model_ctx > 0:
             return model_ctx
     return settings.DEFAULT_CONTEXT_SIZE#int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
@@ -64,8 +66,8 @@ def default_context_size_for_model(model_name: Optional[str]) -> int:
 #_____________________________________________________________________________
 def default_temp_for_model(model_name: Optional[str]) -> float:
     """Return model-specific temperature when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_temp = _get_configured_value(settings.AVAILABLE_MODELS[model_name], "temp", float, 0.3)
+    if model_name and model_name in AVAILABLE_MODELS:
+        model_temp = _get_configured_value(AVAILABLE_MODELS[model_name], "temperature", float, 0.3)
         if model_temp > 0:
             return model_temp
     return settings.DEFAULT_TEMP
@@ -73,8 +75,8 @@ def default_temp_for_model(model_name: Optional[str]) -> float:
 #_____________________________________________________________________________
 def default_top_p_for_model(model_name: Optional[str]) -> float:
     """Return model-specific top_p when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_top_p = _get_configured_value(settings.AVAILABLE_MODELS[model_name], "top_p", float, 0.5)
+    if model_name and model_name in AVAILABLE_MODELS:
+        model_top_p = _get_configured_value(AVAILABLE_MODELS[model_name], "top_p", float, 0.5)
         if model_top_p > 0:
             return model_top_p
     return settings.DEFAULT_TOP_P
@@ -82,8 +84,8 @@ def default_top_p_for_model(model_name: Optional[str]) -> float:
 #_____________________________________________________________________________
 def default_top_k_for_model(model_name: Optional[str]) -> float:
     """Return model-specific top_k when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_top_k = _get_configured_value(settings.AVAILABLE_MODELS[model_name], "top_k", int, 30)
+    if model_name and model_name in AVAILABLE_MODELS:
+        model_top_k = _get_configured_value(AVAILABLE_MODELS[model_name], "top_k", int, 30)
         if model_top_k > 0:
             return model_top_k
     return settings.DEFAULT_TOP_K
@@ -91,15 +93,15 @@ def default_top_k_for_model(model_name: Optional[str]) -> float:
 #_____________________________________________________________________________
 def default_shard_balance_for_model(model_name: Optional[str]) -> float:
     """Return shard_balance (which depends on the cluster) when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_shard_balance = _get_configured_value(settings.AVAILABLE_MODELS[model_name], "shard_balance", str, "10,10")
+    if model_name and model_name in AVAILABLE_MODELS:
+        model_shard_balance = _get_configured_value(AVAILABLE_MODELS[model_name], "shard_balance", str, "10,10")
         if model_shard_balance:
             return model_shard_balance
     return settings.DEFAULT_SHARD_BALANCE
 
 #_____________________________________________________________________________
 def configured_model_path(configured: Any) -> str:
-    """Extract the main GGUF path/folder from one settings.AVAILABLE_MODELS value.
+    """Extract the main GGUF path/folder from one AVAILABLE_MODELS value.
 
     Supports both legacy string values and dict values, for example:
         "Model": "/path/to/model.gguf"
@@ -139,7 +141,7 @@ def configured_model_path(configured: Any) -> str:
             if isinstance(value, (str, Path)) and str(value).strip():
                 return str(value)
 
-    raise TypeError(f"Unsupported settings.AVAILABLE_MODELS entry: {configured!r}")
+    raise TypeError(f"Unsupported AVAILABLE_MODELS entry: {configured!r}")
 
 #_____________________________________________________________________________
 def path_to_model_folder(path_string: str | Path) -> Path:
@@ -155,7 +157,6 @@ def path_to_model_folder(path_string: str | Path) -> Path:
 
 #_____________________________________________________________________________
 def extract_model_from_props(payload: dict[str, Any]) -> Optional[str]:
-    """Extract model id/path from llama.cpp /props response, if settings.AVAILAble."""
     for key in ("model_path", "model", "model_name", "model_alias"):
         value = payload.get(key)
         if isinstance(value, str) and value.strip():
@@ -173,3 +174,7 @@ def extract_model_from_openai_models(payload: dict[str, Any]) -> Optional[str]:
             if isinstance(model_id, str) and model_id.strip():
                 return model_id.strip()
     return None
+
+
+
+AVAILABLE_MODELS: dict[str, ModelConfig] = discover_available_models(settings.MODEL_BASE_DIR)

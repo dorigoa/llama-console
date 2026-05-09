@@ -58,7 +58,7 @@ def ui_log(message: str) -> None:
 #_____________________________________________________________________________
 def available_model_names() -> list[str]:
     """Return model names discovered/configured for the model combo box."""
-    return sorted(settings.AVAILABLE_MODELS.keys(), key=str.lower)
+    return sorted(model_utils.AVAILABLE_MODELS.keys(), key=str.lower)
 
 #_____________________________________________________________________________
 def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Optional[dict]:
@@ -72,7 +72,7 @@ def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Opti
         emit(f"Could not load persisted parameters from {settings.PERSIST_FILE}: {exc}", None)
         return None
 
-    if model_name not i#n persisted:
+    if model_name not in persisted:
         return None
 
     try:
@@ -191,17 +191,17 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
 
 #_____________________________________________________________________________
 def _match_configured_model(detected_model: str) -> str:
-    """Try to map llama-server reported model string to one settings.AVAILABLE_MODELS key."""
+    """Try to map llama-server reported model string to one model_utils.AVAILABLE_MODELS key."""
     detected = detected_model.strip()
     detected_path = Path(detected)
     detected_name = detected_path.name
     detected_stem = detected_path.stem
 
-    for logical_name, configured in settings.AVAILABLE_MODELS.items():
+    for logical_name, configured in model_utils.AVAILABLE_MODELS.items():
         try:
             main_path = model_utils.configured_model_path(configured)
         except TypeError as exc:
-            emit(f"Skipping invalid settings.AVAILABLE_MODELS entry {logical_name!r}: {exc}", None)
+            emit(f"Skipping invalid model_utils.AVAILABLE_MODELS entry {logical_name!r}: {exc}", None)
             continue
 
         configured_path = Path(main_path).expanduser()
@@ -620,8 +620,8 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
 
             model_select = ui.select(
-                options=next(iter(available_model_names()), None)
-                value=next(iter(available_model_names()), None)
+                options=available_model_names(),#next(iter(available_model_names()), None),
+                value=next(iter(available_model_names()), None),
                 label="Select a model from the list below...",
                 on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
@@ -720,7 +720,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 _shard_balance = settings.LLAMA_PARAM['tensorsplit']
 
             model_name = str(model_select.value)
-            configured = settings.AVAILABLE_MODELS[model_name]
+            configured = model_utils.AVAILABLE_MODELS[model_name]
             started = await manager.start_server(model_name, configured, context_size, temperature, top_p, top_k, _shard_balance, mmproj_select.value)
 
             if started:
@@ -742,7 +742,7 @@ ui.timer(0.5, detect_existing_llama_server, once=True)
 
 emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
-emit(f"Available models: {len(settings.AVAILABLE_MODELS)}", None)
+emit(f"Available models: {len(model_utils.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
 
 #_____________________________________________________________________________

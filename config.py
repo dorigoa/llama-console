@@ -1,6 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass, field
-import model_utils
+#import model_utils
 
 #_____________________________________________________________________________
 @dataclass
@@ -65,9 +65,5 @@ class Settings:
         "top_p": 0.8,
         "top_k": 40,
     })
-
-    AVAILABLE_MODELS: dict[str, model_utils.ModelConfig] = field(
-        default_factory=lambda: model_utils.discover_available_models(Settings.MODEL_BASE_DIR)
-    )
     
 settings = Settings()
