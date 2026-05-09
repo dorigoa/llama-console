@@ -4,6 +4,7 @@ import shlex
 from pathlib import Path
 from config import settings
 from logging_utils import emit, LogSink, setup_console_logging
+import model_utils
 
 def build_llama_command(
     llama_server_bin: str,
@@ -97,7 +98,7 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         gpus,
         str(kwargs.get("tensorsplit", settings.LLAMA_PARAM["tensorsplit"])),
         str(kwargs.get("splitmode", settings.LLAMA_PARAM["defaultsplitmode"])),
-        str(kwargs.get("ctxsize", settings.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
+        str(kwargs.get("ctxsize", model_utils.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         kwargs.get("temperature", None),
         kwargs.get("top_p", None),
         kwargs.get("top_k", None),
