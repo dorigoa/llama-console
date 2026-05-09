@@ -1,42 +1,6 @@
 from __future__ import annotations
-
 from dataclasses import dataclass, field
-from pathlib import Path
-
-from typing import TypedDict
-
-#_____________________________________________________________________________
-class ModelConfig(TypedDict):
-    path: str
-    ctxsize: int
-
-
-#_____________________________________________________________________________
-def discover_available_models(models_dir: str) -> dict[str, ModelConfig]:
-    """Return GGUF models discovered under models_dir.
-
-    Each immediate subdirectory is treated as one model. The model name shown in
-    the GUI is the last path component of the directory. The main model path is
-    selected as the first non-mmproj *.gguf file found in that directory.
-    """
-    root = Path(models_dir).expanduser()
-    models: dict[str, ModelConfig] = {}
-
-    if not root.is_dir():
-        return models
-
-    for model_dir in sorted((p for p in root.iterdir() if p.is_dir()), key=lambda p: p.name.lower()):
-        gguf_files = sorted(model_dir.glob("*.gguf"), key=lambda p: p.name.lower())
-        main_candidates = [p for p in gguf_files if "mmproj" not in p.name.lower()]
-        if not main_candidates:
-            continue
-
-        models[model_dir.name] = {
-            "path": str(main_candidates[0]),
-            "ctxsize": 0,
-        }
-
-    return models
+import model_utils
 
 #_____________________________________________________________________________
 @dataclass
@@ -102,8 +66,8 @@ class Settings:
         "top_k": 40,
     })
 
-    AVAILABLE_MODELS: dict[str, ModelConfig] = field(
-        default_factory=lambda: discover_available_models(Settings.MODEL_BASE_DIR)
+    AVAILABLE_MODELS: dict[str, model_utils.ModelConfig] = field(
+        default_factory=lambda: model_utils.discover_available_models(Settings.MODEL_BASE_DIR)
     )
     
 settings = Settings()

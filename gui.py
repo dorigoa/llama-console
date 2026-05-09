@@ -9,13 +9,16 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from persist import JsonParams
+
 import re
 from nicegui import ui
 
 from launcher import get_llama_command, format_command
 from config import settings
 from logging_utils import emit, setup_console_logging
+import model_utils
+import utils
+from persist import JsonParams
 
 logger = setup_console_logging()
 
@@ -53,189 +56,9 @@ def ui_log(message: str) -> None:
         raise
 
 #_____________________________________________________________________________
-def configured_model_path(configured: Any) -> str:
-    """Extract the main GGUF path/folder from one settings.AVAILABLE_MODELS value.
-
-    Supports both legacy string values and dict values, for example:
-        "Model": "/path/to/model.gguf"
-        "Model": {"model": "/path/to/model.gguf", "mmproj": "/path/to/mmproj.gguf"}
-    """
-    if isinstance(configured, (str, Path)):
-        return str(configured)
-
-    if isinstance(configured, dict):
-        # Prefer explicit main-model keys. Do not pick mmproj unless it is the only usable path.
-        preferred_keys = (
-            "model",
-            "model_path",
-            "path",
-            "gguf",
-            "file",
-            "filename",
-            "model_file",
-            "folder",
-            "directory",
-            "dir",
-        )
-        for key in preferred_keys:
-            value = configured.get(key)
-            if isinstance(value, (str, Path)) and str(value).strip():
-                return str(value)
-
-        # Fallback: first string/path value that does not look like a multimodal projector.
-        for value in configured.values():
-            if isinstance(value, (str, Path)) and str(value).strip():
-                candidate = str(value)
-                if "mmproj" not in Path(candidate).name.lower():
-                    return candidate
-
-        # Last resort: any string/path value, including mmproj.
-        for value in configured.values():
-            if isinstance(value, (str, Path)) and str(value).strip():
-                return str(value)
-
-    raise TypeError(f"Unsupported settings.AVAILABLE_MODELS entry: {configured!r}")
-
-#_____________________________________________________________________________
-def path_to_model_folder(path_string: str | Path) -> Path:
-    """Accept either a GGUF file path or a model directory path."""
-    p = Path(path_string).expanduser()
-
-    # Path.exists() is intentionally not required here because network volumes may be late-mounted.
-    # If the configured string ends with .gguf, treat it as a model file and use its parent.
-    if p.suffix.lower() == ".gguf":
-        return p.parent.resolve()
-
-    return p.resolve()
-
-
-#_____________________________________________________________________________
-def configured_context_size(configured: Any) -> int:
-    """Extract a per-model context size from model config, if present."""
-    if isinstance(configured, dict):
-        value = configured.get("ctxsize", 0)
-        try:
-            return int(value)
-        except (TypeError, ValueError):
-            return 0
-    return 0
-
-#_____________________________________________________________________________
-def configured_temp(configured: Any) -> float:
-    """Extract a per-model temperature from model config, if present."""
-    if isinstance(configured, dict):
-        value = configured.get("temp", 0)
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0
-    return 0
-
-#_____________________________________________________________________________
-def configured_top_p(configured: Any) -> float:
-    """Extract a per-model top_p from model config, if present."""
-    if isinstance(configured, dict):
-        value = configured.get("top_p", 0)
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0
-    return 0
-
-#_____________________________________________________________________________
-def configured_top_k(configured: Any) -> float:
-    """Extract a per-model top_p from model config, if present."""
-    if isinstance(configured, dict):
-        value = configured.get("top_k", 0)
-        try:
-            return float(value)
-        except (TypeError, ValueError):
-            return 0
-    return 0
-
-#_____________________________________________________________________________
-def configured_shard_balance(configured: Any) -> float:
-    """Extract a per-model shard_balance from model config, if present."""
-    if isinstance(configured, dict):
-        value = configured.get("shard_balance", 0)
-        try:
-            return value
-        except (TypeError, ValueError):
-            return ""
-    return ""
-
-#_____________________________________________________________________________
-def format_context_size(value: int) -> str:
-    """Human-readable label for context size values."""
-    if value >= 1024 and value % 1024 == 0:
-        return f"{value // 1024}k"
-    return str(value)
-
-#_____________________________________________________________________________
-def configured_context_options() -> dict[int, str]:
-    """Return NiceGUI select options for context sizes.
-    NiceGUI expects dict options in the form {value: label}; therefore
-    the selected value remains the integer context size, while the UI
-    shows the compact label such as "32k".
-    """
-    values = settings.CONTEXT_SIZE_OPTIONS #getattr(settings, "CONTEXT_SIZE_OPTIONS", [
-    
-    return {int(v): format_context_size(int(v)) for v in values}
-
-#_____________________________________________________________________________
 def available_model_names() -> list[str]:
     """Return model names discovered/configured for the model combo box."""
     return sorted(settings.AVAILABLE_MODELS.keys(), key=str.lower)
-
-#_____________________________________________________________________________
-def default_model_name() -> Optional[str]:
-    names = available_model_names()
-    return names[0] if names else None
-
-#_____________________________________________________________________________
-def default_context_size_for_model(model_name: Optional[str]) -> int:
-    """Return model-specific ctxsize when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_ctx = configured_context_size(settings.AVAILABLE_MODELS[model_name])
-        if model_ctx > 0:
-            return model_ctx
-    return settings.DEFAULT_CONTEXT_SIZE#int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
-
-#_____________________________________________________________________________
-def default_temp_for_model(model_name: Optional[str]) -> float:
-    """Return model-specific temperature when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_temp = configured_temp(settings.AVAILABLE_MODELS[model_name])
-        if model_temp > 0:
-            return model_temp
-    return settings.DEFAULT_TEMP
-
-#_____________________________________________________________________________
-def default_top_p_for_model(model_name: Optional[str]) -> float:
-    """Return model-specific top_p when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_top_p = configured_temp(settings.AVAILABLE_MODELS[model_name])
-        if model_top_p > 0:
-            return model_top_p
-    return settings.DEFAULT_TOP_P
-
-#_____________________________________________________________________________
-def default_top_k_for_model(model_name: Optional[str]) -> float:
-    """Return model-specific top_k when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_top_k = configured_temp(settings.AVAILABLE_MODELS[model_name])
-        if model_top_k > 0:
-            return model_top_k
-    return settings.DEFAULT_TOP_K
-
-#_____________________________________________________________________________
-def default_shard_balance_for_model(model_name: Optional[str]) -> float:
-    """Return shard_balance (which depends on the cluster) when configured, otherwise global default."""
-    if model_name and model_name in settings.AVAILABLE_MODELS:
-        model_shard_balance = configured_temp(settings.AVAILABLE_MODELS[model_name])
-        if model_shard_balance:
-            return model_shard_balance
-    return settings.DEFAULT_SHARD_BALANCE
 
 #_____________________________________________________________________________
 def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Optional[dict]:
@@ -249,7 +72,7 @@ def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Opti
         emit(f"Could not load persisted parameters from {settings.PERSIST_FILE}: {exc}", None)
         return None
 
-    if model_name not in persisted:
+    if model_name not i#n persisted:
         return None
 
     try:
@@ -259,33 +82,21 @@ def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Opti
         return None
 
 #_____________________________________________________________________________
-def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, float, int]:
+def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, float, int, str]:
     """Return persisted ctxsize when available, otherwise configured/default ctxsize."""
     persisted_data = persisted_data_for_model(model_name)
     if persisted_data is not None:
         return persisted_data['context_size'], persisted_data['temperature'], persisted_data['top_p'], persisted_data['top_k'], persisted_data['shard_balance']
-    return default_context_size_for_model(model_name), default_temp_for_model(model_name), default_top_p_for_model( model_name ), default_top_k_for_model( model_name ), default_shard_balance_for_model( model_name )
+    return model_utils.default_context_size_for_model(model_name), model_utils.default_temp_for_model(model_name), model_utils.default_top_p_for_model( model_name ), model_utils.default_top_k_for_model( model_name ), model_utils.default_shard_balance_for_model( model_name )
 
-#_____________________________________________________________________________
-def normalize_context_size_for_select(ctx: int) -> int:
-    """Return a context size accepted by the context select widget."""
-    valid_values = set(configured_context_options().keys())
 
-    if ctx in valid_values:
-        return ctx
-
-    fallback_ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
-    if fallback_ctx in valid_values:
-        return fallback_ctx
-
-    return next(iter(valid_values))
 
 #_____________________________________________________________________________
 def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
     ctx, temp, top_p, top_k, shard_balance = selected_data_for_model(model_name)
-    ctx = normalize_context_size_for_select(ctx)
+    ctx = utils.normalize_context_size_for_select(ctx)
     context_select.set_value( ctx )
     temperature_select.set_value(f"{float(temp):.1f}")
     top_p_input.set_value(f"{float(top_p):.1f}")
@@ -365,60 +176,7 @@ def find_listening_pids_on_port(port: int) -> list[int]:
             seen.add(pid)
     return pids
 
-#_____________________________________________________________________________
-def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple[list[int], list[str]]:
-    """Terminate, then force-kill if required. Returns affected PIDs and error strings."""
-    import time
 
-    current_pid = os.getpid()
-    targets = [pid for pid in pids if pid != current_pid]
-    killed: list[int] = []
-    errors: list[str] = []
-
-    if not targets:
-        return killed, ["No killable PID found"]
-
-    for pid in targets:
-        try:
-            os.kill(pid, signal.SIGTERM)
-        except ProcessLookupError:
-            killed.append(pid)
-        except PermissionError as exc:
-            errors.append(f"PID {pid}: permission denied while sending SIGTERM: {exc}")
-        except OSError as exc:
-            errors.append(f"PID {pid}: failed to send SIGTERM: {exc}")
-
-    end_time = time.monotonic() + terminate_timeout
-    while time.monotonic() < end_time:
-        alive: list[int] = []
-        for pid in targets:
-            if pid in killed:
-                continue
-            try:
-                os.kill(pid, 0)
-                alive.append(pid)
-            except ProcessLookupError:
-                killed.append(pid)
-            except PermissionError:
-                alive.append(pid)
-        if not alive:
-            return killed, errors
-        time.sleep(0.2)
-
-    for pid in targets:
-        if pid in killed:
-            continue
-        try:
-            os.kill(pid, signal.SIGKILL)
-            killed.append(pid)
-        except ProcessLookupError:
-            killed.append(pid)
-        except PermissionError as exc:
-            errors.append(f"PID {pid}: permission denied while sending SIGKILL: {exc}")
-        except OSError as exc:
-            errors.append(f"PID {pid}: failed to send SIGKILL: {exc}")
-
-    return killed, errors
 
 #_____________________________________________________________________________
 def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
@@ -432,27 +190,6 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
         return json.loads(raw)
 
 #_____________________________________________________________________________
-def _extract_model_from_openai_models(payload: dict[str, Any]) -> Optional[str]:
-    """Extract model id/name from /v1/models compatible response."""
-    data = payload.get("data")
-    if isinstance(data, list) and data:
-        first = data[0]
-        if isinstance(first, dict):
-            model_id = first.get("id") or first.get("name")
-            if isinstance(model_id, str) and model_id.strip():
-                return model_id.strip()
-    return None
-
-#_____________________________________________________________________________
-def _extract_model_from_props(payload: dict[str, Any]) -> Optional[str]:
-    """Extract model id/path from llama.cpp /props response, if settings.AVAILAble."""
-    for key in ("model_path", "model", "model_name", "model_alias"):
-        value = payload.get(key)
-        if isinstance(value, str) and value.strip():
-            return value.strip()
-    return None
-
-#_____________________________________________________________________________
 def _match_configured_model(detected_model: str) -> str:
     """Try to map llama-server reported model string to one settings.AVAILABLE_MODELS key."""
     detected = detected_model.strip()
@@ -462,13 +199,13 @@ def _match_configured_model(detected_model: str) -> str:
 
     for logical_name, configured in settings.AVAILABLE_MODELS.items():
         try:
-            main_path = configured_model_path(configured)
+            main_path = model_utils.configured_model_path(configured)
         except TypeError as exc:
             emit(f"Skipping invalid settings.AVAILABLE_MODELS entry {logical_name!r}: {exc}", None)
             continue
 
         configured_path = Path(main_path).expanduser()
-        folder = path_to_model_folder(main_path)
+        folder = model_utils.path_to_model_folder(main_path)
         candidates = {
             logical_name,
             str(configured_path),
@@ -492,8 +229,8 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
 
     for base_url in _local_llama_base_urls():
         for endpoint, extractor in (
-            ("/v1/models", _extract_model_from_openai_models),
-            ("/props", _extract_model_from_props),
+            ("/v1/models", model_utils.extract_model_from_openai_models),
+            ("/props", model_utils.extract_model_from_props),
         ):
             url = f"{base_url}{endpoint}"
             try:
@@ -608,8 +345,8 @@ class LlamaManager:
             return False
 
         try:
-            configured_path = configured_model_path(configured)
-            model_folder = path_to_model_folder(configured_path)
+            configured_path = model_utils.configured_model_path(configured)
+            model_folder = model_utils.path_to_model_folder(configured_path)
         except Exception as exc:
             msg = f"Invalid model configuration for {model_name}: {exc}"
             emit(msg, ui_log)
@@ -817,7 +554,7 @@ class LlamaManager:
             return
 
         emit(f"Killing external llama-server/listener PIDs on port {port}: {pids}", ui_log)
-        killed, errors = await asyncio.to_thread(kill_pids_sync, pids)
+        killed, errors = await asyncio.to_thread(utils.kill_pids_sync, pids)
 
         for err in errors:
             emit(err, ui_log)
@@ -883,8 +620,8 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
 
             model_select = ui.select(
-                options=available_model_names(),
-                value=default_model_name(),
+                options=next(iter(available_model_names()), None)
+                value=next(iter(available_model_names()), None)
                 label="Select a model from the list below...",
                 on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
@@ -892,10 +629,10 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             model_list_refresh = ui.button("Refresh List", on_click=None, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
-            ctx, temp, top_p, top_k, shard_balance = selected_data_for_model(default_model_name())
+            ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( next(iter(available_model_names()), None) )
             context_select = ui.select(
-                options=configured_context_options(),
-                value=normalize_context_size_for_select( ctx ),
+                options=utils.configured_context_options(),
+                value=utils.normalize_context_size_for_select( ctx ),
                 label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
