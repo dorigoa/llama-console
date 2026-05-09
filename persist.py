@@ -1,16 +1,19 @@
 import json
 from pathlib import Path
-from typing import Dict
+from typing import Any, Dict
 
+JsonDict = Dict[str, Any]
 
 class JsonParams:
     def __init__(self, filename: str | Path):
         self.path = Path(filename)
 
-    def load_params(self) -> Dict[str, str]:
+    #___________________________________________________________________________________
+    def load_params(self) -> Dict[str, JsonDict]:
         """
         Load all parameters from the JSON file.
 
+        The file must contain a JSON object whose values are JSON objects.
         Returns an empty dict if the file does not exist yet.
         """
         if not self.path.exists():
@@ -24,11 +27,26 @@ class JsonParams:
 
         return data
 
-    def save_param(self, key: str, value: str) -> None:
+    #___________________________________________________________________________________
+    def save_param(self, key: str, value: JsonDict) -> None:
         """
-        Save or update a single key/value pair.
+        Save or update a single key/dict pair.
         Creates the JSON file if it does not exist.
+
+        The value must be a JSON-serializable dict.
         """
+        if not isinstance(key, str) or not key:
+            raise ValueError("key must be a non-empty string")
+
+        if not isinstance(value, dict):
+            raise TypeError("value must be a dict")
+
+        # Validate JSON serializability before touching the file.
+        try:
+            json.dumps(value, ensure_ascii=False)
+        except TypeError as exc:
+            raise TypeError(f"value for key {key!r} is not JSON-serializable: {exc}") from exc
+
         data = self.load_params()
         data[key] = value
 

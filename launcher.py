@@ -34,14 +34,13 @@ def build_llama_command(
         "--split-mode", str(splitmode),
         "--tensor-split", str(tensorsplit),
         "-ngl", str(settings.LLAMA_PARAM["ngl"]),
-        "--top-p", top_p,
-        "--top-k", top_k,
         "--fit", str(settings.LLAMA_PARAM["fit"]),
         "-c", str(ctxsize),
         "-t", str(settings.LLAMA_PARAM["threads"]),
         "-tb", str(settings.LLAMA_PARAM["threadsbunch"]),
         "--parallel", str(settings.LLAMA_PARAM["parallel"]),
-        #"--temperature", settings.LLAMA_PARAM["temperature"],
+        "--top-p", top_p,
+        "--top-k", top_k,
     ])
 
     if temperature is not None:
@@ -50,7 +49,6 @@ def build_llama_command(
     if mmproj_file:
         cmd.extend(["--mmproj", str(mmproj_file)])
 
-    #return cmd
     return [str(arg) for arg in cmd]
 
 #_____________________________________________________________________________

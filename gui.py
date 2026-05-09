@@ -154,6 +154,17 @@ def configured_top_k(configured: Any) -> float:
     return 0
 
 #_____________________________________________________________________________
+def configured_shard_balance(configured: Any) -> float:
+    """Extract a per-model shard_balance from model config, if present."""
+    if isinstance(configured, dict):
+        value = configured.get("shard_balance", 0)
+        try:
+            return value
+        except (TypeError, ValueError):
+            return ""
+    return ""
+
+#_____________________________________________________________________________
 def format_context_size(value: int) -> str:
     """Human-readable label for context size values."""
     if value >= 1024 and value % 1024 == 0:
@@ -218,6 +229,15 @@ def default_top_k_for_model(model_name: Optional[str]) -> float:
     return settings.DEFAULT_TOP_K
 
 #_____________________________________________________________________________
+def default_shard_balance_for_model(model_name: Optional[str]) -> float:
+    """Return shard_balance (which depends on the cluster) when configured, otherwise global default."""
+    if model_name and model_name in settings.AVAILABLE_MODELS:
+        model_shard_balance = configured_temp(settings.AVAILABLE_MODELS[model_name])
+        if model_shard_balance:
+            return model_shard_balance
+    return settings.DEFAULT_SHARD_BALANCE
+
+#_____________________________________________________________________________
 def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Optional[dict]:
     """Return the context size stored in persist.json for model_name, if present and valid."""
     if not model_name:
@@ -233,7 +253,6 @@ def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Opti
         return None
 
     try:
-        #return int(persisted[model_name])
         return persisted[model_name]
     except (TypeError, ValueError):
         emit(f"Ignoring invalid persisted context size for {model_name!r}: {persisted[model_name]!r}", None)
@@ -244,8 +263,8 @@ def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, floa
     """Return persisted ctxsize when available, otherwise configured/default ctxsize."""
     persisted_data = persisted_data_for_model(model_name)
     if persisted_data is not None:
-        return persisted_data['context_size'], persisted_data['temperature'], persisted_data['top_p'], persisted_data['top_k']
-    return default_context_size_for_model(model_name), default_temp_for_model(model_name), default_top_p_for_model( model_name ), default_top_k_for_model( model_name )
+        return persisted_data['context_size'], persisted_data['temperature'], persisted_data['top_p'], persisted_data['top_k'], persisted_data['shard_balance']
+    return default_context_size_for_model(model_name), default_temp_for_model(model_name), default_top_p_for_model( model_name ), default_top_k_for_model( model_name ), default_shard_balance_for_model( model_name )
 
 #_____________________________________________________________________________
 def normalize_context_size_for_select(ctx: int) -> int:
@@ -265,16 +284,13 @@ def normalize_context_size_for_select(ctx: int) -> int:
 def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
-    ctx, temp, top_p, top_k = selected_data_for_model(model_name)
-    #ctx, temp, top_p = selected_data_for_model(model_name)
+    ctx, temp, top_p, top_k, shard_balance = selected_data_for_model(model_name)
     ctx = normalize_context_size_for_select(ctx)
-    #print(f"Loaded params for model: {ctx}, {temp}")
-    #context_select.value = ctx
     context_select.set_value( ctx )
-    #temperature_select.value = f"{float(temp):.1f}"#temp
     temperature_select.set_value(f"{float(temp):.1f}")
     top_p_input.set_value(f"{float(top_p):.1f}")
     top_k_input.set_value(f"{int(top_k)}")
+    shard_balance_input.set_value( shard_balance )
 
 
 #_____________________________________________________________________________
@@ -557,15 +573,19 @@ def open_chat_dialog(model_name: str, chat_url: str) -> None:
 
 #_____________________________________________________________________________
 class LlamaManager:
+
+    #_____________________________________________________________________________________
     def __init__(self) -> None:
         self.process: Optional[asyncio.subprocess.Process] = None
         self._reader_task: Optional[asyncio.Task] = None
         self._ready_event: Optional[asyncio.Event] = None
         self._ready_reason: Optional[str] = None
 
+    #_____________________________________________________________________________________
     def is_running(self) -> bool:
         return self.process is not None and self.process.returncode is None
 
+    #_____________________________________________________________________________________
     async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float, top_p: float, top_k: int, shard_balance: str) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
@@ -632,7 +652,7 @@ class LlamaManager:
 
             self._ready_event = asyncio.Event()
             self._ready_reason = None
-            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, temperature, top_p, top_k, self.process))
+            self._reader_task = asyncio.create_task(self._read_process_output(model_name, context_size, temperature, top_p, top_k, shard_balance, self.process))
 
             await asyncio.sleep(0.5)
             if self.process.returncode is not None:
@@ -683,11 +703,13 @@ class LlamaManager:
             notify_user(msg, type="negative")
             return False
 
+    #_____________________________________________________________________________________
     async def _read_process_output(self, model_name: str, 
                                    context_size: int, 
                                    temperature: float,
                                    top_p: float,
                                    top_k: int,
+                                   shard_balance: str,
                                    process: asyncio.subprocess.Process) -> None:
         assert process.stdout is not None
 
@@ -709,7 +731,8 @@ class LlamaManager:
                                 "context_size": context_size,
                                 "temperature": temperature,
                                 "top_p": top_p,
-                                "top_k": top_k
+                                "top_k": top_k,
+                                "shard_balance": shard_balance
                             }
                             params.save_param(model_name, model_persist_data)
 
@@ -733,6 +756,7 @@ class LlamaManager:
             if self._reader_task is asyncio.current_task():
                 self._reader_task = None
 
+    #_____________________________________________________________________________________
     async def stop_server(self) -> None:
         if self.is_running():
             assert self.process is not None
@@ -858,7 +882,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             model_list_refresh = ui.button("Refresh List", on_click=None, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
-            ctx, temp, top_p, top_k = selected_data_for_model(default_model_name())
+            ctx, temp, top_p, top_k, shard_balance = selected_data_for_model(default_model_name())
             context_select = ui.select(
                 options=configured_context_options(),
                 value=normalize_context_size_for_select( ctx ),
@@ -872,19 +896,16 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             ).classes("flex-[1]")
 
             top_p_input = ui.input(
-                #options=[f"{i / 10:.1f}" for i in range(1, 11)],
                 value="0.9",
                 label="Top_p",
             ).classes("flex-[1]")
             
             top_k_input = ui.input(
-                #options=[f"{i / 10:.1f}" for i in range(1, 11)],
                 value="40",
                 label="Top_k",
             ).classes("flex-[1]")
 
-        shard_balance = ui.input(
-                #options=[f"{i / 10:.1f}" for i in range(1, 11)],
+        shard_balance_input = ui.input(
                 value="6,12",
                 label="Shard balance",
             ).classes("flex-[1]")
@@ -905,11 +926,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
                 notify_user("Invalid context size!", type="warning")
                 return
-
-            #if temperature_select.value is None:
-            #    emit("Start ignored: no temperature selected", ui_log)
-            #    notify_user("Select a temperature!", type="warning")
-            #    return
             
             if top_p_input.value is None:
                 emit("Start ignored: no Top_p selected", ui_log)
@@ -918,6 +934,10 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             if top_k_input.value is None:
                 emit("Start ignored: no Top_k selected", ui_log)
                 notify_user("Input a Top_k integer between 20 and 100", type="warning")
+
+            if shard_balance_input.value is None:
+                emit("Start ignored: no Shard Balance selected", ui_log)
+                notify_user("Input a Shard balance string (e.g. 5,5)", type="warning")
 
             try:
                 temperature = float(temperature_select.value)
@@ -939,13 +959,11 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 emit(f"Start ignored: invalid Top_k: {top_k_input.value!r}", ui_log)
                 notify_user("Invalid Top_k!", type="warning")
                 return
-            
-
-
-            if not shard_balance.value:
+                        
+            if not shard_balance_input.value:
                 _shard_balance = settings.LLAMA_PARAM['tensorsplit']
             else:
-                _shard_balance = shard_balance.value
+                _shard_balance = shard_balance_input.value
 
             pattern = r"\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+"
             

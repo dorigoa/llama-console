@@ -80,10 +80,12 @@ class Settings:
         196608,
         262144,
     ])
-    DEFAULT_CONTEXT_SIZE: int = 32768
-    DEFAULT_TEMP: float = 0.8
+
+    DEFAULT_SHARD_BALANCE: str = "10,10"
+    DEFAULT_CONTEXT_SIZE: int = 32768   
     DEFAULT_TOP_P: float = 0.9
     DEFAULT_TOP_K: int   = 40
+    DEFAULT_TEMP: float = 0.8
 
     LLAMA_PARAM: dict = field(default_factory=lambda: {
         "fit": "on",
@@ -97,7 +99,7 @@ class Settings:
         "ctxsize": "0",
         "temperature": 0.3,
         "top_p": 0.8,
-        "top_k": 40
+        "top_k": 40,
     })
 
     AVAILABLE_MODELS: dict[str, ModelConfig] = field(
