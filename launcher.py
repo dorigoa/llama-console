@@ -33,6 +33,7 @@ def build_llama_command(
         "-m", str(gguf_file),
         "--rpc", f"{rpc_server}:{RPC_PORT}",
         "--device", str(devices),
+        "--jinja",
         "--split-mode", str(splitmode),
         "--tensor-split", str(tensorsplit),
         "-ngl", str(settings.LLAMA_PARAM["ngl"]),
