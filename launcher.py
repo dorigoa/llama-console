@@ -18,6 +18,7 @@ def build_llama_command(
     temperature: str | float | None ,
     top_p: float,
     top_k: int,
+    load_mmproj: bool,
     *,
     listen_host: str | None = None,
     listen_port: int | str | None = None,
@@ -43,10 +44,12 @@ def build_llama_command(
         "--top-k", top_k,
     ])
 
+    print(f"DEBUG: load_mmproj={load_mmproj}")
+
     if temperature is not None:
         cmd.extend(["--temp", f"{float(temperature):.1f}"])
 
-    if mmproj_file:
+    if mmproj_file and load_mmproj:
         cmd.extend(["--mmproj", str(mmproj_file)])
 
     return [str(arg) for arg in cmd]
@@ -98,6 +101,7 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         kwargs.get("temperature", None),
         kwargs.get("top_p", None),
         kwargs.get("top_k", None),
+        kwargs.get("load_mmproj", False),
         listen_host=kwargs.get("listen_host", settings.LLAMA_SERVER_HOST),
         listen_port=kwargs.get("listen_port", settings.LLAMA_SERVER_PORT),
     )

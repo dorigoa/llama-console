@@ -89,8 +89,8 @@ class Settings:
 
     LLAMA_PARAM: dict = field(default_factory=lambda: {
         "fit": "on",
-        "threads": "6",
-        "threadsbunch": "8",
+        "threads": "4",
+        "threadsbunch": "4",
         "parallel": "1",
         "ngl": "auto",
         "splitmodes": ["none", "layer", "row", "tensor"],

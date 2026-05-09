@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Any, Optional
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
-from persist_dict import JsonParams
+from persist import JsonParams
 import re
 from nicegui import ui
 
@@ -586,7 +586,15 @@ class LlamaManager:
         return self.process is not None and self.process.returncode is None
 
     #_____________________________________________________________________________________
-    async def start_server(self, model_name: str, configured: Any, context_size: int, temperature: float, top_p: float, top_k: int, shard_balance: str) -> bool:
+    async def start_server(self, 
+                           model_name: str, 
+                           configured: Any, 
+                           context_size: int, 
+                           temperature: float, 
+                           top_p: float, 
+                           top_k: int, 
+                           shard_balance: str, 
+                           load_mmproj: bool) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -619,6 +627,7 @@ class LlamaManager:
         emit(f"Top_p          : {top_p}", ui_log)
         emit(f"Top_k          : {top_k}", ui_log)
         emit(f"Sharding       : {shard_balance}", ui_log)
+        emit(f"Load mmproj    : {load_mmproj}", ui_log)
 
         try:
 
@@ -631,6 +640,7 @@ class LlamaManager:
                 top_p=top_p,
                 top_k=top_k,
                 tensorsplit=shard_balance,
+                load_mmproj=load_mmproj,
             )
 
             cmd = [str(arg) for arg in cmd]
@@ -909,6 +919,8 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 value="6,12",
                 label="Shard balance",
             ).classes("flex-[1]")
+        
+        mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
 
         async def start_selected_model() -> None:
             if not model_select.value:
@@ -972,7 +984,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
             model_name = str(model_select.value)
             configured = settings.AVAILABLE_MODELS[model_name]
-            started = await manager.start_server(model_name, configured, context_size, temperature, top_p, top_k, _shard_balance)
+            started = await manager.start_server(model_name, configured, context_size, temperature, top_p, top_k, _shard_balance, mmproj_select.value)
 
             if started:
                 chat_url = await get_browser_based_llama_url()
