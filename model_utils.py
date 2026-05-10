@@ -3,7 +3,9 @@ from dataclasses import dataclass, field
 from typing import TypedDict
 from pathlib import Path
 
-from config import settings
+from config_manager import get_settings
+
+settings = get_settings()
 
 #_____________________________________________________________________________
 class ModelConfig(TypedDict):

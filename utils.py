@@ -1,7 +1,9 @@
 import os
 import signal
 
-from config import settings
+from config_manager import get_settings
+
+settings = get_settings()
 
 #_____________________________________________________________________________
 def _format_context_size(value: int) -> str:
@@ -20,21 +22,7 @@ def configured_context_options() -> dict[int, str]:
     values = settings.CONTEXT_SIZE_OPTIONS
     
     return {int(v): _format_context_size(int(v)) for v in values}
-
-#_____________________________________________________________________________
-def normalize_context_size_for_select(ctx: int) -> int:
-    """Return a context size accepted by the context select widget."""
-    valid_values = set(configured_context_options().keys())
-
-    if ctx in valid_values:
-        return ctx
-
-    fallback_ctx = int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
-    if fallback_ctx in valid_values:
-        return fallback_ctx
-
-    return next(iter(valid_values))
-
+    
 #_____________________________________________________________________________
 def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple[list[int], list[str]]:
     """Terminate, then force-kill if required. Returns affected PIDs and error strings."""

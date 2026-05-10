@@ -3,7 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from pathlib import Path
 
-
+#___________________________________________________________________________________________
 @dataclass(frozen=True)
 class ModelFiles:
     model_dir: Path
@@ -11,11 +11,11 @@ class ModelFiles:
     gguf: Path
     mmproj: Path | None
 
-
+#___________________________________________________________________________________________
 class ModelDiscoveryError(RuntimeError):
     pass
 
-
+#___________________________________________________________________________________________
 def discover_model_files(model_dir: Path) -> ModelFiles:
     model_dir = model_dir.expanduser().resolve()
 

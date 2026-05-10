@@ -2,9 +2,11 @@ from __future__ import annotations
 
 import shlex
 from pathlib import Path
-from config import settings
-from logging_utils import emit, LogSink, setup_console_logging
+from config_manager import get_settings
+from logging_utils import emit, LogSink#, setup_console_logging
 import model_utils
+
+settings = get_settings()
 
 def build_llama_command(
     llama_server_bin: str,
@@ -36,17 +38,15 @@ def build_llama_command(
         "--jinja",
         "--split-mode", str(splitmode),
         "--tensor-split", str(tensorsplit),
-        "-ngl", str(settings.LLAMA_PARAM["ngl"]),
-        "--fit", str(settings.LLAMA_PARAM["fit"]),
+        "-ngl", str(settings.DEFAULT_NGL),
+        "--fit", str(settings.DEAFULT_FIT),
         "-c", str(ctxsize),
-        "-t", str(settings.LLAMA_PARAM["threads"]),
-        "-tb", str(settings.LLAMA_PARAM["threadsbunch"]),
-        "--parallel", str(settings.LLAMA_PARAM["parallel"]),
+        "-t", str(settings.DEFAULT_THREADS),
+        "-tb", str(settings.DEFAULT_THREAD_BUNCHES),
+        "--parallel", str(settings.DEFAULT_PARALLEL),
         "--top-p", top_p,
         "--top-k", top_k,
     ])
-
-    print(f"DEBUG: load_mmproj={load_mmproj}")
 
     if temperature is not None:
         cmd.extend(["--temp", f"{float(temperature):.1f}"])
@@ -97,8 +97,8 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
         str(files.gguf),
         str(files.mmproj) if files.mmproj else None,
         gpus,
-        str(kwargs.get("tensorsplit", settings.LLAMA_PARAM["tensorsplit"])),
-        str(kwargs.get("splitmode", settings.LLAMA_PARAM["defaultsplitmode"])),
+        str(kwargs.get("tensorsplit", settings.DEFAULT_SHARD_BALANCE)),
+        str(kwargs.get("splitmode", settings.DEFAULT_SPLIT_MODE)),
         str(kwargs.get("ctxsize", model_utils.AVAILABLE_MODELS[files.model_name]["ctxsize"])),
         kwargs.get("temperature", None),
         kwargs.get("top_p", None),

@@ -3,16 +3,17 @@ from __future__ import annotations
 import subprocess
 from collections.abc import Callable
 
-from config import settings
+#from config import settings
+from config_manager import get_settings
 from logging_utils import emit, LogSink
 
-#settings = Settings()
+settings = get_settings()#Settings()
 
-
+#__________________________________________________________________________________________
 class DeviceDiscoveryError(RuntimeError):
     pass
 
-
+#__________________________________________________________________________________________
 def list_usable_devices(rpc_server: str, rpc_port: int, log_sink: LogSink = None) -> str:
     cmd = [
         settings.LLAMA_SERVER_PATH,

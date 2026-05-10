@@ -20,10 +20,14 @@ class JsonParams:
             return {}
 
         with self.path.open("r", encoding="utf-8") as f:
-            data = json.load(f)
+            try:
+                data = json.load(f)
+            except Exception as e:
+                #return {}
+                raise Exception(f"Couldn't decode the JSON (call to json.load(..) failed)")
 
         if not isinstance(data, dict):
-            raise ValueError(f"{self.path} does not contain a JSON object")
+            raise ValueError(f"Cannot find a contain a JSON object")
 
         return data
 

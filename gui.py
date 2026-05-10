@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 import json
 import os
-import signal
+#import signal
 import subprocess
 from pathlib import Path
 from typing import Any, Optional
@@ -14,11 +14,13 @@ import re
 from nicegui import ui
 
 from launcher import get_llama_command, format_command
-from config import settings
+from config_manager import get_settings
 from logging_utils import emit, setup_console_logging
 import model_utils
 import utils
 from persist import JsonParams
+
+settings = get_settings()
 
 logger = setup_console_logging()
 
@@ -78,7 +80,7 @@ def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Opti
     try:
         return persisted[model_name]
     except (TypeError, ValueError):
-        emit(f"Ignoring invalid persisted context size for {model_name!r}: {persisted[model_name]!r}", None)
+        emit(f"Ignoring invalid persisted data for {model_name!r}: {persisted[model_name]!r}", None)
         return None
 
 #_____________________________________________________________________________
@@ -96,7 +98,7 @@ def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
     ctx, temp, top_p, top_k, shard_balance = selected_data_for_model(model_name)
-    ctx = utils.normalize_context_size_for_select(ctx)
+    #ctx = utils.normalize_context_size_for_select(ctx)
     context_select.set_value( ctx )
     temperature_select.set_value(f"{float(temp):.1f}")
     top_p_input.set_value(f"{float(top_p):.1f}")
@@ -156,11 +158,11 @@ def find_listening_pids_on_port(port: int) -> list[int]:
     except Exception as exc:
         emit(f"lsof lookup failed: {exc}", ui_log)
 
-    try:
-        ss = _run_command(["ss", "-H", "-ltnp", f"sport = :{port}"])
-    except Exception as exc:
-        emit(f"ss lookup failed: {exc}", ui_log)
-        return []
+    # try:
+    #     ss = _run_command(["ss", "-H", "-ltnp", f"sport = :{port}"])
+    # except Exception as exc:
+    #     emit(f"ss lookup failed: {exc}", ui_log)
+    #     return []
 
     pids: list[int] = []
     seen: set[int] = set()
@@ -632,7 +634,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( next(iter(available_model_names()), None) )
             context_select = ui.select(
                 options=utils.configured_context_options(),
-                value=utils.normalize_context_size_for_select( ctx ),
+                value=ctx,#utils.normalize_context_size_for_select( ctx ),
                 label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
@@ -710,14 +712,14 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 return
                         
             if not shard_balance_input.value:
-                _shard_balance = settings.LLAMA_PARAM['tensorsplit']
+                _shard_balance = settings.DEFAULT_SHARD_BALANCE#LLAMA_PARAM['tensorsplit']
             else:
                 _shard_balance = shard_balance_input.value
 
             pattern = r"\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+"
             
             if not re.match(pattern, _shard_balance):
-                _shard_balance = settings.LLAMA_PARAM['tensorsplit']
+                _shard_balance = settings.DEFAULT_SHARD_BALANCE#LLAMA_PARAM['tensorsplit']
 
             model_name = str(model_select.value)
             configured = model_utils.AVAILABLE_MODELS[model_name]

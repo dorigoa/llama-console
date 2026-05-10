@@ -7,7 +7,7 @@ from typing import Optional
 
 LogSink = Optional[Callable[[str], None]]
 
-
+#___________________________________________________________________________________________
 def setup_console_logging(level: int = logging.INFO) -> logging.Logger:
     """Configure root logging so messages are visible when running `python gui.py`."""
     logging.basicConfig(
@@ -18,7 +18,7 @@ def setup_console_logging(level: int = logging.INFO) -> logging.Logger:
     )
     return logging.getLogger("llama-orc")
 
-
+#___________________________________________________________________________________________
 def emit(message: str, sink: LogSink = None, level: int = logging.INFO) -> None:
     """Log to console and, optionally, to a UI sink such as NiceGUI's ui.log().push."""
     logging.getLogger("llama-orc").log(level, message)
