@@ -10,6 +10,7 @@ class Settings:
     UI_PORT: int = 8080
     LLAMA_SERVER_HOST: str = "127.0.0.1"
     LLAMA_SERVER_PORT: int = 8088
+    LLAMA_SERVER_BASEURL: str = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
     RPC_HOST: str = "192.168.20.2"
     RPC_PORT: int = 50000
     RPC_CACHE_PATH: str = "/Volumes/Home/llama.cpp/"
@@ -25,7 +26,7 @@ class Settings:
     DEFAULT_SHARD_BALANCE: str = "1,1"
     DEFAULT_SPLIT_MODE: str = "layer"
     DEFAULT_NGL: str = "auto"
-    DEAFULT_FIT: str = "on"
+    #DEFAULT_FIT: str = "on"
     DEFAULT_THREADS: int = 4
     DEFAULT_THREAD_BUNCHES: int = 4
     DEFAULT_PARALLEL: int = 1

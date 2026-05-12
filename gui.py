@@ -2,8 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import json
-import os
-#import signal
 import subprocess
 from pathlib import Path
 from typing import Any, Optional
@@ -105,18 +103,6 @@ def update_data_from_model() -> None:
     top_k_input.set_value(f"{int(top_k)}")
     shard_balance_input.set_value( shard_balance )
 
-
-#_____________________________________________________________________________
-def _local_llama_base_urls() -> list[str]:
-    """Return candidate local URLs for probing an already-running llama-server."""
-    port = settings.LLAMA_SERVER_PORT
-    return [
-        f"http://127.0.0.1:{port}",
-        f"http://localhost:{port}",
-        f"http://127.0.0.1:{port}",
-        f"http://localhost:{port}",
-    ]
-
 #_____________________________________________________________________________
 def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
     """Run a small local inspection command without raising on non-zero exit."""
@@ -164,19 +150,19 @@ def find_listening_pids_on_port(port: int) -> list[int]:
     #     emit(f"ss lookup failed: {exc}", ui_log)
     #     return []
 
-    pids: list[int] = []
-    seen: set[int] = set()
-    for token in ss.stdout.replace(',', ' ').split():
-        if not token.startswith('pid='):
-            continue
-        try:
-            pid = int(token.removeprefix('pid='))
-        except ValueError:
-            continue
-        if pid > 0 and pid not in seen:
-            pids.append(pid)
-            seen.add(pid)
-    return pids
+    # pids: list[int] = []
+    # seen: set[int] = set()
+    # for token in ss.stdout.replace(',', ' ').split():
+    #     if not token.startswith('pid='):
+    #         continue
+    #     try:
+    #         pid = int(token.removeprefix('pid='))
+    #     except ValueError:
+    #         continue
+    #     if pid > 0 and pid not in seen:
+    #         pids.append(pid)
+    #         seen.add(pid)
+    # return pids
 
 
 
@@ -223,25 +209,20 @@ def _match_configured_model(detected_model: str) -> str:
 
 #_____________________________________________________________________________
 def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
-    """Probe an already-running llama-server.
-
-    Returns: (running, model, base_url, error)
-    """
     last_error: Optional[str] = None
 
-    for base_url in _local_llama_base_urls():
-        for endpoint, extractor in (
-            ("/v1/models", model_utils.extract_model_from_openai_models),
-            ("/props", model_utils.extract_model_from_props),
-        ):
-            url = f"{base_url}{endpoint}"
-            try:
-                payload = _json_get(url)
-                model = extractor(payload)
-                return True, model, base_url, None
-            except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
-                last_error = f"{url}: {exc}"
-                continue
+    for endpoint, extractor in (
+        ("/v1/models", model_utils.extract_model_from_openai_models),
+        ("/props", model_utils.extract_model_from_props),
+    ):
+        url = f"{settings.LLAMA_SERVER_BASEURL}{endpoint}"
+        try:
+            payload = _json_get(url)
+            model = extractor(payload)
+            return True, model, settings.LLAMA_SERVER_BASEURL, None
+        except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
+            last_error = f"{url}: {exc}"
+            continue
 
     return False, None, None, last_error
 

@@ -60,7 +60,7 @@ def discover_available_models(models_dir: str) -> dict[str, ModelConfig]:
 def default_context_size_for_model(model_name: Optional[str]) -> int:
     """Return model-specific ctxsize when configured, otherwise global default."""
     if model_name and model_name in AVAILABLE_MODELS:
-        model_ctx = _get_configured_value( AVAILABLE_MODELS[model_name], "ctxsize", int, "8192")
+        model_ctx = _get_configured_value( AVAILABLE_MODELS[model_name], "ctxsize", int, 8192)
         if model_ctx > 0:
             return model_ctx
     return settings.DEFAULT_CONTEXT_SIZE#int(getattr(settings, "DEFAULT_CONTEXT_SIZE", 32768))
@@ -84,7 +84,7 @@ def default_top_p_for_model(model_name: Optional[str]) -> float:
     return settings.DEFAULT_TOP_P
 
 #_____________________________________________________________________________
-def default_top_k_for_model(model_name: Optional[str]) -> float:
+def default_top_k_for_model(model_name: Optional[str]) -> int:
     """Return model-specific top_k when configured, otherwise global default."""
     if model_name and model_name in AVAILABLE_MODELS:
         model_top_k = _get_configured_value(AVAILABLE_MODELS[model_name], "top_k", int, 30)
@@ -93,10 +93,10 @@ def default_top_k_for_model(model_name: Optional[str]) -> float:
     return settings.DEFAULT_TOP_K
 
 #_____________________________________________________________________________
-def default_shard_balance_for_model(model_name: Optional[str]) -> float:
+def default_shard_balance_for_model(model_name: Optional[str]) -> str:
     """Return shard_balance (which depends on the cluster) when configured, otherwise global default."""
     if model_name and model_name in AVAILABLE_MODELS:
-        model_shard_balance = _get_configured_value(AVAILABLE_MODELS[model_name], "shard_balance", str, "10,10")
+        model_shard_balance = _get_configured_value(AVAILABLE_MODELS[model_name], "shard_balance", str, "1,1")
         if model_shard_balance:
             return model_shard_balance
     return settings.DEFAULT_SHARD_BALANCE
