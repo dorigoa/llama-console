@@ -10,8 +10,8 @@ settings = get_settings()
 
 def build_llama_command(
     llama_server_bin: str,
-    rpc_server: str,
-    RPC_PORT: int,
+    rpc_server: str | None,
+    RPC_PORT: int | None,
     gguf_file: str,
     mmproj_file: str | None,
     devices: str,
@@ -33,13 +33,19 @@ def build_llama_command(
         "--host", str(listen_host or settings.LLAMA_SERVER_HOST),
         "--port", str(listen_port or settings.LLAMA_SERVER_PORT),
         "-m", str(gguf_file),
-        "--rpc", f"{rpc_server}:{RPC_PORT}",
+    ])
+
+    if rpc_server is not None and RPC_PORT is not None:
+        cmd.extend(["--rpc", f"{rpc_server}:{RPC_PORT}",
+                   "--split-mode", str(splitmode),
+                   "--tensor-split", str(tensorsplit),
+                   ])
+
+    cmd.extend([
         "--device", str(devices),
         "--jinja",
-        "--split-mode", str(splitmode),
-        "--tensor-split", str(tensorsplit),
         "-ngl", str(settings.DEFAULT_NGL),
-        "--fit", str(settings.DEAFULT_FIT),
+        "--fit", str(settings.DEFAULT_FIT),
         "-c", str(ctxsize),
         "-t", str(settings.DEFAULT_THREADS),
         "-tb", str(settings.DEFAULT_THREAD_BUNCHES),
@@ -47,6 +53,29 @@ def build_llama_command(
         "--top-p", top_p,
         "--top-k", top_k,
     ])
+
+    # cmd.extend([
+    #     llama_server_bin,
+    #     "--host", str(listen_host or settings.LLAMA_SERVER_HOST),
+    #     "--port", str(listen_port or settings.LLAMA_SERVER_PORT),
+    #     "-m", str(gguf_file),
+    #     "--rpc", f"{rpc_server}:{RPC_PORT}",
+    #     "--device", str(devices),
+    #     "--jinja",
+    #     "--split-mode", str(splitmode),
+    #     "--tensor-split", str(tensorsplit),
+    #     "-ngl", str(settings.DEFAULT_NGL),
+    #     "--fit", str(settings.DEAFULT_FIT),
+    #     "-c", str(ctxsize),
+    #     "-t", str(settings.DEFAULT_THREADS),
+    #     "-tb", str(settings.DEFAULT_THREAD_BUNCHES),
+    #     "--parallel", str(settings.DEFAULT_PARALLEL),
+    #     "--top-p", top_p,
+    #     "--top-k", top_k,
+    # ])
+
+    # if rpc_server is not None and RPC_PORT is not None:
+    #     cmd.extend(["--rpc", f"{rpc_server}:{RPC_PORT}"])
 
     if temperature is not None:
         cmd.extend(["--temp", f"{float(temperature):.1f}"])
@@ -68,7 +97,10 @@ def validate_ssl_files(key_file: Path, cert_file: Path) -> None:
         raise FileNotFoundError(f"Missing SSL file(s):\n{joined}")
 
 #_____________________________________________________________________________
-def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) -> list[str]:
+def get_llama_command(model_folder: Path, 
+                      log_sink: LogSink = None, 
+                      run_local_only: bool = False,
+                      **kwargs) -> list[str]:
     """Build the llama-server command without executing it."""
     import devices
     import launcher
@@ -82,14 +114,19 @@ def get_llama_command(model_folder: Path, log_sink: LogSink = None, **kwargs) ->
     rpc_server = kwargs.get("rpc_server", settings.RPC_HOST)
     RPC_PORT = int(kwargs.get("RPC_PORT", settings.RPC_PORT))
 
+    if run_local_only:
+        rpc_server = None
+        RPC_PORT = None
+
     files = model_finder.discover_model_files(model_folder)
     emit(f"Model name   : {files.model_name}", log_sink)
     emit(f"GGUF model   : {files.gguf}", log_sink)
     emit(f"MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
 
-    rpc.ensure_remote_rpc(RPC_HOST, 5, rpc_server, RPC_PORT, log_sink=log_sink)
+    if not run_local_only:
+        rpc.ensure_remote_rpc(RPC_HOST, 5, rpc_server, RPC_PORT, log_sink=log_sink)
     gpus = devices.list_usable_devices(rpc_server, RPC_PORT, log_sink=log_sink)
-
+    
     cmd = launcher.build_llama_command(
         settings.LLAMA_SERVER_PATH,
         rpc_server,

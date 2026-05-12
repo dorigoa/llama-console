@@ -314,7 +314,8 @@ class LlamaManager:
                            top_p: float, 
                            top_k: int, 
                            shard_balance: str, 
-                           load_mmproj: bool) -> bool:
+                           load_mmproj: bool,
+                           run_local_only: bool = False) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -361,6 +362,7 @@ class LlamaManager:
                 top_k=top_k,
                 tensorsplit=shard_balance,
                 load_mmproj=load_mmproj,
+                run_local_only=run_local_only,
             )
 
             cmd = [str(arg) for arg in cmd]
@@ -642,6 +644,11 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         
         mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
 
+        run_local_only_checkbox = ui.checkbox(
+            "Run local only (no --rpc flag)",
+            value=False,
+        ).classes("flex-[1] mt-2")
+
         async def start_selected_model() -> None:
             if not model_select.value:
                 emit("Start ignored: no model selected", ui_log)
@@ -702,9 +709,17 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             if not re.match(pattern, _shard_balance):
                 _shard_balance = settings.DEFAULT_SHARD_BALANCE#LLAMA_PARAM['tensorsplit']
 
+            run_local_only = bool(run_local_only_checkbox.value)
             model_name = str(model_select.value)
             configured = model_utils.AVAILABLE_MODELS[model_name]
-            started = await manager.start_server(model_name, configured, context_size, temperature, top_p, top_k, _shard_balance, mmproj_select.value)
+            started = await manager.start_server(model_name, 
+                                                 configured, 
+                                                 context_size, 
+                                                 temperature, 
+                                                 top_p, top_k, 
+                                                 _shard_balance, 
+                                                 mmproj_select.value,
+                                                 run_local_only)
 
             if started:
                 chat_url = await get_browser_based_llama_url()

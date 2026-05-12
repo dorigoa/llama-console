@@ -26,7 +26,7 @@ class Settings:
     DEFAULT_SHARD_BALANCE: str = "1,1"
     DEFAULT_SPLIT_MODE: str = "layer"
     DEFAULT_NGL: str = "auto"
-    #DEFAULT_FIT: str = "on"
+    DEFAULT_FIT: str = "on"
     DEFAULT_THREADS: int = 4
     DEFAULT_THREAD_BUNCHES: int = 4
     DEFAULT_PARALLEL: int = 1

@@ -15,12 +15,19 @@ class DeviceDiscoveryError(RuntimeError):
 
 #__________________________________________________________________________________________
 def list_usable_devices(rpc_server: str, rpc_port: int, log_sink: LogSink = None) -> str:
-    cmd = [
-        settings.LLAMA_SERVER_PATH,
-        "--rpc",
-        f"{rpc_server}:{rpc_port}",
-        "--list-devices",
-    ]
+
+    if rpc_server and rpc_server:
+        cmd = [
+            settings.LLAMA_SERVER_PATH,
+            "--rpc",
+            f"{rpc_server}:{rpc_port}",
+            "--list-devices",
+        ]
+    else:
+        cmd = [
+            settings.LLAMA_SERVER_PATH,
+            "--list-devices",
+        ]
 
     emit(f"Discovering devices: {' '.join(cmd)}", log_sink)
 
