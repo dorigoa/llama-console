@@ -16,16 +16,6 @@ class RpcStartupError(RuntimeError):
     pass
 
 #__________________________________________________________________________________________
-# def _is_valid_rpc_list(text: str) -> bool:
-#     pattern = r"""
-#         ^                                   
-#         (?:\d{1,3}(?:\.\d{1,3}){3}:\d+)    
-#         (?:\s*,\s*\d{1,3}(?:\.\d{1,3}){3}:\d+)*  
-#         $                                   
-#     """
-#     return re.fullmatch(pattern, text.strip(), re.VERBOSE) is not None
-
-#__________________________________________________________________________________________
 def tcp_connect(host: str, port: int, timeout_seconds: int = 2) -> bool:
     try:
         with socket.create_connection((host, port), timeout=timeout_seconds):
@@ -64,7 +54,7 @@ def ensure_remote_rpc(timeout: int,
     if platform == "Linux" or platform == "Darwin":
         emit(f"Stopping any remotely running rpc-server...")
         remote_kill_cmd = (
-            f'killall -9 {settings.RPC_SERVER_PATH["Linux"]}'
+            f'killall -9 {Path(settings.RPC_SERVER_PATH["Linux"]).name}'
         )
         emit(f"ssh {RPC_HOST} {remote_kill_cmd}", log_sink)
         subprocess.run(["ssh", RPC_HOST, remote_kill_cmd], check=False)
