@@ -144,28 +144,6 @@ def find_listening_pids_on_port(port: int) -> list[int]:
     except Exception as exc:
         emit(f"lsof lookup failed: {exc}", ui_log)
 
-    # try:
-    #     ss = _run_command(["ss", "-H", "-ltnp", f"sport = :{port}"])
-    # except Exception as exc:
-    #     emit(f"ss lookup failed: {exc}", ui_log)
-    #     return []
-
-    # pids: list[int] = []
-    # seen: set[int] = set()
-    # for token in ss.stdout.replace(',', ' ').split():
-    #     if not token.startswith('pid='):
-    #         continue
-    #     try:
-    #         pid = int(token.removeprefix('pid='))
-    #     except ValueError:
-    #         continue
-    #     if pid > 0 and pid not in seen:
-    #         pids.append(pid)
-    #         seen.add(pid)
-    # return pids
-
-
-
 #_____________________________________________________________________________
 def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
     """Small blocking JSON GET helper. Run it via asyncio.to_thread()."""
@@ -748,7 +726,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                     notify_user("Launch cancelled", type="warning")
                     return
 
-                pattern = r"^\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+$"
+                pattern = r"^\d+(?:,\d+)+$"
                 if not re.match(pattern, requested_shard_balance):
                     emit(f"Invalid shard balance {requested_shard_balance!r}; using default {settings.DEFAULT_SHARD_BALANCE!r}", ui_log)
                     notify_user("Invalid shard balance; using default", type="warning")
@@ -756,16 +734,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 else:
                     _shard_balance = requested_shard_balance
 
-            #rpc_server = str(rpc_server_input.value).strip()
-            # if not run_local_only:                     # se non è “local only” serve almeno un RPC
-            #     if not rpc_server:
-            #         emit("Start ignored: RPC server list required", ui_log)
-            #         notify_user("Insert at least one RPC server!", type="warning")
-            #         return
-            #     if not rpc._is_valid_rpc_list(rpc_server):
-            #         emit(f"Start ignored: RPC list malformed: {rpc_server!r}", ui_log)
-            #         notify_user("Invalid RPC format – use IP:port[,IP:porta]...", type="warning")
-            #         return
                 
             model_name = str(model_select.value)
             configured = model_utils.AVAILABLE_MODELS[model_name]

@@ -24,12 +24,12 @@ class Settings:
         RpcServer(
             hostname="192.168.20.2",
             tcpport=50000,
-            platform="Darwin",
+            platform="Darwin"
         ),
         RpcServer(
             hostname="192.168.1.200",
             tcpport=50000,
-            platform="Windows",
+            platform="Windows"
         ),
     ])
     RPC_CACHE_PATH: str = "/Volumes/Home/llama.cpp/"
