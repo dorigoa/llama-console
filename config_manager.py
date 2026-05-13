@@ -50,10 +50,10 @@ class Settings:
     ])
     DEFAULT_SHARD_BALANCE: str = "1,1"
     DEFAULT_SPLIT_MODE: str = "layer"
-    DEFAULT_NGL: str = "auto"
-    DEFAULT_FIT: str = "on"
-    DEFAULT_THREADS: int = 4
-    DEFAULT_THREAD_BUNCHES: int = 4
+    DEFAULT_NGL: str = "all"
+    DEFAULT_FIT: str = "off"
+    DEFAULT_THREADS: int = 8
+    DEFAULT_THREAD_BUNCHES: int = 8
     DEFAULT_PARALLEL: int = 1
     DEFAULT_CONTEXT_SIZE: int = 32768
     DEFAULT_TOP_P: float = 0.9
