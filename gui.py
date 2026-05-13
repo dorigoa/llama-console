@@ -12,11 +12,12 @@ import re
 from nicegui import ui
 
 from launcher import get_llama_command, format_command
-from config_manager import get_settings
+from config_manager import get_settings, RpcServer
 from logging_utils import emit, setup_console_logging
 import model_utils
 import utils
 from persist import JsonParams
+import rpc
 
 settings = get_settings()
 
@@ -315,7 +316,7 @@ class LlamaManager:
                            top_k: int, 
                            shard_balance: str, 
                            load_mmproj: bool,
-                           run_local_only: bool = False) -> bool:
+                           run_local_only: bool = False,) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -339,7 +340,12 @@ class LlamaManager:
             notify_user(msg, type="negative")
             return False
 
+        all_endpoints = utils.get_all_rpc_servers()
+        all_rpc = ",".join(all_endpoints)
+
         emit("--- Start requested ---", ui_log)
+        emit(f"Run local      : {run_local_only}", ui_log)
+        emit(f"RPC server(s)  : {all_rpc}", ui_log)
         emit(f"Selected model : {model_name}", ui_log)
         emit(f"Configured path: {configured_path}", ui_log)
         emit(f"Model folder   : {model_folder}", ui_log)
@@ -351,7 +357,7 @@ class LlamaManager:
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
 
         try:
-
+            #logger.info(f"DEBUG - Calling get_llama_command with rpc_server={rpc_server}")
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 model_folder,
@@ -363,6 +369,7 @@ class LlamaManager:
                 tensorsplit=shard_balance,
                 load_mmproj=load_mmproj,
                 run_local_only=run_local_only,
+                rpc_server=all_rpc,
             )
 
             cmd = [str(arg) for arg in cmd]
@@ -649,6 +656,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             value=False,
         ).classes("flex-[1] mt-2")
 
+        # rpc_server_input = ui.input(
+        #     label="RPC server(s) – IP:porta (es. 192.168.1.10:12345,10.0.0.5:12345)",
+        #     placeholder="192.168.1.10:12345,10.0.0.5:12345",
+        #     value="",
+        # ).classes("w-1/2")
+
         async def start_selected_model() -> None:
             if not model_select.value:
                 emit("Start ignored: no model selected", ui_log)
@@ -710,6 +723,17 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 _shard_balance = settings.DEFAULT_SHARD_BALANCE#LLAMA_PARAM['tensorsplit']
 
             run_local_only = bool(run_local_only_checkbox.value)
+            #rpc_server = str(rpc_server_input.value).strip()
+            # if not run_local_only:                     # se non è “local only” serve almeno un RPC
+            #     if not rpc_server:
+            #         emit("Start ignored: RPC server list required", ui_log)
+            #         notify_user("Insert at least one RPC server!", type="warning")
+            #         return
+            #     if not rpc._is_valid_rpc_list(rpc_server):
+            #         emit(f"Start ignored: RPC list malformed: {rpc_server!r}", ui_log)
+            #         notify_user("Invalid RPC format – use IP:port[,IP:porta]...", type="warning")
+            #         return
+                
             model_name = str(model_select.value)
             configured = model_utils.AVAILABLE_MODELS[model_name]
             started = await manager.start_server(model_name, 
@@ -719,7 +743,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                                                  top_p, top_k, 
                                                  _shard_balance, 
                                                  mmproj_select.value,
-                                                 run_local_only)
+                                                 run_local_only,)
 
             if started:
                 chat_url = await get_browser_based_llama_url()

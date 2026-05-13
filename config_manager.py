@@ -4,6 +4,12 @@ from typing import List, Optional
 #import os
 
 @dataclass
+class RpcServer:
+    hostname: str
+    tcpport: int
+    platform: str
+
+@dataclass
 class Settings:
     UI_TITLE: str = "LLama Launcher by Alvise Dorigo (alvise72@gmail.com)"
     UI_HOST: str = "127.0.0.1"
@@ -11,11 +17,30 @@ class Settings:
     LLAMA_SERVER_HOST: str = "127.0.0.1"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BASEURL: str = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
-    RPC_HOST: str = "192.168.20.2"
-    RPC_PORT: int = 50000
+    #RPC_HOST: str = "192.168.20.2"
+    #RPC_PORT: int = 50000
+    #RPC_SERVERS: list[RpcServer] = "192.168.20.2:50000"
+    RPC_SERVERS: list[RpcServer] = field(default_factory=lambda: [
+        RpcServer(
+            hostname="192.168.20.2",
+            tcpport=50000,
+            platform="Darwin",
+        ),
+        RpcServer(
+            hostname="192.168.1.200",
+            tcpport=50000,
+            platform="Windows",
+        ),
+    ])
     RPC_CACHE_PATH: str = "/Volumes/Home/llama.cpp/"
     OPENBROWSER: bool = True
-    RPC_SERVER_PATH: str = "/usr/local/bin/rpc-server"
+
+    RPC_SERVER_PATH: dict = field(default_factory=lambda:{ 
+        "Linux": '/usr/local/bin/rpc-server',
+        "Windows": r"C:\llama.cpp\build\bin\Release\rpc-server.exe"
+        #"Windows": r"C:\Users\alvis\AppData\Local\Programs\llama.cpp\bin\rpc-server.exe"
+        })
+
     LLAMA_SERVER_PATH: str = "/usr/local/bin/llama-server"
     PERSIST_FILE: str = "persist.json"
     MODEL_BASE_DIR: str = "/Volumes/Home/gguf_models"

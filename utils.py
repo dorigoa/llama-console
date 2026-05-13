@@ -5,6 +5,12 @@ from config_manager import get_settings
 
 settings = get_settings()
 
+def get_all_rpc_servers() -> list[str]:
+    all_endpoints = []
+    for rpc_server in settings.RPC_SERVERS:
+        all_endpoints.append(f"{rpc_server.hostname}:{rpc_server.tcpport}")
+    return all_endpoints
+
 #_____________________________________________________________________________
 def _format_context_size(value: int) -> str:
     """Human-readable label for context size values."""

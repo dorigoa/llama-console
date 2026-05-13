@@ -3,15 +3,17 @@ from __future__ import annotations
 import shlex
 from pathlib import Path
 from config_manager import get_settings
-from logging_utils import emit, LogSink#, setup_console_logging
+from logging_utils import emit, LogSink, setup_console_logging#, setup_console_logging
 import model_utils
 
 settings = get_settings()
 
+logger = setup_console_logging()
+
 def build_llama_command(
     llama_server_bin: str,
     rpc_server: str | None,
-    RPC_PORT: int | None,
+    #RPC_PORT: int | None,
     gguf_file: str,
     mmproj_file: str | None,
     devices: str,
@@ -35,8 +37,8 @@ def build_llama_command(
         "-m", str(gguf_file),
     ])
 
-    if rpc_server is not None and RPC_PORT is not None:
-        cmd.extend(["--rpc", f"{rpc_server}:{RPC_PORT}",
+    if rpc_server is not None:
+        cmd.extend(["--rpc", f"{rpc_server}",
                    "--split-mode", str(splitmode),
                    "--tensor-split", str(tensorsplit),
                    ])
@@ -110,27 +112,39 @@ def get_llama_command(model_folder: Path,
     model_folder = Path(model_folder).expanduser().resolve()
     emit(f"Selected model folder: {model_folder}", log_sink)
 
-    RPC_HOST = kwargs.get("RPC_HOST", settings.RPC_HOST)
-    rpc_server = kwargs.get("rpc_server", settings.RPC_HOST)
-    RPC_PORT = int(kwargs.get("RPC_PORT", settings.RPC_PORT))
+    #RPC_HOST = kwargs.get("RPC_HOST", settings.RPC_HOST)
+    #rpc_server = kwargs.get("rpc_server") #, settings.RPC_HOST)
+    #RPC_PORT = int(kwargs.get("RPC_PORT", settings.RPC_PORT))
 
-    if run_local_only:
-        rpc_server = None
-        RPC_PORT = None
+    #logger.info(f"DEBUG - rpc_server before={rpc_server}")
+
+    #rpc_servers = settings.RPC_SERVERS
+
+    if not run_local_only:
+        #rpc_servers = rpc_server.split(",")
+        for rpc_server in settings.RPC_SERVERS:
+            #rpc_host, rpc_port = s.split(":")
+            logger.info(f"DEBUG - rpc.ensure {rpc_server.hostname}:{rpc_server.tcpport}/{rpc_server.platform}")
+            rpc.ensure_remote_rpc(5, rpc_server.hostname, rpc_server.tcpport, rpc_server.platform, log_sink=log_sink)
 
     files = model_finder.discover_model_files(model_folder)
     emit(f"Model name   : {files.model_name}", log_sink)
     emit(f"GGUF model   : {files.gguf}", log_sink)
     emit(f"MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
 
-    if not run_local_only:
-        rpc.ensure_remote_rpc(RPC_HOST, 5, rpc_server, RPC_PORT, log_sink=log_sink)
-    gpus = devices.list_usable_devices(rpc_server, RPC_PORT, log_sink=log_sink)
+    #if not run_local_only:
+        
+    all_endpoints = []
+    for rpc_server in settings.RPC_SERVERS:
+        all_endpoints.append(f"{rpc_server.hostname}:{rpc_server.tcpport}")
+
+    
+    gpus = devices.list_usable_devices(",".join(all_endpoints), log_sink=log_sink)
     
     cmd = launcher.build_llama_command(
         settings.LLAMA_SERVER_PATH,
-        rpc_server,
-        RPC_PORT,
+        ",".join(all_endpoints),
+        #RPC_PORT,
         str(files.gguf),
         str(files.mmproj) if files.mmproj else None,
         gpus,
@@ -145,5 +159,5 @@ def get_llama_command(model_folder: Path,
         listen_port=kwargs.get("listen_port", settings.LLAMA_SERVER_PORT),
     )
 
-    emit(f"Command: {launcher.format_command(cmd)}", log_sink)
+    #emit(f"Command: {launcher.format_command(cmd)}", log_sink)
     return cmd
