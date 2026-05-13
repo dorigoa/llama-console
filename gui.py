@@ -57,8 +57,11 @@ def ui_log(message: str) -> None:
         raise
 
 #_____________________________________________________________________________
+# def available_model_names() -> list[str]:
+#     """Return model names discovered/configured for the model combo box."""
+#     return sorted(model_utils.AVAILABLE_MODELS.keys(), key=str.lower)
 def available_model_names() -> list[str]:
-    """Return model names discovered/configured for the model combo box."""
+    model_utils.AVAILABLE_MODELS = model_utils.discover_available_models(settings.MODEL_BASE_DIR)
     return sorted(model_utils.AVAILABLE_MODELS.keys(), key=str.lower)
 
 #_____________________________________________________________________________
@@ -102,6 +105,27 @@ def update_data_from_model() -> None:
     temperature_select.set_value(f"{float(temp):.1f}")
     top_p_input.set_value(f"{float(top_p):.1f}")
     top_k_input.set_value(f"{int(top_k)}")
+
+#_____________________________________________________________________________
+def refresh_model_list() -> None:
+    """Reload available models and refresh the model select widget."""
+    current_model = str(model_select.value) if model_select.value else None
+    model_names = available_model_names()
+
+    if current_model in model_names:
+        selected_model = current_model
+    else:
+        selected_model = next(iter(model_names), None)
+
+    model_select.set_options(model_names, value=selected_model)
+
+    if selected_model:
+        update_data_from_model()
+        emit(f"Model list refreshed: {len(model_names)} models found", ui_log)
+        notify_user(f"Model list refreshed: {len(model_names)} models found", type="positive")
+    else:
+        emit("Model list refreshed: no models found", ui_log)
+        notify_user("Model list refreshed: no models found", type="warning")
 
 #_____________________________________________________________________________
 def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -628,7 +652,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
 
-            model_list_refresh = ui.button("Refresh List", on_click=None, icon="refresh").classes("mt-4")
+            model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
             ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( next(iter(available_model_names()), None) )
