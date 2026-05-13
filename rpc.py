@@ -34,8 +34,16 @@ def tcp_connect(host: str, port: int, timeout_seconds: int = 2) -> bool:
         return False
 
 #__________________________________________________________________________________________
-def ensure_remote_rpc(timeout: int, RPC_HOST: str, RPC_PORT: int, platform: str, log_sink: LogSink = None) -> None:
+def ensure_remote_rpc(timeout: int, 
+                      RPC_HOST: str, 
+                      RPC_PORT: int, 
+                      platform: str, 
+                      log_sink: LogSink = None, 
+                      ) -> None:
     
+    #if run_local_only:
+
+
     if platform == "Windows":
         for attempt in range(1, 11):
             if tcp_connect(RPC_HOST, RPC_PORT, 2):
@@ -45,10 +53,10 @@ def ensure_remote_rpc(timeout: int, RPC_HOST: str, RPC_PORT: int, platform: str,
             emit(f"RPC on on {RPC_HOST}:{RPC_PORT} not reachable yet, attempt {attempt}/10 to start it", log_sink)
             
             remote_cmd = (f'schtasks /Create /TN llama-rpc-server-manual /TR "C:\\llama.cpp\\build\\bin\\Release\\rpc-server.exe --host {RPC_HOST} --port {RPC_PORT} -c" /SC ONCE /ST 23:59 /F')
-            #logger.info(f"DEBUG - Executing {remote_cmd}")
+            logger.info(f"DEBUG - Executing {remote_cmd}")
             subprocess.run(["ssh", RPC_HOST, remote_cmd], check=True)
             remote_cmd = ('schtasks /Run /TN llama-rpc-server-manual')
-            #logger.info(f"DEBUG - Executing {remote_cmd}")
+            logger.info(f"DEBUG - Executing {remote_cmd}")
             subprocess.run(["ssh", RPC_HOST, remote_cmd], check=True)
             time.sleep(3)
         raise RpcStartupError("Remote RPC did not become reachable. Stop.")

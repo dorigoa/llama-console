@@ -132,14 +132,13 @@ def get_llama_command(model_folder: Path,
     emit(f"GGUF model   : {files.gguf}", log_sink)
     emit(f"MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
 
-    #if not run_local_only:
-        
     all_endpoints = []
-    for rpc_server in settings.RPC_SERVERS:
-        all_endpoints.append(f"{rpc_server.hostname}:{rpc_server.tcpport}")
-
-    
-    gpus = devices.list_usable_devices(",".join(all_endpoints), log_sink=log_sink)
+    if not run_local_only:    
+        for rpc_server in settings.RPC_SERVERS:
+            all_endpoints.append(f"{rpc_server.hostname}:{rpc_server.tcpport}")
+        gpus = devices.list_usable_devices(",".join(all_endpoints), log_sink=log_sink)
+    else:
+        gpus = devices.list_usable_devices(None, log_sink=log_sink)
     
     cmd = launcher.build_llama_command(
         settings.LLAMA_SERVER_PATH,

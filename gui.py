@@ -96,13 +96,12 @@ def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, floa
 def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
-    ctx, temp, top_p, top_k, shard_balance = selected_data_for_model(model_name)
+    ctx, temp, top_p, top_k, _shard_balance = selected_data_for_model(model_name)
     #ctx = utils.normalize_context_size_for_select(ctx)
     context_select.set_value( ctx )
     temperature_select.set_value(f"{float(temp):.1f}")
     top_p_input.set_value(f"{float(top_p):.1f}")
     top_k_input.set_value(f"{int(top_k)}")
-    shard_balance_input.set_value( shard_balance )
 
 #_____________________________________________________________________________
 def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
@@ -586,6 +585,39 @@ with ui.dialog() as chat_dialog, ui.card().classes("w-full max-w-lg"):
         )
 
 #_____________________________________________________________________________
+async def ask_shard_balance(default_value: str) -> str | None:
+    """Ask for tensor split/shard balance only when RPC execution is enabled."""
+    result: dict[str, str | None] = {"value": None}
+    done = asyncio.Event()
+
+    with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
+        ui.label("Shard balance").classes("text-h6")
+        ui.label("Insert tensor split values, for example: 6,12").classes("text-sm text-gray-600")
+        shard_input = ui.input(
+            label="Shard balance",
+            value=default_value,
+            placeholder="6,12",
+        ).classes("w-full")
+
+        def confirm() -> None:
+            result["value"] = str(shard_input.value or "").strip()
+            dialog.close()
+            done.set()
+
+        def cancel() -> None:
+            result["value"] = None
+            dialog.close()
+            done.set()
+
+        with ui.row().classes("w-full justify-end gap-2"):
+            ui.button("Cancel", on_click=cancel)
+            ui.button("OK", on_click=confirm, icon="check")
+
+    dialog.open()
+    await done.wait()
+    return result["value"]
+
+#_____________________________________________________________________________
 with ui.header().classes("items-center justify-between"):
     ui.label(settings.UI_TITLE).classes("text-h6")
     ui.button("Stop Model", on_click=manager.stop_server, icon="stop", color="red")
@@ -644,11 +676,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 label="Top_k",
             ).classes("flex-[1]")
 
-        shard_balance_input = ui.input(
-                value="6,12",
-                label="Shard balance",
-            ).classes("flex-[1]")
-        
         mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
 
         run_local_only_checkbox = ui.checkbox(
@@ -687,10 +714,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 emit("Start ignored: no Top_k selected", ui_log)
                 notify_user("Input a Top_k integer between 20 and 100", type="warning")
 
-            if shard_balance_input.value is None:
-                emit("Start ignored: no Shard Balance selected", ui_log)
-                notify_user("Input a Shard balance string (e.g. 5,5)", type="warning")
-
             try:
                 temperature = float(temperature_select.value)
             except (TypeError, ValueError):
@@ -712,17 +735,27 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Invalid Top_k!", type="warning")
                 return
                         
-            if not shard_balance_input.value:
-                _shard_balance = settings.DEFAULT_SHARD_BALANCE#LLAMA_PARAM['tensorsplit']
-            else:
-                _shard_balance = shard_balance_input.value
-
-            pattern = r"\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+"
-            
-            if not re.match(pattern, _shard_balance):
-                _shard_balance = settings.DEFAULT_SHARD_BALANCE#LLAMA_PARAM['tensorsplit']
-
             run_local_only = bool(run_local_only_checkbox.value)
+
+            model_name_for_default = str(model_select.value) if model_select.value else None
+            _ctx, _temp, _top_p, _top_k, persisted_shard_balance = selected_data_for_model(model_name_for_default)
+            _shard_balance = str(persisted_shard_balance or settings.DEFAULT_SHARD_BALANCE)
+
+            if not run_local_only:
+                requested_shard_balance = await ask_shard_balance(_shard_balance)
+                if requested_shard_balance is None:
+                    emit("Start cancelled: shard balance dialog closed", ui_log)
+                    notify_user("Launch cancelled", type="warning")
+                    return
+
+                pattern = r"^\d+(?:\.\d+)?(?:,\d+(?:\.\d+)?)+$"
+                if not re.match(pattern, requested_shard_balance):
+                    emit(f"Invalid shard balance {requested_shard_balance!r}; using default {settings.DEFAULT_SHARD_BALANCE!r}", ui_log)
+                    notify_user("Invalid shard balance; using default", type="warning")
+                    _shard_balance = settings.DEFAULT_SHARD_BALANCE
+                else:
+                    _shard_balance = requested_shard_balance
+
             #rpc_server = str(rpc_server_input.value).strip()
             # if not run_local_only:                     # se non è “local only” serve almeno un RPC
             #     if not rpc_server:
