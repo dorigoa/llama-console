@@ -22,12 +22,12 @@ class Settings:
     #RPC_SERVERS: list[RpcServer] = "192.168.20.2:50000"
     RPC_SERVERS: list[RpcServer] = field(default_factory=lambda: [
         RpcServer(
-            hostname="192.168.20.2",
+            hostname="192.168.20.1",
             tcpport=50000,
             platform="Darwin"
         ),
         RpcServer(
-            hostname="192.168.1.200",
+            hostname="192.168.30.2",
             tcpport=50000,
             platform="Windows"
         ),
