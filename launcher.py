@@ -10,7 +10,7 @@ settings = get_settings()
 logger = setup_console_logging()
 
 def build_llama_command(
-    llama_server_bin: str,
+    #llama_server_bin: str,
     rpc_server: str | None,
     gguf_file: str,
     mmproj_file: str | None,
@@ -26,7 +26,7 @@ def build_llama_command(
     cmd: list[str] = []
 
     cmd.extend([
-        llama_server_bin,
+        settings.LLAMA_SERVER_PATH,
         "--host", settings.LLAMA_SERVER_HOST,
         "--port", settings.LLAMA_SERVER_PORT,
         "-m", str(gguf_file),
@@ -110,6 +110,7 @@ def get_llama_command(model_folder: Path,
         gpus = devices.list_usable_devices(None, log_sink=log_sink)
     
     cmd = launcher.build_llama_command(
+        ",".join(all_endpoints),
         str(files.gguf),
         str(files.mmproj) if files.mmproj else None,
         gpus,
