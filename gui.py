@@ -358,19 +358,15 @@ class LlamaManager:
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
 
         try:
-            #logger.info(f"DEBUG - Calling get_llama_command with rpc_server={rpc_server}")
             cmd = await asyncio.to_thread(
-                get_llama_command,
                 model_folder,
                 ui_log,
-                ctxsize=context_size,
+                run_local_only=run_local_only,
+                tensorsplit=shard_balance,
                 temperature=temperature,
                 top_p=top_p,
                 top_k=top_k,
-                tensorsplit=shard_balance,
                 load_mmproj=load_mmproj,
-                run_local_only=run_local_only,
-                rpc_server=all_rpc,
             )
 
             cmd = [str(arg) for arg in cmd]
