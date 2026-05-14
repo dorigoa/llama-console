@@ -359,6 +359,7 @@ class LlamaManager:
 
         try:
             cmd = await asyncio.to_thread(
+                get_llama_command,
                 model_folder,
                 ui_log,
                 run_local_only=run_local_only,
