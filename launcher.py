@@ -60,29 +60,28 @@ def build_llama_command(
     return [str(arg) for arg in cmd]
 
 #_____________________________________________________________________________
-def format_command(cmd: list[str]) -> str:
-    return " ".join(shlex.quote(str(x)) for x in cmd)
+#def format_command(cmd: list[str]) -> str:
+#    return " ".join(shlex.quote(str(x)) for x in cmd)
 
 #_____________________________________________________________________________
-def validate_ssl_files(key_file: Path, cert_file: Path) -> None:
-    missing = [str(p) for p in (key_file, cert_file) if not p.exists()]
-    if missing:
-        joined = "\n".join(f"  {p}" for p in missing)
-        raise FileNotFoundError(f"Missing SSL file(s):\n{joined}")
+# def validate_ssl_files(key_file: Path, cert_file: Path) -> None:
+#     missing = [str(p) for p in (key_file, cert_file) if not p.exists()]
+#     if missing:
+#         joined = "\n".join(f"  {p}" for p in missing)
+#         raise FileNotFoundError(f"Missing SSL file(s):\n{joined}")
 
 #_____________________________________________________________________________
 def get_llama_command(model_folder: Path, 
                       log_sink: LogSink = None, 
                       run_local_only: bool = False,
                       tensorsplit: str = "1,1",
-                      #splitmode: str = "layer",
                       ctxsize: int = 32768,
                       temperature: float = 0.5,
                       top_p: float = 0.8,
                       top_k: int = 40,
                       load_mmproj: bool = False,
                       ) -> list[str]:
-    """Build the llama-server command without executing it."""
+    
     import devices
     import launcher
     import model_finder
@@ -115,7 +114,6 @@ def get_llama_command(model_folder: Path,
         str(files.mmproj) if files.mmproj else None,
         gpus,
         tensorsplit,
-        #splitmode,
         ctxsize,
         temperature,
         top_p,
