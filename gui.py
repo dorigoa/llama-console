@@ -782,16 +782,24 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ui.label("Server Logs").classes("flex-1")
         clear_log = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
     #log_area = ui.log().classes("w-full h-96 font-mono text-xs bg-black text-green-400")
-    log_area = ui.element('pre').style("""
-                                        max-width: 100%;      /* larghezza massima del contenitore */
-                                        max-height: 300px;    /* altezza massima del contenitore */
-                                        overflow: auto;       /* abilita entrambe le barre di scorrimento */
-                                        white-space: pre-wrap;/* mantiene i ritorni a capo ma permette il wrap */
-                                        font-family: monospace;
-                                        background: #f8f8f8;
-                                        padding: 8px;
-                                        border: 1px solid #ddd;
-                                    """)
+    # log_area = ui.element('pre').style("""
+    #                                     max-width: 100%;      /* larghezza massima del contenitore */
+    #                                     max-height: 300px;    /* altezza massima del contenitore */
+    #                                     overflow: auto;       /* abilita entrambe le barre di scorrimento */
+    #                                     white-space: pre-wrap;/* mantiene i ritorni a capo ma permette il wrap */
+    #                                     font-family: monospace;
+    #                                     background: #f8f8f8;
+    #                                     padding: 8px;
+    #                                     border: 1px solid #ddd;
+    #                                 """)
+    log_area = ui.textarea(rows=15, cols=80).style("""
+            background: #000;
+            color: #fff;
+            font-family: monospace;
+            resize: both;
+            overflow: auto;
+        """)
+
 
 ui.timer(0.5, detect_existing_llama_server, once=True)
 
