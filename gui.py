@@ -794,36 +794,37 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     )
 
     ui.add_head_html("""
-    <style>
-    .custom-log-scrollbar {
-        scrollbar-width: thin;              /* Firefox */
-        scrollbar-color: #22c55e #111827;   /* thumb track */
-    }
+        <style>
+        .custom-log-scrollbar,
+        .custom-log-scrollbar * {
+            scrollbar-width: thin;
+            scrollbar-color: #22c55e #111827;
+        }
 
-    .custom-log-scrollbar::-webkit-scrollbar {
-        width: 12px;
-        height: 12px;
-    }
+        .custom-log-scrollbar::-webkit-scrollbar,
+        .custom-log-scrollbar *::-webkit-scrollbar {
+            width: 12px;
+            height: 12px;
+        }
 
-    .custom-log-scrollbar::-webkit-scrollbar-track {
-        background: #111827;
-    }
+        .custom-log-scrollbar::-webkit-scrollbar-track,
+        .custom-log-scrollbar *::-webkit-scrollbar-track {
+            background: #111827;
+        }
 
-    .custom-log-scrollbar::-webkit-scrollbar-thumb {
-        background-color: #22c55e;
-        border-radius: 8px;
-        border: 2px solid #111827;
-    }
+        .custom-log-scrollbar::-webkit-scrollbar-thumb,
+        .custom-log-scrollbar *::-webkit-scrollbar-thumb {
+            background-color: #22c55e;
+            border-radius: 8px;
+            border: 2px solid #111827;
+        }
 
-    .custom-log-scrollbar::-webkit-scrollbar-thumb:hover {
-        background-color: #86efac;
-    }
-
-    .custom-log-scrollbar::-webkit-scrollbar-corner {
-        background: #111827;
-    }
-    </style>
-    """)
+        .custom-log-scrollbar::-webkit-scrollbar-corner,
+        .custom-log-scrollbar *::-webkit-scrollbar-corner {
+            background: #111827;
+        }
+        </style>
+        """)
 
 
 ui.timer(0.5, detect_existing_llama_server, once=True)
