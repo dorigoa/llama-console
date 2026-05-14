@@ -25,15 +25,15 @@ def build_llama_command(
     top_k: int,
     load_mmproj: bool,
     *,
-    listen_host: str | None = None,
-    listen_port: int | str | None = None,
+    #listen_host: str | None = None,
+    #listen_port: int | str | None = None,
 ) -> list[str]:
     cmd: list[str] = []
 
     cmd.extend([
         llama_server_bin,
-        "--host", str(listen_host or settings.LLAMA_SERVER_HOST),
-        "--port", str(listen_port or settings.LLAMA_SERVER_PORT),
+        "--host", settings.LLAMA_SERVER_HOST,
+        "--port", settings.LLAMA_SERVER_PORT,
         "-m", str(gguf_file),
     ])
 
@@ -154,8 +154,8 @@ def get_llama_command(model_folder: Path,
         kwargs.get("top_p", None),
         kwargs.get("top_k", None),
         kwargs.get("load_mmproj", False),
-        listen_host=kwargs.get("listen_host", settings.LLAMA_SERVER_HOST),
-        listen_port=kwargs.get("listen_port", settings.LLAMA_SERVER_PORT),
+        #listen_host=kwargs.get("listen_host", settings.LLAMA_SERVER_HOST),
+        #listen_port=kwargs.get("listen_port", settings.LLAMA_SERVER_PORT),
     )
 
     #emit(f"Command: {launcher.format_command(cmd)}", log_sink)

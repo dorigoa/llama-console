@@ -14,7 +14,7 @@ class Settings:
     UI_TITLE: str = "LLama Launcher by Alvise Dorigo (alvise72@gmail.com)"
     UI_HOST: str = "127.0.0.1"
     UI_PORT: int = 8080
-    LLAMA_SERVER_HOST: str = "127.0.0.1"
+    LLAMA_SERVER_HOST: str = "192.168.1.191"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BASEURL: str = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
     #RPC_HOST: str = "192.168.20.2"
