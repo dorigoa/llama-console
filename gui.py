@@ -364,6 +364,7 @@ class LlamaManager:
                 ui_log,
                 run_local_only=run_local_only,
                 tensorsplit=shard_balance,
+                ctxsize=context_size,
                 temperature=temperature,
                 top_p=top_p,
                 top_k=top_k,

@@ -16,9 +16,9 @@ def build_llama_command(
     mmproj_file: str | None,
     devices: str,
     tensorsplit: str,
-    splitmode: str,
-    ctxsize: str,
-    temperature: str | float | None ,
+    #splitmode: str,
+    ctxsize: int,
+    temperature: float,
     top_p: float,
     top_k: int,
     load_mmproj: bool,
@@ -34,7 +34,7 @@ def build_llama_command(
 
     if rpc_server is not None:
         cmd.extend(["--rpc", f"{rpc_server}",
-                   "--split-mode", str(splitmode),
+                   "--split-mode", str(settings.DEFAULT_SPLIT_MODE),
                    "--tensor-split", str(tensorsplit),
                    ])
 
@@ -75,7 +75,7 @@ def get_llama_command(model_folder: Path,
                       log_sink: LogSink = None, 
                       run_local_only: bool = False,
                       tensorsplit: str = "1,1",
-                      splitmode: str = "layer",
+                      #splitmode: str = "layer",
                       ctxsize: int = 32768,
                       temperature: float = 0.5,
                       top_p: float = 0.8,
