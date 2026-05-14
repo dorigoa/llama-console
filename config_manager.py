@@ -1,7 +1,5 @@
-# config_manager.py
 from dataclasses import dataclass, field
 from typing import List, Optional
-#import os
 
 @dataclass
 class RpcServer:
@@ -17,9 +15,6 @@ class Settings:
     LLAMA_SERVER_HOST: str = "192.168.1.191"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BASEURL: str = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
-    #RPC_HOST: str = "192.168.20.2"
-    #RPC_PORT: int = 50000
-    #RPC_SERVERS: list[RpcServer] = "192.168.20.2:50000"
     RPC_SERVERS: list[RpcServer] = field(default_factory=lambda: [
         RpcServer(
             hostname="192.168.20.1",
@@ -38,7 +33,6 @@ class Settings:
     RPC_SERVER_PATH: dict = field(default_factory=lambda:{ 
         "Linux": '/usr/local/bin/rpc-server',
         "Windows": r"C:\llama.cpp\build\bin\Release\rpc-server.exe"
-        #"Windows": r"C:\Users\alvis\AppData\Local\Programs\llama.cpp\bin\rpc-server.exe"
         })
 
     LLAMA_SERVER_PATH: str = "/usr/local/bin/llama-server"
@@ -60,7 +54,6 @@ class Settings:
     DEFAULT_TOP_K: int = 40
     DEFAULT_TEMP: float = 0.8
 
-# Singleton instance
 _settings_instance: Optional[Settings] = None
 
 def get_settings() -> Settings:
