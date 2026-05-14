@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shlex
 import asyncio
 import json
 import subprocess
@@ -11,13 +12,13 @@ from urllib.request import Request, urlopen
 import re
 from nicegui import ui
 
-from launcher import get_llama_command, format_command
-from config_manager import get_settings, RpcServer
+from llama_command import get_llama_command#, format_command
+from config_manager import get_settings#, RpcServer
 from logging_utils import emit, setup_console_logging
 import model_utils
 import utils
 from persist import JsonParams
-import rpc
+#import rpc
 
 settings = get_settings()
 
@@ -372,7 +373,7 @@ class LlamaManager:
             )
 
             cmd = [str(arg) for arg in cmd]
-            emit(f"Final command: {format_command(cmd)}", ui_log)
+            emit(f"Final command: {" ".join(shlex.quote(str(x)) for x in cmd)}", ui_log)
 
             emit("Launching llama-server process...", ui_log)
             self.process = await asyncio.create_subprocess_exec(
