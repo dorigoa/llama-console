@@ -23,8 +23,8 @@ def build_llama_command(
     temperature: str | float | None ,
     top_p: float,
     top_k: int,
-    load_mmproj: bool,
     *,
+    load_mmproj: bool,
     #listen_host: str | None = None,
     #listen_port: int | str | None = None,
 ) -> list[str]:
