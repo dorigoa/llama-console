@@ -117,7 +117,7 @@ def get_llama_command(model_folder: Path,
         "-m", str(files.gguf),
     ])
 
-    if rpc_server is not None:
+    if not run_local_only:
         cmd.extend(["--rpc", f"{rpc_server}",
                    "--split-mode", str(settings.DEFAULT_SPLIT_MODE),
                    "--tensor-split", str(tensorsplit),
