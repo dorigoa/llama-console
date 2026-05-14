@@ -12,13 +12,12 @@ from urllib.request import Request, urlopen
 import re
 from nicegui import ui
 
-from llama_command import get_llama_command#, format_command
-from config_manager import get_settings#, RpcServer
+from llama_command import get_llama_command
+from config_manager import get_settings
 from logging_utils import emit, setup_console_logging
 import model_utils
 import utils
 from persist import JsonParams
-#import rpc
 
 settings = get_settings()
 
@@ -28,7 +27,7 @@ LLAMA_READY_LOG_MARKERS = (
     "server is listening on",
     "all slots are idle",
 )
-LLAMA_READY_TIMEOUT_SECONDS = 300
+#LLAMA_READY_TIMEOUT_SECONDS = 300
 
 params = JsonParams( settings.PERSIST_FILE )
 
@@ -403,11 +402,11 @@ class LlamaManager:
 
             try:
                 assert self._ready_event is not None
-                await asyncio.wait_for(self._ready_event.wait(), timeout=LLAMA_READY_TIMEOUT_SECONDS)
+                await asyncio.wait_for(self._ready_event.wait(), timeout=settings.LLAMA_READY_TIMEOUT_SECONDS)
             except asyncio.TimeoutError:
                 msg = (
                     f"llama-server did not emit a readiness line within "
-                    f"{LLAMA_READY_TIMEOUT_SECONDS} seconds"
+                    f"{settings.LLAMA_READY_TIMEOUT_SECONDS} seconds"
                 )
                 emit(msg, ui_log)
                 status_label.set_text("llama-server status: starting, readiness not confirmed")
