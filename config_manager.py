@@ -15,6 +15,7 @@ class Settings:
     LLAMA_SERVER_HOST: str = "192.168.1.191"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BASEURL: str = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
+    LLAMA_READY_TIMEOUT_SECONDS: int = 600
     RPC_SERVERS: list[RpcServer] = field(default_factory=lambda: [
         RpcServer(
             hostname="192.168.20.1",
