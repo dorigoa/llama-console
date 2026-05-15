@@ -28,7 +28,7 @@ def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
             "--list-devices",
         ]
 
-    #emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
+    emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
 
     proc = subprocess.run(
         cmd,
@@ -38,9 +38,9 @@ def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
         check=False,
     )
 
-    if proc.stdout:
-        for line in proc.stdout.splitlines():
-            emit(f"-> [list-devices] {line}", log_sink)
+    # if proc.stdout:
+    #     for line in proc.stdout.splitlines():
+    #         emit(f"-> [list-devices] {line}", log_sink)
 
     if proc.returncode != 0:
         raise DeviceDiscoveryError(f"Device discovery command failed with return code {proc.returncode}")
