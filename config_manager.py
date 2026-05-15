@@ -41,7 +41,7 @@ class Settings:
         # ),
     ])
     
-    LLAMA_SERVER = Server(
+    LLAMA_SERVER: Server = (
             hostname="192.168.20.2",
             tcpport=8088,
             platform="Darwin",
