@@ -1,6 +1,4 @@
 from __future__ import annotations
-import shlex
-from pathlib import Path
 from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 
@@ -14,7 +12,6 @@ logger = setup_console_logging()
 
 #_____________________________________________________________________________
 def get_llama_command(
-        #model_folder: Path, 
         files: ModelFiles = None,              
         log_sink: LogSink = None, 
         run_local_only: bool = False,
@@ -26,15 +23,6 @@ def get_llama_command(
         load_mmproj: bool = False,
         ) -> list[str]:
     
-    
-
-    #model_folder = Path(model_folder).expanduser().resolve()
-    #emit(f"-> Selected model folder: {model_folder}", log_sink)
-    #files = model_finder.discover_model_files(model_folder)
-    #emit(f"-> Model name   : {files.model_name}", log_sink)
-    #emit(f"-> GGUF model   : {files.gguf}", log_sink)
-    #emit(f"-> MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
-
     if not run_local_only:
         for rpc_server in settings.RPC_SERVERS:
             emit(f"-> Checking remote rpc: {rpc_server.hostname}:{rpc_server.tcpport}", log_sink)
@@ -56,7 +44,7 @@ def get_llama_command(
 
     cmd.extend([
         settings.LLAMA_SERVER.binarypath,
-        "--host", settings.LLAMA_SERVER.hostname,
+        "--host", settings.LLAMA_SERVER.bindaddress,
         "--port", settings.LLAMA_SERVER.tcpport,
         "-m", str(files.gguf),
     ])

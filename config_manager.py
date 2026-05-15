@@ -18,6 +18,7 @@ class Settings:
         Server(
             hostname="192.168.20.1",
             tcpport=50000,
+            bindaddress=None,
             platform="Darwin",
             cachepath=Path("/Volumes/Home/llama.cpp/"),
             binarypath=Path("/usr/local/bin/rpc-server"),
@@ -26,6 +27,7 @@ class Settings:
         Server(
             hostname="192.168.30.2",
             tcpport=50000,
+            bindaddress=None,
             platform="Windows",
             cachepath=Path("/Volumes/Home/llama.cpp/"),
             binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe"),
@@ -36,6 +38,7 @@ class Settings:
     LLAMA_SERVER: Server = field(default_factory=lambda: Server(
             hostname="192.168.20.2",
             tcpport=8088,
+            bindaddress="127.0.0.1",
             platform="Darwin",
             cachepath=None,
             binarypath="/usr/local/bin/llama-server",

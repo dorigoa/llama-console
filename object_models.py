@@ -12,6 +12,7 @@ class ServerType(Enum):
 class Server:
     hostname: str
     tcpport: int
+    bindaddress: str
     platform: str
     cachepath: Path
     binarypath: Path
