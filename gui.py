@@ -276,7 +276,7 @@ async def get_browser_based_llama_url() -> str:
     if settings.LLAMA_SERVER.bindaddress not in url:
         url=url.replace('http','https')
         url=url.replace(f':{settings.LLAMA_SERVER.tcpport}','')
-    return str(await ui.run_javascript(js))
+    return url
 
 #_____________________________________________________________________________
 def set_link_target(link: ui.link, url: str) -> None:
