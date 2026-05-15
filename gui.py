@@ -365,7 +365,9 @@ class LlamaManager:
 
             cmd = [str(arg) for arg in cmd]
             emit(f"-> Launching command: {" ".join(shlex.quote(str(x)) for x in cmd)}", ui_log)
-
+            emit("->", ui_log)
+            emit("->", ui_log)
+            emit("-> Follows the llama-server stdout ", ui_log)
             #emit("-> Launching llama-server process...", ui_log)
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
