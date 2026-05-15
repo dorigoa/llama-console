@@ -231,9 +231,9 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     if running:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
         
-        #chat_url = await get_browser_based_llama_url()
+        chat_url = await get_browser_based_llama_url()
 
-        chat_url = ui.context.client.request.url
+        #chat_url = ui.context.client.request.url
         
         #logger.info(f"DEBUG chat url before={chat_url}")
         emit(f"DEBUG chat url before={chat_url}", ui_log)
@@ -272,6 +272,10 @@ async def get_browser_based_llama_url() -> str:
             return `http://${{hostname}}:{port}/`;
         }})()
     """
+    url = str(await ui.run_javascript(js))
+    if settings.LLAMA_SERVER.bindaddress not in url:
+        url=url.replace('http','https')
+        url=url.replace(f':{settings.LLAMA_SERVER.tcpport}','')
     return str(await ui.run_javascript(js))
 
 #_____________________________________________________________________________
