@@ -1,5 +1,5 @@
 
-from enum import Enum, auto, StrEnum, unique
+from enum import Enum, auto, unique
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -13,7 +13,6 @@ class Server:
     hostname: str
     tcpport: int
     platform: str
-    #type: ServerType
     cachepath: Path
     binarypath: Path
 
