@@ -232,11 +232,13 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
         
         chat_url = await get_browser_based_llama_url()
-        logger.info(f"DEBUG chat url before={chat_url}")
+        #logger.info(f"DEBUG chat url before={chat_url}")
+        emit(f"DEBUG chat url before={chat_url}", ui_log)
         if "127.0.0.1" not in str(chat_url):
             chat_url=chat_url.replace("http","https")
             chat_url=chat_url.replace(":8088","")
-        logger.info(f"DEBUG chat url after={chat_url}")
+        emit(f"DEBUG chat url after={chat_url}", ui_log)
+        #logger.info(f"DEBUG chat url after={chat_url}")
         status_label.set_text("llama-server status: already running")
         status_detail_label.set_text(
             f"Detected endpoint: {base_url} | Model: {display_model} "
