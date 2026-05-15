@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-from object_models import Server#, ServerType
+from object_models import Server, ServerType
 from pathlib import Path
 
 
@@ -20,14 +20,16 @@ class Settings:
             tcpport=50000,
             platform="Darwin",
             cachepath=Path("/Volumes/Home/llama.cpp/"),
-            binarypath=Path("/usr/local/bin/rpc-server")
+            binarypath=Path("/usr/local/bin/rpc-server"),
+            type=ServerType.RPCSERVER
         ),
         Server(
             hostname="192.168.30.2",
             tcpport=50000,
             platform="Windows",
             cachepath=Path("/Volumes/Home/llama.cpp/"),
-            binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe")
+            binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe"),
+            type=ServerType.RPCSERVER
         ),
     ])
     
@@ -36,7 +38,8 @@ class Settings:
             tcpport=8088,
             platform="Darwin",
             cachepath=None,
-            binarypath="/usr/local/bin/llama-server"
+            binarypath="/usr/local/bin/llama-server",
+            type=ServerType.LLAMASERVER
         ))
     
     OPENBROWSER: bool = True
