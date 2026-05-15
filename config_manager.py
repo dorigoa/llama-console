@@ -19,7 +19,7 @@ class Settings:
             hostname="192.168.20.1",
             tcpport=50000,
             platform="Darwin",
-            type=ServerType.RPCSERVER,
+            #type=ServerType.RPCSERVER,
             cachepath=Path("/Volumes/Home/llama.cpp/"),
             binarypath=Path("/usr/local/bin/rpc-server")
         ),
@@ -27,7 +27,7 @@ class Settings:
             hostname="192.168.30.2",
             tcpport=50000,
             platform="Windows",
-            type=ServerType.RPCSERVER,
+            #type=ServerType.RPCSERVER,
             cachepath=Path("/Volumes/Home/llama.cpp/"),
             binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe")
         ),
@@ -45,7 +45,7 @@ class Settings:
             hostname="192.168.20.2",
             tcpport=8088,
             platform="Darwin",
-            type=ServerType.LLAMASERVER,
+            #type=ServerType.LLAMASERVER,
             cachepath=None,
             binarypath="/usr/local/bin/llama-server"
         )
