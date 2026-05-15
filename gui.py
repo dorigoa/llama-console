@@ -265,7 +265,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
 #_____________________________________________________________________________
 async def get_browser_based_llama_url() -> str:
-    port = settings.LLAMA_SERVER_PORT
+    port = settings.LLAMA_SERVER.tcpport
     js = f"""
         (() => {{
             const hostname = window.location.hostname;
@@ -529,7 +529,7 @@ class LlamaManager:
             notify_user("Server stopped", type="info")
             return
 
-        port = settings.LLAMA_SERVER_PORT
+        port = settings.LLAMA_SERVER.tcpport
         emit(f"No GUI-started process handle; looking for external listener on TCP port {port}...", ui_log)
         status_label.set_text("llama-server status: stopping external process")
         status_detail_label.set_text(f"Searching for listener on TCP port {port}")
