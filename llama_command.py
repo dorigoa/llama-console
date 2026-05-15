@@ -5,7 +5,7 @@ from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 
 import devices
-import model_finder
+from model_finder import ModelFiles
 import rpc
 
 settings = get_settings()
@@ -13,25 +13,27 @@ settings = get_settings()
 logger = setup_console_logging()
 
 #_____________________________________________________________________________
-def get_llama_command(model_folder: Path, 
-                      log_sink: LogSink = None, 
-                      run_local_only: bool = False,
-                      tensorsplit: str = "1,1",
-                      ctxsize: int = 32768,
-                      temperature: float = 0.5,
-                      top_p: float = 0.8,
-                      top_k: int = 40,
-                      load_mmproj: bool = False,
-                      ) -> list[str]:
+def get_llama_command(
+        #model_folder: Path, 
+        files: ModelFiles = None,              
+        log_sink: LogSink = None, 
+        run_local_only: bool = False,
+        tensorsplit: str = "1,1",
+        ctxsize: int = 32768,
+        temperature: float = 0.5,
+        top_p: float = 0.8,
+        top_k: int = 40,
+        load_mmproj: bool = False,
+        ) -> list[str]:
     
     
 
-    model_folder = Path(model_folder).expanduser().resolve()
-    emit(f"-> Selected model folder: {model_folder}", log_sink)
-    files = model_finder.discover_model_files(model_folder)
-    emit(f"-> Model name   : {files.model_name}", log_sink)
-    emit(f"-> GGUF model   : {files.gguf}", log_sink)
-    emit(f"-> MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
+    #model_folder = Path(model_folder).expanduser().resolve()
+    #emit(f"-> Selected model folder: {model_folder}", log_sink)
+    #files = model_finder.discover_model_files(model_folder)
+    #emit(f"-> Model name   : {files.model_name}", log_sink)
+    #emit(f"-> GGUF model   : {files.gguf}", log_sink)
+    #emit(f"-> MMProj       : {files.mmproj if files.mmproj else 'none'}", log_sink)
 
     if not run_local_only:
         for rpc_server in settings.RPC_SERVERS:

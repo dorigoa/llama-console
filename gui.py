@@ -16,6 +16,7 @@ from llama_command import get_llama_command
 from config_manager import get_settings
 from logging_utils import emit, setup_console_logging
 import model_utils
+import model_finder
 import utils
 from persist import JsonParams
 
@@ -330,6 +331,8 @@ class LlamaManager:
         #all_endpoints = utils.get_all_rpc_servers()
         #all_rpc = ",".join(all_endpoints)
 
+        files = model_finder.discover_model_files(model_folder)
+        
         emit("--- Start requested ---", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
         emit(f"RPC server(s)  : {",".join( utils.get_all_rpc_servers() )}", ui_log)
@@ -342,11 +345,15 @@ class LlamaManager:
         emit(f"Top_k          : {top_k}", ui_log)
         emit(f"Sharding       : {shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
+        if files.mmproj and load_mmproj:
+            emit(f"MMProj file    : {files.mmproj.name}", ui_log)
         emit(f"----------------------", ui_log)
+        
         try:
             cmd = await asyncio.to_thread(
                 get_llama_command,
-                model_folder,
+                #model_folder,
+                files
                 ui_log,
                 run_local_only=run_local_only,
                 tensorsplit=shard_balance,
