@@ -15,8 +15,6 @@ class DeviceDiscoveryError(RuntimeError):
 #__________________________________________________________________________________________
 def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
 
-
-
     if rpc:
         cmd = [
             settings.LLAMA_SERVER.binarypath,
@@ -30,7 +28,7 @@ def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
             "--list-devices",
         ]
 
-    emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
+    #emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
 
     proc = subprocess.run(
         cmd,
