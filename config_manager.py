@@ -28,7 +28,7 @@ class Settings:
             tcpport=50000,
             platform="Windows",
             type=ServerType.RPCSERVER,
-            cachepath=Path("/Volumes/Home/llama.cpp/")
+            cachepath=Path("/Volumes/Home/llama.cpp/"),
             binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe")
         ),
         # Server(
