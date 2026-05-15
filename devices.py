@@ -30,7 +30,7 @@ def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
             "--list-devices",
         ]
 
-    emit(f"Discovering devices: {' '.join(cmd)}", log_sink)
+    emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
 
     proc = subprocess.run(
         cmd,
@@ -42,7 +42,7 @@ def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
 
     if proc.stdout:
         for line in proc.stdout.splitlines():
-            emit(f"[list-devices] {line}", log_sink)
+            emit(f"-> [list-devices] {line}", log_sink)
 
     if proc.returncode != 0:
         raise DeviceDiscoveryError(f"Device discovery command failed with return code {proc.returncode}")
@@ -71,5 +71,5 @@ def list_usable_devices(rpc: Server, log_sink: LogSink = None) -> str:
         raise DeviceDiscoveryError("No usable GPU/device found. Stop.")
 
     result = ",".join(devices)
-    emit(f"Usable devices: {result}", log_sink)
+    emit(f"-> Usable devices: {result}", log_sink)
     return result
