@@ -210,11 +210,11 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
         ("/v1/models", model_utils.extract_model_from_openai_models),
         ("/props", model_utils.extract_model_from_props),
     ):
-        url = f"{settings.LLAMA_SERVER_BASEURL}{endpoint}"
+        url = f"http://{settings.LLAMA_SERVER.bindaddress}:{settings.LLAMA_SERVER.tcpport}{endpoint}"
         try:
             payload = _json_get(url)
             model = extractor(payload)
-            return True, model, settings.LLAMA_SERVER_BASEURL, None
+            return True, model, url, None
         except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
             last_error = f"{url}: {exc}"
             continue
@@ -226,7 +226,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     status_label.set_text("llama-server status: checking...")
     status_detail_label.set_text(f"Probe target: local port {settings.LLAMA_SERVER_PORT}")
 
-    running, detected_model, base_url, error = await asyncio.to_thread(probe_existing_llama_server_sync)
+    running, detected_model, url, error = await asyncio.to_thread(probe_existing_llama_server_sync)
 
     if running:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
@@ -822,6 +822,12 @@ emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
 emit(f"Available models: {len(model_utils.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
+
+from nicegui.context import client
+ui.label(f'URL: {client.request.url}')
+ui.label(f'Path: {client.request.url.path}')
+ui.label(f'Query: {client.request.url.query}')
+emit(f"URL={client.request.url}")
 
 #_____________________________________________________________________________
 ui.run(
