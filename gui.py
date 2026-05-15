@@ -224,7 +224,7 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
 #_____________________________________________________________________________
 async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     status_label.set_text("llama-server status: checking...")
-    status_detail_label.set_text(f"Probe target: local port {settings.LLAMA_SERVER_PORT}")
+    status_detail_label.set_text(f"Probe target: local port {settings.LLAMA_SERVER.tcpport}")
 
     running, detected_model, url, error = await asyncio.to_thread(probe_existing_llama_server_sync)
 
