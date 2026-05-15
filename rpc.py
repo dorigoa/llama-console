@@ -60,7 +60,7 @@ def ensure_remote_rpc(timeout: int,
         emit(f"-> Starting remote RPC through SSH host {rpc.hostname}", log_sink)
         time.sleep(3)
         remote_cmd = (
-            f"LLAMA_CACHE={settings.RPC_CACHE_PATH} nohup {settings.RPC_SERVER_PATH['Linux']} "
+            f"LLAMA_CACHE={rpc.cachepath} nohup {rpc.binarypath} "
             f"--host '{rpc.hostname}' "
             f"--port '{rpc.tcpport}' "
             "-c >/dev/null 2>&1 &"

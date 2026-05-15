@@ -4,9 +4,9 @@ PYTHON_EXE_LLAMA="$USER_HOME/miniforge3/envs/llama-orc/bin/python"
 PROJECT_DIR_LLAMA="$USER_HOME/llama-console"
 LOG_FILE_LLAMA="$USER_HOME/gui.log"
 
-#WEBUI_EXE="$USER_HOME/miniforge3/envs/openwebui/bin/open-webui"
+WEBUI_EXE="$USER_HOME/miniforge3/envs/openwebui/bin/open-webui"
 #LOG_FILE_WEBUI="$USER_HOME/webui.log"
 
 cd "$PROJECT_DIR_LLAMA" && nohup "$PYTHON_EXE_LLAMA" gui.py > "$LOG_FILE_LLAMA" 2>&1 &
 
-#nohup "$WEBUI_EXE" serve --host 0.0.0.0 --port 8000 > "$LOG_FILE_WEBUI" 2>&1 &
+nohup "$WEBUI_EXE" serve --host 0.0.0.0 --port 8000 > "$LOG_FILE_WEBUI" 2>&1 &
