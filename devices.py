@@ -6,7 +6,7 @@ from object_models import Server, ServerType
 from config_manager import get_settings
 from logging_utils import emit, LogSink
 
-settings = get_settings()#Settings()
+settings = get_settings()
 
 #__________________________________________________________________________________________
 class DeviceDiscoveryError(RuntimeError):
