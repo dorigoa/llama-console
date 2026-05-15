@@ -231,7 +231,10 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     if running:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
         
-        chat_url = await get_browser_based_llama_url()
+        #chat_url = await get_browser_based_llama_url()
+
+        chat_url = ui.context.client.request.url
+        
         #logger.info(f"DEBUG chat url before={chat_url}")
         emit(f"DEBUG chat url before={chat_url}", ui_log)
         if "127.0.0.1" not in str(chat_url):
@@ -823,11 +826,11 @@ emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
 emit(f"Available models: {len(model_utils.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
 
-from nicegui.context import client
-ui.label(f'URL: {client.request.url}')
-ui.label(f'Path: {client.request.url.path}')
-ui.label(f'Query: {client.request.url.query}')
-emit(f"URL={client.request.url}")
+#from nicegui.context import client
+#ui.label(f'URL: {client.request.url}')
+#ui.label(f'Path: {client.request.url.path}')
+##ui.label(f'Query: {client.request.url.query}')
+#emit(f"URL={client.request.url}")
 
 #_____________________________________________________________________________
 ui.run(
