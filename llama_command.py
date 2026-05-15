@@ -45,9 +45,9 @@ def get_llama_command(
     all_endpoints.extend(f"{s.hostname}:{s.tcpport}" for s in settings.RPC_SERVERS)
 
     if not run_local_only:        
-        gpus = devices.list_usable_devices(",".join(all_endpoints), log_sink=log_sink)
+        gpus = devices.list_remote_usable_devices(",".join(all_endpoints), log_sink=log_sink)
     else:
-        gpus = devices.list_usable_devices(settings.LLAMA_SERVER, log_sink=log_sink)
+        gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, log_sink=log_sink)
 
     cmd: list[str] = []
 
