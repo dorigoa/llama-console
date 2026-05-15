@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-from object_models import ServerType, Server
+from object_models import Server
 from pathlib import Path
 
 
