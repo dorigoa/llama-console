@@ -236,21 +236,21 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         #chat_url = ui.context.client.request.url
         
         #logger.info(f"DEBUG chat url before={chat_url}")
-        emit(f"DEBUG chat url before={chat_url}", ui_log)
-        if "127.0.0.1" not in str(chat_url):
-            chat_url=chat_url.replace("http","https")
-            chat_url=chat_url.replace(":8088","")
-        emit(f"DEBUG chat url after={chat_url}", ui_log)
+        #emit(f"DEBUG chat url before={chat_url}", ui_log)
+        # if "127.0.0.1" not in str(chat_url):
+        #     chat_url=chat_url.replace("http","https")
+        #     chat_url=chat_url.replace(":8088","")
+        # #emit(f"DEBUG chat url after={chat_url}", ui_log)
         #logger.info(f"DEBUG chat url after={chat_url}")
         status_label.set_text("llama-server status: already running")
         status_detail_label.set_text(
-            f"Detected endpoint: {base_url} | Model: {display_model} "
+            f"Detected endpoint: {chat_url} | Model: {display_model} "
         )
         set_link_target(status_chat_link, chat_url)
         status_chat_link.visible = True
         status_chat_button.visible = True
 
-        emit(f"Detected already-running llama-server at {base_url}", ui_log)
+        emit(f"Detected already-running llama-server at {chat_url}", ui_log)
         emit(f"Detected model: {display_model}", ui_log)
         emit(f"Chat URL: {chat_url}", ui_log)
         return True
