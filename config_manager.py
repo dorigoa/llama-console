@@ -1,42 +1,57 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
+from object_models import ServerType, Server
+from pathlib import Path
 
-@dataclass
-class RpcServer:
-    hostname: str
-    tcpport: int
-    platform: str
+
 
 @dataclass
 class Settings:
-    UI_TITLE: str = "LLama Launcher by Alvise Dorigo (alvise72@gmail.com)"
+    UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
     UI_HOST: str = "127.0.0.1"
     UI_PORT: int = 8080
     LLAMA_SERVER_HOST: str = "192.168.1.191"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BASEURL: str = f"http://{LLAMA_SERVER_HOST}:{LLAMA_SERVER_PORT}"
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
-    RPC_SERVERS: list[RpcServer] = field(default_factory=lambda: [
-        RpcServer(
+    RPC_SERVERS: list[Server] = field(default_factory=lambda: [
+        Server(
             hostname="192.168.20.1",
             tcpport=50000,
-            platform="Darwin"
+            platform="Darwin",
+            type=ServerType.RPCSERVER,
+            cachepath=Path("/Volumes/Home/llama.cpp/"),
+            binarypath=Path("/usr/local/bin/rpc-server")
         ),
-        RpcServer(
+        Server(
             hostname="192.168.30.2",
             tcpport=50000,
-            platform="Windows"
+            platform="Windows",
+            type=ServerType.RPCSERVER,
+            cachepath=Path("/Volumes/Home/llama.cpp/")
+            binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe")
         ),
+        # Server(
+        #     hostname="192.168.20.2",
+        #     tcpport=8088,
+        #     platform="Darwin",
+        #     type=ServerType.LLAMASERVER,
+        #     cachepath=None,
+        #     binarypath="/usr/local/bin/llama-server"
+        # ),
     ])
-    RPC_CACHE_PATH: str = "/Volumes/Home/llama.cpp/"
+    
+    LLAMA_SERVER = Server(
+            hostname="192.168.20.2",
+            tcpport=8088,
+            platform="Darwin",
+            type=ServerType.LLAMASERVER,
+            cachepath=None,
+            binarypath="/usr/local/bin/llama-server"
+        )
+    
     OPENBROWSER: bool = True
 
-    RPC_SERVER_PATH: dict = field(default_factory=lambda:{ 
-        "Linux": '/usr/local/bin/rpc-server',
-        "Windows": r"C:\llama.cpp\build\bin\Release\rpc-server.exe"
-        })
-
-    LLAMA_SERVER_PATH: str = "/usr/local/bin/llama-server"
     PERSIST_FILE: str = "persist.json"
     MODEL_BASE_DIR: str = "/Volumes/Home/gguf_models"
     CONTEXT_SIZE_OPTIONS: List[int] = field(default_factory=lambda: [

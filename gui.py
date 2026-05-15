@@ -27,7 +27,6 @@ LLAMA_READY_LOG_MARKERS = (
     "server is listening on",
     "all slots are idle",
 )
-#LLAMA_READY_TIMEOUT_SECONDS = 300
 
 params = JsonParams( settings.PERSIST_FILE )
 
@@ -57,9 +56,6 @@ def ui_log(message: str) -> None:
         raise
 
 #_____________________________________________________________________________
-# def available_model_names() -> list[str]:
-#     """Return model names discovered/configured for the model combo box."""
-#     return sorted(model_utils.AVAILABLE_MODELS.keys(), key=str.lower)
 def available_model_names() -> list[str]:
     model_utils.AVAILABLE_MODELS = model_utils.discover_available_models(settings.MODEL_BASE_DIR)
     return sorted(model_utils.AVAILABLE_MODELS.keys(), key=str.lower)
@@ -93,14 +89,11 @@ def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, floa
         return persisted_data['context_size'], persisted_data['temperature'], persisted_data['top_p'], persisted_data['top_k'], persisted_data['shard_balance']
     return model_utils.default_context_size_for_model(model_name), model_utils.default_temp_for_model(model_name), model_utils.default_top_p_for_model( model_name ), model_utils.default_top_k_for_model( model_name ), model_utils.default_shard_balance_for_model( model_name )
 
-
-
 #_____________________________________________________________________________
 def update_data_from_model() -> None:
     """Set context combo box from persist.json, then config/default fallback."""
     model_name = str(model_select.value) if model_select.value else None
     ctx, temp, top_p, top_k, _shard_balance = selected_data_for_model(model_name)
-    #ctx = utils.normalize_context_size_for_select(ctx)
     context_select.set_value( ctx )
     temperature_select.set_value(f"{float(temp):.1f}")
     top_p_input.set_value(f"{float(top_p):.1f}")
@@ -181,7 +174,6 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
 
 #_____________________________________________________________________________
 def _match_configured_model(detected_model: str) -> str:
-    """Try to map llama-server reported model string to one model_utils.AVAILABLE_MODELS key."""
     detected = detected_model.strip()
     detected_path = Path(detected)
     detected_name = detected_path.name
@@ -230,10 +222,6 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
 
 #_____________________________________________________________________________
 async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
-    """Detect a llama-server already running before this GUI launched it.
-
-    This updates permanent UI elements. It intentionally does not use notify_user().
-    """
     status_label.set_text("llama-server status: checking...")
     status_detail_label.set_text(f"Probe target: local port {settings.LLAMA_SERVER_PORT}")
 
@@ -241,7 +229,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
     if running:
         display_model = _match_configured_model(detected_model) if detected_model else "unknown model"
-        #global_display_model = display_model
+        
         chat_url = await get_browser_based_llama_url()
 
         if "127.0.0.1" not in str(chat_url):
@@ -271,7 +259,6 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
 #_____________________________________________________________________________
 async def get_browser_based_llama_url() -> str:
-    """Build the llama-server chat URL from the browser-visible GUI URL."""
     port = settings.LLAMA_SERVER_PORT
     js = f"""
         (() => {{
@@ -283,7 +270,6 @@ async def get_browser_based_llama_url() -> str:
 
 #_____________________________________________________________________________
 def set_link_target(link: ui.link, url: str) -> None:
-    """Update a NiceGUI link target and visible text."""
     link.set_text(url)
     link.props(f'href="{url}"')
 
@@ -341,12 +327,12 @@ class LlamaManager:
             notify_user(msg, type="negative")
             return False
 
-        all_endpoints = utils.get_all_rpc_servers()
-        all_rpc = ",".join(all_endpoints)
+        #all_endpoints = utils.get_all_rpc_servers()
+        #all_rpc = ",".join(all_endpoints)
 
         emit("--- Start requested ---", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
-        emit(f"RPC server(s)  : {all_rpc}", ui_log)
+        emit(f"RPC server(s)  : {",".join( utils.get_all_rpc_servers() )}", ui_log)
         emit(f"Selected model : {model_name}", ui_log)
         emit(f"Configured path: {configured_path}", ui_log)
         emit(f"Model folder   : {model_folder}", ui_log)
@@ -356,7 +342,7 @@ class LlamaManager:
         emit(f"Top_k          : {top_k}", ui_log)
         emit(f"Sharding       : {shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
-
+        emit(f"----------------------", ui_log)
         try:
             cmd = await asyncio.to_thread(
                 get_llama_command,
@@ -372,9 +358,9 @@ class LlamaManager:
             )
 
             cmd = [str(arg) for arg in cmd]
-            emit(f"Final command: {" ".join(shlex.quote(str(x)) for x in cmd)}", ui_log)
+            emit(f"-> Final command: {" ".join(shlex.quote(str(x)) for x in cmd)}", ui_log)
 
-            emit("Launching llama-server process...", ui_log)
+            emit("-> Launching llama-server process...", ui_log)
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
@@ -683,12 +669,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             value=False,
         ).classes("flex-[1] mt-2")
 
-        # rpc_server_input = ui.input(
-        #     label="RPC server(s) – IP:porta (es. 192.168.1.10:12345,10.0.0.5:12345)",
-        #     placeholder="192.168.1.10:12345,10.0.0.5:12345",
-        #     value="",
-        # ).classes("w-1/2")
-
         async def start_selected_model() -> None:
             if not model_select.value:
                 emit("Start ignored: no model selected", ui_log)
@@ -781,12 +761,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.row().classes("w-full gap-4 mt-4 items-end"):
         ui.label("Server Logs").classes("flex-1")
         clear_log = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
-    #log_area = ui.log().classes("w-full h-96 font-mono text-xs bg-black text-green-400 ")
-    # log_area = (
-    #     ui.log()
-    #     .classes("w-full h-96 font-mono text-xs bg-black text-green-400")
-    #     .style("overflow: auto; white-space: pre;")
-    # )
+    
     log_area = (
         ui.log()
         .classes("w-full h-96 font-mono text-xs bg-black text-green-400 custom-log-scrollbar")
