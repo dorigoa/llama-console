@@ -256,7 +256,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         return True
 
     status_label.set_text("llama-server status: not detected")
-    status_detail_label.set_text(f"No server answered on local port {settings.LLAMA_SERVER_PORT}")
+    status_detail_label.set_text(f"No server answered on local port {settings.LLAMA_SERVER.tcpport}")
     status_chat_link.visible = False
     status_chat_button.visible = False
     if verbose:
