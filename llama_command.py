@@ -47,9 +47,12 @@ def get_llama_command(
     if not run_local_only:        
         gpus = devices.list_usable_devices(",".join(all_endpoints), log_sink=log_sink)
     else:
-        gpus = devices.list_usable_devices(None, log_sink=log_sink)
+        gpus = devices.list_usable_devices(settings.LLAMA_SERVER, log_sink=log_sink)
 
     cmd: list[str] = []
+
+    if not settings.LLAMA_SERVER:
+        raise Exception("Passed None settings.LLAMA_SERVER to get_llama_command")
 
     cmd.extend([
         settings.LLAMA_SERVER.binarypath,

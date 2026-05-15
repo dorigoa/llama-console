@@ -30,6 +30,9 @@ def ensure_remote_rpc(timeout: int,
                       log_sink: LogSink = None, 
                       ) -> None:
     
+    if not rpc:
+        raise RpcStartupError("Passed None rpc argument to ensure_remote_rpc")
+
     if rpc.platform == "Windows":
         for attempt in range(1, 11):
             if tcp_connect(rpc.hostname, rpc.tcpport, 2):
