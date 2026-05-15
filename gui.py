@@ -368,6 +368,8 @@ class LlamaManager:
             emit("->", ui_log)
             emit("->", ui_log)
             emit("-> Follows the llama-server stdout ", ui_log)
+            emit("->", ui_log)
+            emit("->", ui_log)
             #emit("-> Launching llama-server process...", ui_log)
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
@@ -758,7 +760,9 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
             if started:
                 chat_url = await get_browser_based_llama_url()
-                emit(f"Chat URL: {chat_url}", ui_log)
+                emit(f"->", ui_log)
+                emit(f"->", ui_log)
+                emit(f"-> Chat URL: {chat_url}", ui_log)
                 open_chat_dialog(model_name, chat_url)
 
         ui.button("Launch Model", on_click=start_selected_model, icon="play_arrow").classes("mt-4")
