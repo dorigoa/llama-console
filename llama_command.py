@@ -38,6 +38,7 @@ def get_llama_command(
     if not run_local_only:
         for rpc_server in settings.RPC_SERVERS:
             emit(f"-> Checking remote rpc: {rpc_server.hostname}:{rpc_server.tcpport}", log_sink)
+            logger.info(f"DEBUG - {rpc_server}")
             rpc.ensure_remote_rpc(5, rpc_server, log_sink=log_sink)
 
     all_endpoints = []
