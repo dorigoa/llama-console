@@ -15,4 +15,5 @@ class Server:
     platform: str
     cachepath: Path
     binarypath: Path
+    type: ServerType
 

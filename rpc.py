@@ -36,7 +36,7 @@ def ensure_remote_rpc(timeout: int,
     if rpc.platform == "Windows":
         for attempt in range(1, 11):
             if tcp_connect(rpc.hostname, rpc.tcpport, 2):
-                emit(f"->Remote RPC on {rpc.hostname}:{rpc.tcpport} is now reachable", log_sink)
+                emit(f"-> Remote RPC on {rpc.hostname}:{rpc.tcpport} is now reachable", log_sink)
                 return
             emit(f"-> RPC on on {rpc.hostname}:{rpc.tcpport} not reachable yet, attempt {attempt}/10 to start it", log_sink)
             
