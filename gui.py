@@ -333,7 +333,7 @@ class LlamaManager:
 
         files = model_finder.discover_model_files(model_folder)
         
-        emit("--- Start requested ---", ui_log)
+        emit("------ Start requested ------", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
         emit(f"RPC server(s)  : {",".join( utils.get_all_rpc_servers() )}", ui_log)
         emit(f"Selected model : {model_name}", ui_log)
@@ -347,7 +347,7 @@ class LlamaManager:
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
         if files.mmproj and load_mmproj:
             emit(f"MMProj file    : {files.mmproj.name}", ui_log)
-        emit(f"----------------------", ui_log)
+        emit(f"-----------------------------", ui_log)
         
         try:
             cmd = await asyncio.to_thread(
