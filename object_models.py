@@ -3,10 +3,10 @@ from enum import Enum, auto, StrEnum, unique
 from dataclasses import dataclass
 from pathlib import Path
 
-# @unique
-# class ServerType(Enum):
-#     RPCSERVER = auto()
-#     LLAMASERVER = auto()
+@unique
+class ServerType(Enum):
+    RPCSERVER = auto()
+    LLAMASERVER = auto()
 
 @dataclass
 class Server:
