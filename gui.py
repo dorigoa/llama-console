@@ -353,7 +353,7 @@ class LlamaManager:
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 #model_folder,
-                files
+                files,
                 ui_log,
                 run_local_only=run_local_only,
                 tensorsplit=shard_balance,
