@@ -40,8 +40,8 @@ def ensure_remote_rpc(timeout: int,
                 return
             emit(f"-> RPC on on {rpc.hostname}:{rpc.tcpport} not reachable yet, attempt {attempt}/10 to start it", log_sink)
             
-            remote_cmd = (f'schtasks /Create /TN llama-rpc-server-manual /TR "C:\\llama.cpp\\build\\bin\\Release\\rpc-server.exe --host {rpc.hostname} --port {rpc.tcpport} -c" /SC ONCE /ST 23:59 /F')
-            emit(f"-> Executing {remote_cmd}", log_sink)
+            remote_cmd = (f'schtasks /Create /TN llama-rpc-server-manual /TR "{rpc.binarypath} --host {rpc.hostname} --port {rpc.tcpport} -c" /SC ONCE /ST 23:59 /F')
+            emit(f"-> Executing ssh {rpc.hostname} {remote_cmd}", log_sink)
             subprocess.run(["ssh", rpc.hostname, remote_cmd], check=True)
             
             remote_cmd = ('schtasks /Run /TN llama-rpc-server-manual')
