@@ -30,7 +30,7 @@ class Settings:
             bindaddress=None,
             platform="Windows",
             cachepath=Path("/Volumes/Home/llama.cpp/"),
-            binarypath=Path(r"C:\llama.cpp\build\bin\Release\rpc-server.exe"),
+            binarypath=Path(r"C:\llama.cpp\bin\rpc-server.exe"),
             type=ServerType.RPCSERVER
         ),
     ])
