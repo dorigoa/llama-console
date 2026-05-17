@@ -12,6 +12,8 @@ from urllib.request import Request, urlopen
 import re
 from nicegui import ui
 
+import devices
+
 from llama_command import get_llama_command
 from config_manager import get_settings
 from logging_utils import emit, setup_console_logging
@@ -359,6 +361,19 @@ class LlamaManager:
         emit(f"-----------------------------", ui_log)
         
         try:
+            if run_local_only:
+                gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, ui_log)
+            else:
+                gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, ui_log)
+        except Exception as exc:
+            msg = f"Device discovery failed: {exc}"
+            emit(msg, ui_log)
+            notify_user(msg, type="negative")
+            status_label.set_text("llama-server status: device discovery failed")
+            status_detail_label.set_text(str(exc))
+            return False
+
+        try:
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 files,
@@ -370,6 +385,7 @@ class LlamaManager:
                 top_p=top_p,
                 top_k=top_k,
                 load_mmproj=load_mmproj,
+                gpus=gpus,
             )
 
             cmd = [str(arg) for arg in cmd]
@@ -379,7 +395,7 @@ class LlamaManager:
             emit("-> Follows the llama-server stdout ", ui_log)
             emit("->", ui_log)
             emit("->", ui_log)
-            #emit("-> Launching llama-server process...", ui_log)
+            
             self.process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,

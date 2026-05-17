@@ -2,7 +2,7 @@ from __future__ import annotations
 from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 
-import devices
+#import devices
 from model_finder import ModelFiles
 import rpc
 
@@ -21,6 +21,7 @@ def get_llama_command(
         top_p: float = 0.8,
         top_k: int = 40,
         load_mmproj: bool = False,
+        gpus: str | None = None,
         ) -> list[str]:
     
     if not run_local_only:
@@ -32,10 +33,10 @@ def get_llama_command(
     all_endpoints = []
     all_endpoints.extend(f"{s.hostname}:{s.tcpport}" for s in settings.RPC_SERVERS)
 
-    if not run_local_only:        
-        gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, log_sink=log_sink)
-    else:
-        gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, log_sink=log_sink)
+    # if not run_local_only:        
+    #     gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, log_sink=log_sink)
+    # else:
+    #     gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, log_sink=log_sink)
 
     cmd: list[str] = []
 
