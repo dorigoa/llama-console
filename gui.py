@@ -628,6 +628,59 @@ with ui.header().classes("items-center justify-between"):
     ui.button("Stop Model", on_click=manager.stop_server, icon="stop", color="red")
 
 #_____________________________________________________________________________
+async def ping_servers() -> dict[str, float]:
+    ping_results = {}
+    
+    servers_to_ping = []
+    
+    # Add RPC servers
+    for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
+        servers_to_ping.append(server.hostname)
+    
+    # Add main llama server
+    #servers_to_ping.append(settings.LLAMA_SERVER)
+    
+    # Ping each server
+    for server in servers_to_ping:
+        try:
+            # Use a timeout to avoid hanging
+            ping_time = await asyncio.wait_for(
+                asyncio.to_thread(utils.ping, server), 
+                timeout=5.0
+            )
+            ping_results[server] = ping_time if ping_time is not None else float('inf')
+        except asyncio.TimeoutError:
+            ping_results[server] = float('inf')
+        except Exception as e:
+            logger.error(f"Error pinging {server}: {e}")
+            ping_results[server] = float('inf')
+    
+    return ping_results
+
+#_____________________________________________________________________________
+async def update_ping_status() -> None:
+    ping_results = await ping_servers()
+    
+    for label in ping_labels.values():
+        label.set_text("Pinging...")
+    
+    for hostname, ping_time in ping_results.items():
+        if hostname in ping_labels:
+            if ping_time == float('inf'):
+                ping_labels[hostname].set_text("Ping failed")
+            else:
+                ping_labels[hostname].set_text(f"{ping_time:.2f} ms")
+
+#_____________________________________________________________________________
+async def refresh_ping_status() -> None:
+    """Refresh ping status for all servers."""
+    await update_ping_status()
+
+#_____________________________________________________________________________
+# Global dictionary to store ping labels
+ping_labels: dict[str, ui.label] = {}
+
+#_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.card().classes("w-full p-4"):
         status_label = ui.label("llama-server status: not checked yet").classes("font-bold")
@@ -642,6 +695,24 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 icon="open_in_new",
             )
             status_chat_button.visible = False
+
+    ####################################
+    with ui.card().classes("w-full p-4"):
+        ui.label("Server Ping Status").classes("font-bold")
+
+        for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
+            with ui.row().classes("items-center gap-2"):
+                ui.label(f"{server.hostname} ({server.type.value}):").classes("w-40")
+                ping_labels[server.hostname] = ui.label("Pinging...").classes("font-mono")
+
+        def _schedule_ping_refresh() -> None:
+            """Schedule a single execution of `refresh_ping_status`."""
+            asyncio.create_task(refresh_ping_status())
+
+        ui.timer(0.2, _schedule_ping_refresh, once=True)
+
+        ui.timer(20.0, _schedule_ping_refresh)
+    ####################################
 
     with ui.card().classes("w-full p-4"):
         ui.label("Select a model").classes("text-subtitle1")
