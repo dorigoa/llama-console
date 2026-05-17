@@ -93,7 +93,7 @@ def ping(hostname: str, count: int = 4):
     for _ in range(count):
         latency = ping3.ping(hostname, timeout=5)
         if latency is not None and latency > 0:
-            latencies.append(latency)
+            latencies.append(latency*1000)
     #print(f"{hostname}: {latency}")
     if latencies:
         return statistics.mean(latencies)
