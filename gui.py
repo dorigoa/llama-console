@@ -717,15 +717,17 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ui.timer(20.0, _schedule_ping_refresh)
     ####################################
 
+    models = available_model_names()
+    last_started = utils.load_last_launched_model()
+    if not last_started:
+        last_started = next(iter(models))
+    
     with ui.card().classes("w-full p-4"):
         ui.label("Select a model").classes("text-subtitle1 font-bold")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
 
-            models = available_model_names()
-            last_started = utils.load_last_launched_model()
-            if not last_started:
-                last_started = next(iter(models))
+            
             
             model_select = ui.select(
                 options=models,
