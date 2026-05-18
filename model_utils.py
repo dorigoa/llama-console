@@ -190,4 +190,4 @@ def discover_available_models( ) -> dict[str, ModelConfig]:
 
 
 
-AVAILABLE_MODELS: dict[str, ModelConfig] = discover_available_models(settings.MODEL_BASE_DIR)
+AVAILABLE_MODELS: dict[str, ModelConfig] = discover_available_models( )
