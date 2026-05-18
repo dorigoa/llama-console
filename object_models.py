@@ -5,8 +5,8 @@ from pathlib import Path
 
 @unique
 class ServerType(Enum):
-    RPCSERVER = auto()
-    LLAMASERVER = auto()
+    RPCSERVER = "rpc"#auto()
+    LLAMASERVER = "llama"#auto()
 
 @dataclass
 class Server:
