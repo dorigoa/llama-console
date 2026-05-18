@@ -235,15 +235,6 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         
         chat_url = await get_browser_based_llama_url()
 
-        #chat_url = ui.context.client.request.url
-        
-        #logger.info(f"DEBUG chat url before={chat_url}")
-        #emit(f"DEBUG chat url before={chat_url}", ui_log)
-        # if "127.0.0.1" not in str(chat_url):
-        #     chat_url=chat_url.replace("http","https")
-        #     chat_url=chat_url.replace(":8088","")
-        # #emit(f"DEBUG chat url after={chat_url}", ui_log)
-        #logger.info(f"DEBUG chat url after={chat_url}")
         status_label.set_text("llama-server status: already running")
         status_detail_label.set_text(
             f"Detected endpoint: {chat_url} | Model: {display_model} "
@@ -338,9 +329,6 @@ class LlamaManager:
             status_detail_label.set_text(str(exc))
             notify_user(msg, type="negative")
             return False
-
-        #all_endpoints = utils.get_all_rpc_servers()
-        #all_rpc = ",".join(all_endpoints)
 
         files = model_finder.discover_model_files(model_folder)
         
@@ -491,7 +479,8 @@ class LlamaManager:
                                 "temperature": temperature,
                                 "top_p": top_p,
                                 "top_k": top_k,
-                                "shard_balance": shard_balance
+                                "shard_balance": shard_balance,
+                                "last_started": True,
                             }
                             params.save_param(model_name, model_persist_data)
 
@@ -689,11 +678,9 @@ async def update_ping_status() -> None:
 
 #_____________________________________________________________________________
 async def refresh_ping_status() -> None:
-    """Refresh ping status for all servers."""
     await update_ping_status()
 
 #_____________________________________________________________________________
-# Global dictionary to store ping labels
 ping_labels: dict[str, ui.label] = {}
 
 #_____________________________________________________________________________
@@ -737,7 +724,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
             model_select = ui.select(
                 options=available_model_names(),#next(iter(available_model_names()), None),
-                value=next(iter(available_model_names()), None),
+                value=utils.load_last_launched_model() | next(iter(available_model_names()), None),
                 label="Select a model from the list below...",
                 on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
@@ -748,7 +735,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( next(iter(available_model_names()), None) )
             context_select = ui.select(
                 options=utils.configured_context_options(),
-                value=ctx,#utils.normalize_context_size_for_select( ctx ),
+                value=ctx,
                 label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
@@ -916,12 +903,6 @@ emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
 emit(f"Available models: {len(model_utils.AVAILABLE_MODELS)}", None)
 emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
-
-#from nicegui.context import client
-#ui.label(f'URL: {client.request.url}')
-#ui.label(f'Path: {client.request.url.path}')
-##ui.label(f'Query: {client.request.url.query}')
-#emit(f"URL={client.request.url}")
 
 #_____________________________________________________________________________
 ui.run(
