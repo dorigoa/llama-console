@@ -718,9 +718,9 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     ####################################
 
     models = available_model_names()
-    #last_started = utils.load_last_launched_model()
-    #if not last_started:
-    last_started = next(iter(models), None)
+    last_started = utils.load_last_launched_model()
+    if not last_started:
+        last_started = next(iter(models))
     
     with ui.card().classes("w-full p-4"):
         ui.label("Select a model").classes("text-subtitle1 font-bold")
@@ -736,17 +736,10 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
 
-            async def load_last_started_model_at_boot() -> None:
-                last_started_model = await utils.load_last_launched_model()
-                if last_started_model in models:
-                    model_select.set_value(last_started_model)
-                    update_data_from_model()
-            ui.timer(0.1, load_last_started_model_at_boot, once=True)
-
             model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
-            ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( last_started )#next(iter(available_model_names()), None) )
+            ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( next(iter(available_model_names()), None) )
             context_select = ui.select(
                 options=utils.configured_context_options(),
                 value=ctx,
