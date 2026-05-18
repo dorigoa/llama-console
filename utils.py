@@ -1,9 +1,8 @@
 import os
-import json
 import ping3
 import signal
 import statistics
-from pathlib import Path
+
 from config_manager import get_settings
 
 settings = get_settings()
@@ -99,23 +98,3 @@ def ping(hostname: str, count: int = 4):
     if latencies:
         return statistics.mean(latencies)
     return None
-
-#_____________________________________________________________________________
-async def load_last_launched_model() -> str:
-    with Path(settings.PERSIST_FILE).open("r", encoding="utf-8") as fh:
-        data = json.load(fh)
-
-    if not isinstance(data, dict):
-        raise ValueError("JSON must contain a mapping object at root level.")
-
-    for model_name, params in data.items():
-        if not isinstance(params, dict):
-            raise ValueError(
-                f"Parameters for model '{model_name}' should be a dict, "
-                f"found {type(params)!r}."
-            )
-        if 'last_started' not in params or not params['last_started']:
-            continue
-        else:
-            return model_name
-        return None

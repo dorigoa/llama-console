@@ -33,9 +33,6 @@ LLAMA_READY_LOG_MARKERS = (
 
 params = JsonParams( settings.PERSIST_FILE )
 
-model_names = []
-first_model = ""
-
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
     """Show a persistent, manually dismissible NiceGUI notification."""
@@ -62,10 +59,8 @@ def ui_log(message: str) -> None:
         raise
 
 #_____________________________________________________________________________
-def available_model_names( refresh: bool = False ) -> list[str]:
-    if refresh:
-        model_utils.refresh_available_models()
-    #model_utils.AVAILABLE_MODELS = model_utils.discover_available_models(settings.MODEL_BASE_DIR)
+def available_model_names() -> list[str]:
+    model_utils.AVAILABLE_MODELS = model_utils.discover_available_models(settings.MODEL_BASE_DIR)
     return sorted(model_utils.AVAILABLE_MODELS.keys(), key=str.lower)
 
 #_____________________________________________________________________________
@@ -111,7 +106,7 @@ def update_data_from_model() -> None:
 def refresh_model_list() -> None:
     """Reload available models and refresh the model select widget."""
     current_model = str(model_select.value) if model_select.value else None
-    model_names = available_model_names( refresh = True )
+    model_names = available_model_names()
 
     if current_model in model_names:
         selected_model = current_model
@@ -741,8 +736,8 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
 
             model_select = ui.select(
-                options=model_names,#available_model_names(),#next(iter(available_model_names()), None),
-                value=first_model,#next(iter(available_model_names()), None),
+                options=available_model_names(),#next(iter(available_model_names()), None),
+                value=next(iter(available_model_names()), None),
                 label="Select a model from the list below...",
                 on_change=lambda _: update_data_from_model(),
             ).classes("flex-1")
@@ -927,10 +922,6 @@ emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
 #ui.label(f'Path: {client.request.url.path}')
 ##ui.label(f'Query: {client.request.url.query}')
 #emit(f"URL={client.request.url}")
-
-model_names = available_model_names()
-
-first_model = next(iter(model_names), None)
 
 #_____________________________________________________________________________
 ui.run(
