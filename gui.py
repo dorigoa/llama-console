@@ -65,27 +65,28 @@ def update_data_from_model( M: Model ) -> None:
         top_p_input.set_value(f"{float(settings.DEFAULT_TOP_P):.1f}")
         top_k_input.set_value(f"{int(settings.DEFAULT_TOP_K)}")
         return
-    persisted = persist.get_params_handler().get_param(M.model_name)
+    try:
+        all_persisted_params = persist.get_params_handler().load_params()
+        persisted = all_persisted_params.get(M.model_name, {})
+    except Exception as exc:
+        emit(f"Could not load persisted parameters: {exc}", ui_log)
+        persisted = {}
+    context_select.set_value(
+        persisted.get("context_size", M.ctxsize)
+    )
+    temperature_select.set_value(
+        f"{float(persisted.get('temperature', M.temperature)):.1f}"
+    )
+    top_p_input.set_value(
+        str(persisted.get("top_p", M.top_p))
+    )
+    top_k_input.set_value(
+        str(persisted.get("top_k", M.top_k))
+    )
     if persisted:
-        context_select.set_value(
-            persisted.get("context_size", M.ctxsize)
-        )
-        temperature_select.set_value(
-            f"{float(persisted.get('temperature', M.temperature)):.1f}"
-        )
-        top_p_input.set_value(
-            str(persisted.get("top_p", M.top_p))
-        )
-        top_k_input.set_value(
-            str(persisted.get("top_k", M.top_k))
-        )
         emit(f"Loaded persisted parameters for model: {M.model_name}", ui_log)
     else:
-        context_select.set_value(M.ctxsize)
-        temperature_select.set_value(f"{float(M.temperature):.1f}")
-        top_p_input.set_value(str(M.top_p))
-        top_k_input.set_value(str(M.top_k))
-        emit(f"No persisted parameters found for model: {M.model_name}; using defaults", ui_log)
+        emit(f"No persisted parameters for model: {M.model_name}; using model defaults", ui_log)
 
     # if M:
     #     context_select.set_value( M.ctxsize )
