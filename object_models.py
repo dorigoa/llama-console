@@ -31,5 +31,5 @@ class Model:
     top_p: float
     top_k: int
     shard_balance: str
-    last_started: bool
+    last_started: int
 

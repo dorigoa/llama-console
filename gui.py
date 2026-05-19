@@ -10,6 +10,7 @@ from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 from object_models import Model
 import re
+import time
 from nicegui import ui
 
 import devices
@@ -115,7 +116,6 @@ def refresh_model_list() -> None:
 
 #_____________________________________________________________________________
 def _run_command(args: list[str]) -> subprocess.CompletedProcess[str]:
-    """Run a small local inspection command without raising on non-zero exit."""
     return subprocess.run(
         args,
         text=True,
@@ -395,7 +395,7 @@ class LlamaManager:
                 top_p=M.top_p,
                 top_k=M.top_k,
                 shard_balance=M.shard_balance,
-                last_started=False,
+                last_started=0,
             )
             self._reader_task = asyncio.create_task(self._read_process_output(M, self.process))
 
@@ -473,7 +473,7 @@ class LlamaManager:
                                 "top_p": M.top_p,
                                 "top_k": M.top_k,
                                 "shard_balance": M.shard_balance,
-                                "last_started": True,
+                                "last_started": int(time.time()),
                             }
                             persist.get_params_handler().save_param(M.model_name, model_persist_data)
                             

@@ -15,25 +15,17 @@ def get_all_rpc_servers() -> list[str]:
 
 #_____________________________________________________________________________
 def _format_context_size(value: int) -> str:
-    """Human-readable label for context size values."""
     if value >= 1024 and value % 1024 == 0:
         return f"{value // 1024}k"
     return str(value)
 
 #_____________________________________________________________________________
 def configured_context_options() -> dict[int, str]:
-    """Return NiceGUI select options for context sizes.
-    NiceGUI expects dict options in the form {value: label}; therefore
-    the selected value remains the integer context size, while the UI
-    shows the compact label such as "32k".
-    """
     values = settings.CONTEXT_SIZE_OPTIONS
-    
     return {int(v): _format_context_size(int(v)) for v in values}
     
 #_____________________________________________________________________________
 def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple[list[int], list[str]]:
-    """Terminate, then force-kill if required. Returns affected PIDs and error strings."""
     import time
 
     current_pid = os.getpid()
