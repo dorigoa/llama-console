@@ -827,7 +827,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
                 
             model_name = str(model_select.value)
-            m = model_utils.get_model_by_name[model_name]
+            m = model_utils.get_model_by_name()
             started = await manager.start_server(model_name, 
                                                  m,
                                                  run_local_only,)
