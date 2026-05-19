@@ -53,23 +53,50 @@ def ui_log(message: str) -> None:
         raise
 
 def update_data_from_modelname( modelname: str ) -> None:
+    #M = model_utils.get_model_by_name(modelname)
     update_data_from_model( model_utils.get_model_by_name( modelname ) )
 
 #_____________________________________________________________________________
 def update_data_from_model( M: Model ) -> None:
-    
-    #M = model_utils.get_model_by_name( modelname )
 
-    if M:
-        context_select.set_value( M.ctxsize )
-        temperature_select.set_value(f"{float(M.temperature):.1f}")
-        top_p_input.set_value(f"{float(M.top_p):.1f}")
-        top_k_input.set_value(f"{int(M.top_k)}")
-    else:
-        context_select.set_value( settings.DEFAULT_CONTEXT_SIZE )
+    if M is None:
+        context_select.set_value(settings.DEFAULT_CONTEXT_SIZE)
         temperature_select.set_value(f"{float(settings.DEFAULT_TEMP):.1f}")
         top_p_input.set_value(f"{float(settings.DEFAULT_TOP_P):.1f}")
         top_k_input.set_value(f"{int(settings.DEFAULT_TOP_K)}")
+        return
+    persisted = persist.get_params_handler().get_param(M.model_name)
+    if persisted:
+        context_select.set_value(
+            persisted.get("context_size", M.ctxsize)
+        )
+        temperature_select.set_value(
+            f"{float(persisted.get('temperature', M.temperature)):.1f}"
+        )
+        top_p_input.set_value(
+            str(persisted.get("top_p", M.top_p))
+        )
+        top_k_input.set_value(
+            str(persisted.get("top_k", M.top_k))
+        )
+        emit(f"Loaded persisted parameters for model: {M.model_name}", ui_log)
+    else:
+        context_select.set_value(M.ctxsize)
+        temperature_select.set_value(f"{float(M.temperature):.1f}")
+        top_p_input.set_value(str(M.top_p))
+        top_k_input.set_value(str(M.top_k))
+        emit(f"No persisted parameters found for model: {M.model_name}; using defaults", ui_log)
+
+    # if M:
+    #     context_select.set_value( M.ctxsize )
+    #     temperature_select.set_value(f"{float(M.temperature):.1f}")
+    #     top_p_input.set_value(f"{float(M.top_p):.1f}")
+    #     top_k_input.set_value(f"{int(M.top_k)}")
+    # else:
+    #     context_select.set_value( settings.DEFAULT_CONTEXT_SIZE )
+    #     temperature_select.set_value(f"{float(settings.DEFAULT_TEMP):.1f}")
+    #     top_p_input.set_value(f"{float(settings.DEFAULT_TOP_P):.1f}")
+    #     top_k_input.set_value(f"{int(settings.DEFAULT_TOP_K)}")
 
 #_____________________________________________________________________________
 def refresh_model_list() -> None:
@@ -675,6 +702,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ).classes("flex-[1] mt-2")
 
         async def start_selected_model() -> None:
+            m = model_utils.get_model_by_name(str(model_select.value))
             if not model_select.value:
                 emit("Start ignored: no model selected", ui_log)
                 notify_user("Select a model!", type="warning")
@@ -742,7 +770,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 else:
                     _shard_balance = requested_shard_balance
 
-            m = model_utils.get_model_by_name(str(model_select.value))
+            #m = model_utils.get_model_by_name(str(model_select.value))
             started = await manager.start_server(m, bool(mmproj_select.value), bool(run_local_only_checkbox.value), _shard_balance )
 
             if started:
