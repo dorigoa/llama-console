@@ -17,10 +17,13 @@ def get_llama_command(
         gpus: str = None,
         ) -> list[str]:
 
+    emit(f"-> Called with Model={M}", log_sink)
+    logger.info(f"DEBUG - Called with Model={M}")
+
     if not run_local_only:
         for rpc_server in settings.RPC_SERVERS:
             emit(f"-> Checking remote rpc: {rpc_server.hostname}:{rpc_server.tcpport}", log_sink)
-            logger.info(f"DEBUG - {rpc_server}")
+            #logger.info(f"DEBUG - {rpc_server}")
             rpc.ensure_remote_rpc(rpc_server, log_sink=log_sink)
 
     all_endpoints = []
