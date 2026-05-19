@@ -3,8 +3,6 @@ from typing import List, Optional
 from object_models import Server, ServerType
 from pathlib import Path
 
-
-
 @dataclass
 class Settings:
     UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
