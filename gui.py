@@ -336,7 +336,7 @@ class LlamaManager:
         emit(f"Sharding       : {M.shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
         if M.mmproj_path and load_mmproj:
-            emit(f"MMProj file    : {str(M.mmproj)}", ui_log)
+            emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
         emit(f"-----------------------------", ui_log)
         
         try:
