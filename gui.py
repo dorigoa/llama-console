@@ -356,14 +356,8 @@ class LlamaManager:
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 M,
-#                M.model_path,
                 ui_log,
                 run_local_only=run_local_only,
-                #tensorsplit=M.shard_balance,
-                # ctxsize=M.context_size,
-                # temperature=M.temperature,
-                # top_p=Mtop_p,
-                # top_k=top_k,
                 load_mmproj=load_mmproj,
                 gpus=gpus,
             )

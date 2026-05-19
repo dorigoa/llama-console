@@ -2,8 +2,6 @@ from __future__ import annotations
 from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 from object_models import Model
-#import devices
-#from model_finder import ModelFiles
 import rpc
 
 settings = get_settings()
@@ -13,20 +11,11 @@ logger = setup_console_logging()
 #_____________________________________________________________________________
 def get_llama_command(
         M: Model,
-        #files: ModelFiles = None,              
         log_sink: LogSink = None, 
         run_local_only: bool = False,
-        # tensorsplit: str = "1,1",
-        # ctxsize: int = 32768,
-        # temperature: float = 0.5,
-        # top_p: float = 0.8,
-        # top_k: int = 40,
         load_mmproj: bool = False,
         gpus: str = None,
         ) -> list[str]:
-    
-    #if not files:
-    #    raise ValueError("files must not be None")
 
     if not run_local_only:
         for rpc_server in settings.RPC_SERVERS:
@@ -36,11 +25,6 @@ def get_llama_command(
 
     all_endpoints = []
     all_endpoints.extend(f"{s.hostname}:{s.tcpport}" for s in settings.RPC_SERVERS)
-
-    # if not run_local_only:        
-    #     gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, log_sink=log_sink)
-    # else:
-    #     gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, log_sink=log_sink)
 
     cmd: list[str] = []
 
@@ -56,8 +40,8 @@ def get_llama_command(
 
     if not run_local_only:
         cmd.extend(["--rpc", f"{",".join(all_endpoints)}",
-                   "--split-mode", str(settings.DEFAULT_SPLIT_MODE),
-                   "--tensor-split", str(M.shard_balance),
+                   "--split-mode", settings.DEFAULT_SPLIT_MODE,
+                   "--tensor-split", M.shard_balance,
                    ])
 
     cmd.extend([
@@ -76,7 +60,7 @@ def get_llama_command(
     #if temperature is not None:
     cmd.extend(["--temp", f"{float(M.temperature):.1f}"])
 
-    if M.mmproj and load_mmproj:
-        cmd.extend(["--mmproj", str(M.mmproj)])
+    if M.mmproj_path and load_mmproj:
+        cmd.extend(["--mmproj", str(M.mmproj_path)])
 
     return [str(arg) for arg in cmd]
