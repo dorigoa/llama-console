@@ -285,7 +285,8 @@ class LlamaManager:
             emit("->", ui_log)
             emit("->", ui_log)
             
-            self.process = await asyncio.create_subprocess_exec(
+            #self.process = await asyncio.create_subprocess_exec(
+            process = await asyncio.create_subprocess_exec(
                 *cmd,
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
@@ -311,11 +312,14 @@ class LlamaManager:
                 shard_balance=shard_balance,
                 last_started=0,
             )
-            self._reader_task = asyncio.create_task(self._read_process_output(M, self.process))
+            #self._reader_task = asyncio.create_task(self._read_process_output(M, self.process))
+            self._reader_task = asyncio.create_task(self._read_process_output(M, process))
 
             await asyncio.sleep(0.5)
-            if self.process.returncode is not None:
-                emit(f"llama-server exited immediately with return code {self.process.returncode}", ui_log)
+            #if self.process.returncode is not None:
+            if process.returncode is not None:
+                #emit(f"llama-server exited immediately with return code {self.process.returncode}", ui_log)
+                emit(f"llama-server exited immediately with return code {process.returncode}", ui_log)
                 status_label.set_text("llama-server status: failed")
                 status_detail_label.set_text(f"Model {M.model_name} exited immediately")
                 notify_user(f"{M.model_name} exited before becoming ready", type="negative")
@@ -336,7 +340,8 @@ class LlamaManager:
                 return False
 
             if self.process.returncode is not None:
-                emit(f"llama-server exited before readiness completed with return code {self.process.returncode}", ui_log)
+                #emit(f"llama-server exited before readiness completed with return code {self.process.returncode}", ui_log)
+                emit(f"llama-server exited before readiness completed with return code {process.returncode}", ui_log)
                 status_label.set_text("llama-server status: failed")
                 status_detail_label.set_text(f"Model {M.model_name} exited before readiness completed")
                 notify_user(f"{M.model_name} exited before becoming ready", type="negative")
@@ -387,7 +392,7 @@ class LlamaManager:
                                 "temperature": temperature_select.value,#M.temperature,
                                 "top_p": top_p_input.value,#M.top_p,
                                 "top_k": top_k_input.value,#M.top_k,
-                                "shard_balance": ask_shard_balance, #M.shard_balance,
+                                "shard_balance": M.shard_balance,#ask_shard_balance, #M.shard_balance,
                                 "last_started": int(time.time()),
                             }
                             persist.get_params_handler().save_param(M.model_name, model_persist_data)
