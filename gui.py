@@ -19,7 +19,6 @@ from llama_command import get_llama_command
 from config_manager import get_settings
 from logging_utils import emit, setup_console_logging
 import model_utils
-#import model_finder
 import utils
 import persist
 
@@ -31,8 +30,6 @@ LLAMA_READY_LOG_MARKERS = (
     "server is listening on",
     "all slots are idle",
 )
-
-#params = JsonParams( settings.PERSIST_FILE )
 
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
@@ -54,35 +51,6 @@ def ui_log(message: str) -> None:
         if "client this element belongs to has been deleted" in str(exc):
             return
         raise
-
-#_____________________________________________________________________________
-# def persisted_data_for_model(model_name: Optional[str]) -> dict | None: #-> Optional[dict]:
-    
-#     if not model_name:
-#         return None
-
-#     try:
-#         persisted = params.load_params()
-#     except Exception as exc:
-#         emit(f"Could not load persisted parameters from {settings.PERSIST_FILE}: {exc}", None)
-#         return None
-
-#     if model_name not in persisted:
-#         return None
-
-#     try:
-#         return persisted[model_name]
-#     except (TypeError, ValueError):
-#         emit(f"Ignoring invalid persisted data for {model_name!r}: {persisted[model_name]!r}", None)
-#         return None
-
-#_____________________________________________________________________________
-# def selected_data_for_model(model_name: Optional[str]) -> tuple[int, float, float, int, str, bool]:
-    
-#     persisted_data = persisted_data_for_model(model_name)
-#     if persisted_data is not None:
-#         return persisted_data['context_size'], persisted_data['temperature'], persisted_data['top_p'], persisted_data['top_k'], persisted_data['shard_balance']
-#     return model_utils.default_context_size_for_model(model_name), model_utils.default_temp_for_model(model_name), model_utils.default_top_p_for_model( model_name ), model_utils.default_top_k_for_model( model_name ), model_utils.default_shard_balance_for_model( model_name )
 
 def update_data_from_modelname( modelname: str ) -> None:
     update_data_from_model( model_utils.get_model_by_name( modelname ) )
@@ -166,42 +134,9 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
         return json.loads(raw)
 
 #_____________________________________________________________________________
-# def _match_configured_model(detected_model: str) -> str:
-#     detected = detected_model.strip()
-#     detected_path = Path(detected)
-#     detected_name = detected_path.name
-#     detected_stem = detected_path.stem
-
-#     for logical_name, configured in model_utils.get_available_models(): #AVAILABLE_MODELS.items():
-#         try:
-#             main_path = model_utils.configured_model_path(configured)
-#         except TypeError as exc:
-#             emit(f"Skipping invalid model entry {logical_name!r}: {exc}", None)
-#             continue
-
-#         configured_path = Path(main_path).expanduser()
-#         folder = model_utils.path_to_model_folder(main_path)
-#         candidates = {
-#             logical_name,
-#             str(configured_path),
-#             configured_path.name,
-#             configured_path.stem,
-#             str(folder),
-#             folder.name,
-#         }
-#         if detected in candidates or detected_name in candidates or detected_stem in candidates:
-#             return logical_name
-
-#     return detected
-
-#_____________________________________________________________________________
 def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
     last_error: Optional[str] = None
 
-    # for endpoint, extractor in (
-    #     (""),
-    #     ("/props"),
-    # ):
     url = f"http://{settings.LLAMA_SERVER.bindaddress}:{settings.LLAMA_SERVER.tcpport}/v1/models"
     try:
         payload = _json_get(url)
@@ -289,15 +224,8 @@ class LlamaManager:
     async def start_server(self, 
                            M: Model,
                            load_mmproj: bool,
-#                           model_name: str, 
-#                           configured: Any, 
-#                           context_size: int, 
-#                           temperature: float, 
-#                           top_p: float, 
-#                           top_k: int, 
-#                           shard_balance: str, 
-#                           load_mmproj: bool,
-                           run_local_only: bool = False,) -> bool:
+                           run_local_only: bool = False,
+                           shard_balance: str | None = None ) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -309,31 +237,17 @@ class LlamaManager:
             emit(msg, ui_log)
             notify_user(msg, type="warning")
             return False
-
-        # try:
-        #     configured_path = model_utils.configured_model_path(configured)
-        #     model_folder = model_utils.path_to_model_folder(configured_path)
-        # except Exception as exc:
-        #     msg = f"Invalid model configuration for {M.model_name}: {exc}"
-        #     emit(msg, ui_log)
-        #     status_label.set_text("llama-server status: invalid model configuration")
-        #     status_detail_label.set_text(str(exc))
-        #     notify_user(msg, type="negative")
-        #     return False
-
-        #files = model_finder.discover_model_files(model_folder)
         
         emit("------ Start requested ------", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
         emit(f"RPC server(s)  : {",".join( utils.get_all_rpc_servers() )}", ui_log)
         emit(f"Selected model : {M.model_name}", ui_log)
         emit(f"Configured path: {str(M.model_path)}", ui_log)
-        #emit(f"Model folder   : {model_folder}", ui_log)
         emit(f"Context size   : {M.ctxsize}", ui_log)
         emit(f"Temperature    : {M.temperature}", ui_log)
         emit(f"Top_p          : {M.top_p}", ui_log)
         emit(f"Top_k          : {M.top_k}", ui_log)
-        emit(f"Sharding       : {M.shard_balance}", ui_log)
+        emit(f"Sharding       : shard_balance", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
         if M.mmproj_path and load_mmproj:
             emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
@@ -394,7 +308,7 @@ class LlamaManager:
                 temperature=M.temperature,
                 top_p=M.top_p,
                 top_k=M.top_k,
-                shard_balance=M.shard_balance,
+                shard_balance=shard_balance,
                 last_started=0,
             )
             self._reader_task = asyncio.create_task(self._read_process_output(M, self.process))
@@ -449,7 +363,8 @@ class LlamaManager:
             return False
 
     #_____________________________________________________________________________________
-    async def _read_process_output(self, M: Model,
+    async def _read_process_output(self, 
+                                   M: Model,
                                    process: asyncio.subprocess.Process) -> None:
         assert process.stdout is not None
 
@@ -468,11 +383,11 @@ class LlamaManager:
                             self._ready_event.set()
                             emit(f"llama-server readiness confirmed by log line: {text}", ui_log)
                             model_persist_data = {
-                                "context_size": M.ctxsize,#context_size,
-                                "temperature": M.temperature,#temperature,
-                                "top_p": M.top_p,
-                                "top_k": M.top_k,
-                                "shard_balance": M.shard_balance,
+                                "context_size": context_select.value,#M.ctxsize,
+                                "temperature": temperature_select.value,#M.temperature,
+                                "top_p": top_p_input.value,#M.top_p,
+                                "top_k": top_k_input.value,#M.top_k,
+                                "shard_balance": ask_shard_balance, #M.shard_balance,
                                 "last_started": int(time.time()),
                             }
                             persist.get_params_handler().save_param(M.model_name, model_persist_data)
@@ -567,8 +482,6 @@ class LlamaManager:
         status_chat_link.visible = False
         status_chat_button.visible = False
         notify_user("External server stopped", type="info")
-
-
 
 manager = LlamaManager()
 
@@ -823,7 +736,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                     _shard_balance = requested_shard_balance
 
             m = model_utils.get_model_by_name(str(model_select.value))
-            started = await manager.start_server(m, bool(mmproj_select.value), bool(run_local_only_checkbox.value), )
+            started = await manager.start_server(m, bool(mmproj_select.value), bool(run_local_only_checkbox.value), _shard_balance )
 
             if started:
                 chat_url = await get_browser_based_llama_url()
