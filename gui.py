@@ -198,18 +198,17 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
 def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
     last_error: Optional[str] = None
 
-    for endpoint, extractor in (
-        ("/v1/models", model_utils.extract_model_from_openai_models),
-        ("/props", model_utils.extract_model_from_props),
-    ):
-        url = f"http://{settings.LLAMA_SERVER.bindaddress}:{settings.LLAMA_SERVER.tcpport}{endpoint}"
-        try:
-            payload = _json_get(url)
-            model = extractor(payload)
-            return True, model, url, None
-        except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
-            last_error = f"{url}: {exc}"
-            continue
+    # for endpoint, extractor in (
+    #     (""),
+    #     ("/props"),
+    # ):
+    url = f"http://{settings.LLAMA_SERVER.bindaddress}:{settings.LLAMA_SERVER.tcpport}/v1/models"
+    try:
+        payload = _json_get(url)
+        model = (payload)
+        return True, model, url, None
+    except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
+        last_error = f"{url}: {exc}"
 
     return False, None, None, last_error
 
