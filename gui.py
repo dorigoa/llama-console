@@ -247,7 +247,7 @@ class LlamaManager:
         emit(f"Temperature    : {M.temperature}", ui_log)
         emit(f"Top_p          : {M.top_p}", ui_log)
         emit(f"Top_k          : {M.top_k}", ui_log)
-        emit(f"Sharding       : shard_balance", ui_log)
+        emit(f"Sharding       : {shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
         if M.mmproj_path and load_mmproj:
             emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
@@ -291,6 +291,7 @@ class LlamaManager:
                 stdout=asyncio.subprocess.PIPE,
                 stderr=asyncio.subprocess.STDOUT,
             )
+            self.process = process
 
             status_label.set_text("llama-server status: starting")
             status_detail_label.set_text(
@@ -339,7 +340,8 @@ class LlamaManager:
                 notify_user(msg, type="warning")
                 return False
 
-            if self.process.returncode is not None:
+            #if self.process.returncode is not None:
+            if process.returncode is not None:
                 #emit(f"llama-server exited before readiness completed with return code {self.process.returncode}", ui_log)
                 emit(f"llama-server exited before readiness completed with return code {process.returncode}", ui_log)
                 status_label.set_text("llama-server status: failed")
