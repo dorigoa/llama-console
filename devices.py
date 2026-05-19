@@ -5,7 +5,7 @@ from collections.abc import Callable
 from object_models import Server, ServerType
 from config_manager import get_settings
 from logging_utils import emit, LogSink
-
+import shlex
 settings = get_settings()
 
 #__________________________________________________________________________________________
@@ -18,10 +18,10 @@ def list_local_usable_devices(local: Server, log_sink: LogSink = None) -> str:
         if local.type != ServerType.LLAMASERVER:
             raise DeviceDiscoveryError(f"Provided server for local device discovery is not LLAMASERVER type")
         cmd = [
-            settings.LLAMA_SERVER.binarypath,
+            str(settings.LLAMA_SERVER.binarypath),
             "--list-devices",
         ]
-        emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
+        emit(f"-> Discovering devices: {' '.join(shlex.quote(str(x)) for x in cmd )}", log_sink)
         proc = subprocess.run(
             cmd,
             text=True,
@@ -71,13 +71,13 @@ def list_remote_usable_devices(rpcs: list[Server], log_sink: LogSink = None) -> 
         all.append( f"{rpc.hostname}:{rpc.tcpport}" )
 
     cmd = [
-        settings.LLAMA_SERVER.binarypath,
+        str(settings.LLAMA_SERVER.binarypath),
         "--rpc",
         f"{','.join(all)}",
         "--list-devices",
     ]
     
-    emit(f"-> Discovering devices: {' '.join(cmd)}", log_sink)
+    emit(f"-> Discovering devices: {' '.join(shlex.quote(str(x)) for x in cmd)}", log_sink)
 
     proc = subprocess.run(
         cmd,

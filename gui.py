@@ -800,7 +800,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Invalid Top_k!", type="warning")
                 return
                         
-            run_local_only = bool(run_local_only_checkbox.value)
+            #run_local_only = 
 
             model_name_for_default = str(model_select.value) if model_select.value else None
             #_ctx, _temp, _top_p, _top_k, persisted_shard_balance = selected_data_for_model(model_name_for_default)
@@ -823,7 +823,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                     _shard_balance = requested_shard_balance
 
             m = model_utils.get_model_by_name(str(model_select.value))
-            started = await manager.start_server(m, run_local_only,)
+            started = await manager.start_server(m, bool(mmproj_select.value), bool(run_local_only_checkbox.value), )
 
             if started:
                 chat_url = await get_browser_based_llama_url()
