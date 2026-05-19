@@ -335,7 +335,7 @@ class LlamaManager:
         emit(f"Top_k          : {M.top_k}", ui_log)
         emit(f"Sharding       : {M.shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
-        if M.mmproj and load_mmproj:
+        if M.mmproj_path and load_mmproj:
             emit(f"MMProj file    : {str(M.mmproj)}", ui_log)
         emit(f"-----------------------------", ui_log)
         
@@ -384,22 +384,22 @@ class LlamaManager:
 
             status_label.set_text("llama-server status: starting")
             status_detail_label.set_text(
-                f"Starting model: {model_name}; waiting for llama-server readiness log "
+                f"Starting model: {M.model_name}; waiting for llama-server readiness log "
                 "('server is listening on ...' or 'all slots are idle')"
             )
-            notify_user(f"Starting {model_name}...", type="info")
+            notify_user(f"Starting {M.model_name}...", type="info")
 
             self._ready_event = asyncio.Event()
             self._ready_reason = None
             M = Model(
-                model_name=model_name,
-                model_path=configured_path,
-                mmproj_path=files.mmproj.name,
-                ctxsize=context_size,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
-                shard_balance=shard_balance,
+                model_name=M.model_name,
+                model_path=str(M.model_path),
+                mmproj_path=str(M.mmproj_path),
+                ctxsize=M.ctxsize,
+                temperature=M.temperature,
+                top_p=M.top_p,
+                top_k=M.top_k,
+                shard_balance=M.shard_balance,
                 last_started=False,
             )
             self._reader_task = asyncio.create_task(self._read_process_output(M, self.process))
@@ -408,8 +408,8 @@ class LlamaManager:
             if self.process.returncode is not None:
                 emit(f"llama-server exited immediately with return code {self.process.returncode}", ui_log)
                 status_label.set_text("llama-server status: failed")
-                status_detail_label.set_text(f"Model {model_name} exited immediately")
-                notify_user(f"{model_name} exited before becoming ready", type="negative")
+                status_detail_label.set_text(f"Model {M.model_name} exited immediately")
+                notify_user(f"{M.model_name} exited before becoming ready", type="negative")
                 return False
 
             try:
@@ -429,19 +429,19 @@ class LlamaManager:
             if self.process.returncode is not None:
                 emit(f"llama-server exited before readiness completed with return code {self.process.returncode}", ui_log)
                 status_label.set_text("llama-server status: failed")
-                status_detail_label.set_text(f"Model {model_name} exited before readiness completed")
-                notify_user(f"{model_name} exited before becoming ready", type="negative")
+                status_detail_label.set_text(f"Model {M.model_name} exited before readiness completed")
+                notify_user(f"{M.model_name} exited before becoming ready", type="negative")
                 return False
 
             chat_url = await get_browser_based_llama_url()
             status_label.set_text("llama-server status: running")
             status_detail_label.set_text(
-                f"Started by this GUI | Model: {model_name} | Ready: {self._ready_reason or 'confirmed'}"
+                f"Started by this GUI | Model: {M.model_name} | Ready: {self._ready_reason or 'confirmed'}"
             )
             set_link_target(status_chat_link, chat_url)
             status_chat_link.visible = True
             status_chat_button.visible = True
-            notify_user(f"{model_name} is ready", type="positive")
+            notify_user(f"{M.model_name} is ready", type="positive")
             return True
 
         except Exception as exc:
