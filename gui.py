@@ -749,15 +749,24 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 notify_user("Invalid Top_k!", type="warning")
                 return
                         
-            #run_local_only = 
-
             model_name_for_default = str(model_select.value) if model_select.value else None
-            #_ctx, _temp, _top_p, _top_k, persisted_shard_balance = selected_data_for_model(model_name_for_default)
-            M = model_utils.get_model_by_name( model_name_for_default )
-            _shard_balance = str(M.shard_balance or settings.DEFAULT_SHARD_BALANCE)
+
+            try:
+                all_persisted_params = persist.get_params_handler().load_params()
+                persisted = all_persisted_params.get(model_name_for_default, {})
+            except Exception as exc:
+                emit(f"Could not load persisted shard balance: {exc}", ui_log)
+                persisted = {}
+
+            default_shard_balance = str(
+                persisted.get("shard_balance")
+                or m.shard_balance
+                or settings.DEFAULT_SHARD_BALANCE
+            )
+            _shard_balance = default_shard_balance
 
             if not bool(run_local_only_checkbox.value):
-                requested_shard_balance = await ask_shard_balance(_shard_balance)
+                requested_shard_balance = await ask_shard_balance(default_shard_balance)
                 if requested_shard_balance is None:
                     emit("Start cancelled: shard balance dialog closed", ui_log)
                     notify_user("Launch cancelled", type="warning")
@@ -771,8 +780,24 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 else:
                     _shard_balance = requested_shard_balance
 
-            #m = model_utils.get_model_by_name(str(model_select.value))
-            started = await manager.start_server(m, bool(mmproj_select.value), bool(run_local_only_checkbox.value), _shard_balance )
+            effective_model = Model(
+                model_name=m.model_name,
+                model_path=str(m.model_path),
+                mmproj_path=(str(m.mmproj_path) if m.mmproj_path else None),
+                ctxsize=context_size,
+                temperature=temperature,
+                top_p=top_p,
+                top_k=top_k,
+                shard_balance=_shard_balance,
+                last_started=0,
+            )
+
+            started = await manager.start_server(
+                effective_model,
+                bool(mmproj_select.value),
+                bool(run_local_only_checkbox.value),
+                _shard_balance,
+            )
 
             if started:
                 chat_url = await get_browser_based_llama_url()
