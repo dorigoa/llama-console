@@ -288,6 +288,7 @@ class LlamaManager:
     #_____________________________________________________________________________________
     async def start_server(self, 
                            M: Model,
+                           load_mmproj: bool,
 #                           model_name: str, 
 #                           configured: Any, 
 #                           context_size: int, 
@@ -309,33 +310,33 @@ class LlamaManager:
             notify_user(msg, type="warning")
             return False
 
-        try:
-            configured_path = model_utils.configured_model_path(configured)
-            model_folder = model_utils.path_to_model_folder(configured_path)
-        except Exception as exc:
-            msg = f"Invalid model configuration for {model_name}: {exc}"
-            emit(msg, ui_log)
-            status_label.set_text("llama-server status: invalid model configuration")
-            status_detail_label.set_text(str(exc))
-            notify_user(msg, type="negative")
-            return False
+        # try:
+        #     configured_path = model_utils.configured_model_path(configured)
+        #     model_folder = model_utils.path_to_model_folder(configured_path)
+        # except Exception as exc:
+        #     msg = f"Invalid model configuration for {M.model_name}: {exc}"
+        #     emit(msg, ui_log)
+        #     status_label.set_text("llama-server status: invalid model configuration")
+        #     status_detail_label.set_text(str(exc))
+        #     notify_user(msg, type="negative")
+        #     return False
 
-        files = model_finder.discover_model_files(model_folder)
+        #files = model_finder.discover_model_files(model_folder)
         
         emit("------ Start requested ------", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
         emit(f"RPC server(s)  : {",".join( utils.get_all_rpc_servers() )}", ui_log)
-        emit(f"Selected model : {model_name}", ui_log)
-        emit(f"Configured path: {configured_path}", ui_log)
-        emit(f"Model folder   : {model_folder}", ui_log)
-        emit(f"Context size   : {context_size}", ui_log)
-        emit(f"Temperature    : {temperature}", ui_log)
-        emit(f"Top_p          : {top_p}", ui_log)
-        emit(f"Top_k          : {top_k}", ui_log)
-        emit(f"Sharding       : {shard_balance}", ui_log)
+        emit(f"Selected model : {M.model_name}", ui_log)
+        emit(f"Configured path: {M.model_path}", ui_log)
+        #emit(f"Model folder   : {model_folder}", ui_log)
+        emit(f"Context size   : {M.ctxsize}", ui_log)
+        emit(f"Temperature    : {M.temperature}", ui_log)
+        emit(f"Top_p          : {M.top_p}", ui_log)
+        emit(f"Top_k          : {M.top_k}", ui_log)
+        emit(f"Sharding       : {M.shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
-        if files.mmproj and load_mmproj:
-            emit(f"MMProj file    : {files.mmproj.name}", ui_log)
+        if M.mmproj and load_mmproj:
+            emit(f"MMProj file    : {str(M.mmproj)}", ui_log)
         emit(f"-----------------------------", ui_log)
         
         try:
@@ -354,14 +355,15 @@ class LlamaManager:
         try:
             cmd = await asyncio.to_thread(
                 get_llama_command,
-                files,
+                M
+#                M.model_path,
                 ui_log,
                 run_local_only=run_local_only,
-                tensorsplit=shard_balance,
-                ctxsize=context_size,
-                temperature=temperature,
-                top_p=top_p,
-                top_k=top_k,
+                #tensorsplit=M.shard_balance,
+                # ctxsize=M.context_size,
+                # temperature=M.temperature,
+                # top_p=Mtop_p,
+                # top_k=top_k,
                 load_mmproj=load_mmproj,
                 gpus=gpus,
             )
@@ -826,15 +828,14 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                     _shard_balance = requested_shard_balance
 
             m = model_utils.get_model_by_name(str(model_select.value))
-            started = await manager.start_server(m,
-                                                 run_local_only,)
+            started = await manager.start_server(m, run_local_only,)
 
             if started:
                 chat_url = await get_browser_based_llama_url()
                 emit(f"->", ui_log)
                 emit(f"->", ui_log)
                 emit(f"-> Chat URL: {chat_url}", ui_log)
-                open_chat_dialog(model_name, chat_url)
+                open_chat_dialog(m.model_name, chat_url)
 
         ui.button("Launch Model", on_click=start_selected_model, icon="play_arrow").classes("mt-4")
 
