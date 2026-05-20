@@ -183,7 +183,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
     running, detected_model, url, error = await asyncio.to_thread(probe_existing_llama_server_sync)
 
     if running:
-        display_model = detected_model.model_name if detected_model else "unknown model"
+        display_model = detected_model if detected_model else "unknown model"
         
         chat_url = await get_browser_based_llama_url()
 
