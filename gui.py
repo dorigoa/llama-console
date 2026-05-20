@@ -165,7 +165,7 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
 def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
     last_error: Optional[str] = None
 
-    url = f"http://{settings.LLAMA_SERVER.bindaddress}:{settings.LLAMA_SERVER.tcpport}/v1/models"
+    url = f"http://{settings.LLAMA_SERVER_BIND}:{settings.LLAMA_SERVER_PORT}/v1/models"
     try:
         payload = _json_get(url)
         model = (payload)
@@ -201,7 +201,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         return True
 
     status_label.set_text("llama-server status: not detected")
-    status_detail_label.set_text(f"No server answered on local port {settings.LLAMA_SERVER.tcpport}")
+    status_detail_label.set_text(f"No server answered on local port {settings.LLAMA_SERVER_PORT}")
     status_chat_link.visible = False
     status_chat_button.visible = False
     if verbose:
@@ -210,7 +210,7 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
 #_____________________________________________________________________________
 async def get_browser_based_llama_url() -> str:
-    port = settings.LLAMA_SERVER.tcpport
+    port = settings.LLAMA_SERVER_PORT
     js = f"""
         (() => {{
             const hostname = window.location.hostname;
@@ -218,9 +218,9 @@ async def get_browser_based_llama_url() -> str:
         }})()
     """
     url = str(await ui.run_javascript(js))
-    if settings.LLAMA_SERVER.bindaddress not in url:
+    if settings.LLAMA_SERVER_BIND not in url:
         url=url.replace('http','https')
-        url=url.replace(f':{settings.LLAMA_SERVER.tcpport}','')
+        url=url.replace(f':{settings.LLAMA_SERVER_PORT}','')
     return url
 
 #_____________________________________________________________________________
@@ -482,7 +482,7 @@ class LlamaManager:
             notify_user("Server stopped", type="info")
             return
 
-        port = settings.LLAMA_SERVER.tcpport
+        port = settings.LLAMA_SERVER_PORT
         emit(f"No GUI-started process handle; looking for external listener on TCP port {port}...", ui_log)
         status_label.set_text("llama-server status: stopping external process")
         status_detail_label.set_text(f"Searching for listener on TCP port {port}")
