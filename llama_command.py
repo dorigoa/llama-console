@@ -31,8 +31,8 @@ def get_llama_command(
 
     cmd: list[str] = []
 
-    if not settings.LLAMA_SERVER:
-        raise Exception("Passed None settings.LLAMA_SERVER to get_llama_command")
+#    if not settings.LLAMA_SERVER_HOST:
+#        raise Exception("Passed None settings.LLAMA_SERVER to get_llama_command")
 
     cmd.extend([
         settings.LLAMA_SERVER_BIN,
