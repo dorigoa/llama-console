@@ -2,7 +2,6 @@ from __future__ import annotations
 from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 from object_models import Model
-#import rpc
 
 settings = get_settings()
 
