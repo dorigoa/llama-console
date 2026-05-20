@@ -35,9 +35,9 @@ def get_llama_command(
         raise Exception("Passed None settings.LLAMA_SERVER to get_llama_command")
 
     cmd.extend([
-        settings.LLAMA_SERVER.binarypath,
-        "--host", settings.LLAMA_SERVER.bindaddress,
-        "--port", settings.LLAMA_SERVER.tcpport,
+        settings.LLAMA_SERVER_BIN,
+        "--host", settings.LLAMA_SERVER_BIND,
+        "--port", settings.LLAMA_SERVER_PORT,
         "-m", str(M.model_path),
     ])
 

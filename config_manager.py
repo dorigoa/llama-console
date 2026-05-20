@@ -42,6 +42,10 @@ class Settings:
     RPC_SERVERS = "192.168.20.1:50000,192.168.30.2:50000"
     LOCAL_GPU = "MTL0"
     REMOTE_GPUS = "RPC0,RPC2,RPC3"
+    LLAMA_SERVER_HOST = "192.168.20.2"
+    LLAMA_SERVER_PORT = "8088"
+    LLAMA_SERVER_BIND = "127.0.0.1"
+    LLAMA_SERVER_BIN  = "/usr/local/bin/llama-server"
     
     OPENBROWSER: bool = True
 
