@@ -13,7 +13,7 @@ import re
 import time
 from nicegui import ui
 
-import devices
+#import devices
 
 from llama_command import get_llama_command
 from config_manager import get_settings
@@ -281,18 +281,18 @@ class LlamaManager:
             emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
         emit(f"-----------------------------", ui_log)
         
-        try:
-            if run_local_only:
-                gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, ui_log)
-            else:
-                gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, ui_log)
-        except Exception as exc:
-            msg = f"Device discovery failed: {exc}"
-            emit(msg, ui_log)
-            notify_user(msg, type="negative")
-            status_label.set_text("llama-server status: device discovery failed")
-            status_detail_label.set_text(str(exc))
-            return False
+        # try:
+        #     if run_local_only:
+        #         gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, ui_log)
+        #     else:
+        #         gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, ui_log)
+        # except Exception as exc:
+        #     msg = f"Device discovery failed: {exc}"
+        #     emit(msg, ui_log)
+        #     notify_user(msg, type="negative")
+        #     status_label.set_text("llama-server status: device discovery failed")
+        #     status_detail_label.set_text(str(exc))
+        #     return False
 
         try:
             cmd = await asyncio.to_thread(
@@ -301,7 +301,7 @@ class LlamaManager:
                 ui_log,
                 run_local_only=run_local_only,
                 load_mmproj=load_mmproj,
-                gpus=gpus,
+                #gpus=gpus,
             )
 
             cmd = [str(arg) for arg in cmd]
@@ -575,53 +575,53 @@ with ui.header().classes("items-center justify-between"):
     ui.button("Stop Model", on_click=manager.stop_server, icon="stop", color="red")
 
 #_____________________________________________________________________________
-async def ping_servers() -> dict[str, float]:
-    ping_results = {}
+# async def ping_servers() -> dict[str, float]:
+#     ping_results = {}
     
-    servers_to_ping = []
+#     servers_to_ping = []
     
-    # Add RPC servers
-    for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
-        servers_to_ping.append(server.hostname)
+#     # Add RPC servers
+#     for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
+#         servers_to_ping.append(server.hostname)
     
-    # Ping each server
-    for server in servers_to_ping:
-        try:
-            # Use a timeout to avoid hanging
-            ping_time = await asyncio.wait_for(
-                asyncio.to_thread(utils.ping, server), 
-                timeout=5.0
-            )
-            ping_results[server] = ping_time if ping_time is not None else float('inf')
-        except asyncio.TimeoutError:
-            ping_results[server] = float('inf')
-        except Exception as e:
-            logger.error(f"Error pinging {server}: {e}")
-            ping_results[server] = float('inf')
+#     # Ping each server
+#     for server in servers_to_ping:
+#         try:
+#             # Use a timeout to avoid hanging
+#             ping_time = await asyncio.wait_for(
+#                 asyncio.to_thread(utils.ping, server), 
+#                 timeout=5.0
+#             )
+#             ping_results[server] = ping_time if ping_time is not None else float('inf')
+#         except asyncio.TimeoutError:
+#             ping_results[server] = float('inf')
+#         except Exception as e:
+#             logger.error(f"Error pinging {server}: {e}")
+#             ping_results[server] = float('inf')
     
-    return ping_results
+#     return ping_results
 
 #_____________________________________________________________________________
-async def update_ping_status() -> None:
-    ping_results = await ping_servers()
+# async def update_ping_status() -> None:
+#     ping_results = await ping_servers()
     
-    for label in ping_labels.values():
-        label.set_text("Pinging...")
+#     for label in ping_labels.values():
+#         label.set_text("Pinging...")
     
-    for hostname, ping_time in ping_results.items():
-        if hostname in ping_labels:
-            if ping_time == float('inf'):
-                ping_labels[hostname].set_text("Ping failed")
-            else:
-                ping_labels[hostname].set_text(f"{ping_time:.2f} ms")
+#     for hostname, ping_time in ping_results.items():
+#         if hostname in ping_labels:
+#             if ping_time == float('inf'):
+#                 ping_labels[hostname].set_text("Ping failed")
+#             else:
+#                 ping_labels[hostname].set_text(f"{ping_time:.2f} ms")
 
-#_____________________________________________________________________________
-async def refresh_ping_status() -> None:
-    """Refresh ping status for all servers."""
-    await update_ping_status()
+# #_____________________________________________________________________________
+# async def refresh_ping_status() -> None:
+#     """Refresh ping status for all servers."""
+#     await update_ping_status()
 
-#_____________________________________________________________________________
-ping_labels: dict[str, ui.label] = {}
+# #_____________________________________________________________________________
+# ping_labels: dict[str, ui.label] = {}
 
 #_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
@@ -640,20 +640,20 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             status_chat_button.visible = False
 
     ####################################
-    with ui.card().classes("w-full p-4"):
-        ui.label("Server Ping Status").classes("font-bold")
+    # with ui.card().classes("w-full p-4"):
+    #     ui.label("Server Ping Status").classes("font-bold")
 
-        for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
-            with ui.row().classes("items-center gap-2"):
-                ui.label(f"{server.hostname} ({server.type.value}):").classes("w-40")
-                ping_labels[server.hostname] = ui.label("Pinging...").classes("font-mono")
+    #     for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
+    #         with ui.row().classes("items-center gap-2"):
+    #             ui.label(f"{server.hostname} ({server.type.value}):").classes("w-40")
+    #             ping_labels[server.hostname] = ui.label("Pinging...").classes("font-mono")
 
-        def _schedule_ping_refresh() -> None:
-            """Schedule a single execution of `refresh_ping_status`."""
-            asyncio.create_task(refresh_ping_status())
+    #     def _schedule_ping_refresh() -> None:
+    #         """Schedule a single execution of `refresh_ping_status`."""
+    #         asyncio.create_task(refresh_ping_status())
 
-        ui.timer(0.2, _schedule_ping_refresh, once=True)
-        ui.timer(20.0, _schedule_ping_refresh)
+    #     ui.timer(0.2, _schedule_ping_refresh, once=True)
+    #     ui.timer(20.0, _schedule_ping_refresh)
     ####################################
 
     with ui.card().classes("w-full p-4"):

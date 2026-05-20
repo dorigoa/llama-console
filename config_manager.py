@@ -9,36 +9,39 @@ class Settings:
     UI_HOST: str = "127.0.0.1"
     UI_PORT: int = 8080
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
-    RPC_SERVERS: list[Server] = field(default_factory=lambda: [
-        Server(
-            hostname="192.168.20.1",
-            tcpport=50000,
-            bindaddress=None,
-            platform="Darwin",
-            cachepath=Path("/Volumes/Home/llama.cpp/"),
-            binarypath=Path("/usr/local/bin/rpc-server"),
-            type=ServerType.RPCSERVER
-        ),
-        Server(
-            hostname="192.168.30.2",
-            tcpport=50000,
-            bindaddress=None,
-            platform="Windows",
-            cachepath=Path("/Volumes/Home/llama.cpp/"),
-            binarypath=Path(r"C:\llama.cpp\bin\rpc-server.exe"),
-            type=ServerType.RPCSERVER
-        ),
-    ])
+    # RPC_SERVERS: list[Server] = field(default_factory=lambda: [
+    #     Server(
+    #         hostname="192.168.20.1",
+    #         tcpport=50000,
+    #         bindaddress=None,
+    #         platform="Darwin",
+    #         cachepath=Path("/Volumes/Home/llama.cpp/"),
+    #         binarypath=Path("/usr/local/bin/rpc-server"),
+    #         type=ServerType.RPCSERVER
+    #     ),
+    #     Server(
+    #         hostname="192.168.30.2",
+    #         tcpport=50000,
+    #         bindaddress=None,
+    #         platform="Windows",
+    #         cachepath=Path("/Volumes/Home/llama.cpp/"),
+    #         binarypath=Path(r"C:\llama.cpp\bin\rpc-server.exe"),
+    #         type=ServerType.RPCSERVER
+    #     ),
+    # ])
     
-    LLAMA_SERVER: Server = field(default_factory=lambda: Server(
-            hostname="192.168.20.2",
-            tcpport=8088,
-            bindaddress="127.0.0.1",
-            platform="Darwin",
-            cachepath=None,
-            binarypath=Path("/usr/local/bin/llama-server"),
-            type=ServerType.LLAMASERVER
-        ))
+    # LLAMA_SERVER: Server = field(default_factory=lambda: Server(
+    #         hostname="192.168.20.2",
+    #         tcpport=8088,
+    #         bindaddress="127.0.0.1",
+    #         platform="Darwin",
+    #         cachepath=None,
+    #         binarypath=Path("/usr/local/bin/llama-server"),
+    #         type=ServerType.LLAMASERVER
+    #     ))
+    RPC_SERVERS = "192.168.20.1:50000,192.168.30.2:50000"
+    LOCAL_GPU = "MTL0"
+    REMOTE_GPUS = "RPC0,RPC2,RPC3"
     
     OPENBROWSER: bool = True
 

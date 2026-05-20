@@ -2,7 +2,7 @@ from __future__ import annotations
 from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 from object_models import Model
-import rpc
+#import rpc
 
 settings = get_settings()
 
@@ -20,14 +20,14 @@ def get_llama_command(
     emit(f"-> Called with Model={M}", log_sink)
     logger.info(f"DEBUG - Called with Model={M}")
 
-    if not run_local_only:
-        for rpc_server in settings.RPC_SERVERS:
-            emit(f"-> Checking remote rpc: {rpc_server.hostname}:{rpc_server.tcpport}", log_sink)
-            #logger.info(f"DEBUG - {rpc_server}")
-            rpc.ensure_remote_rpc(rpc_server, log_sink=log_sink)
+    # if not run_local_only:
+    #     for rpc_server in settings.RPC_SERVERS:
+    #         emit(f"-> Checking remote rpc: {rpc_server.hostname}:{rpc_server.tcpport}", log_sink)
+    #         #logger.info(f"DEBUG - {rpc_server}")
+    #         rpc.ensure_remote_rpc(rpc_server, log_sink=log_sink)
 
-    all_endpoints = []
-    all_endpoints.extend(f"{s.hostname}:{s.tcpport}" for s in settings.RPC_SERVERS)
+    #all_endpoints = []
+    #all_endpoints.extend(f"{s.hostname}:{s.tcpport}" for s in settings.RPC_SERVERS)
 
     cmd: list[str] = []
 
@@ -42,10 +42,15 @@ def get_llama_command(
     ])
 
     if not run_local_only:
-        cmd.extend(["--rpc", f"{",".join(all_endpoints)}",
+        cmd.extend(["--rpc", f"{settings.RPC_SERVERS}",
                    "--split-mode", settings.DEFAULT_SPLIT_MODE,
                    "--tensor-split", M.shard_balance,
                    ])
+
+    if not run_local_only:
+        gpus = f"{settings.LOCAL_GPU},{settings.REMOTE_GPUS}"
+    else:
+        gpus = f"{settings.LOCAL_GPU}"
 
     cmd.extend([
         "--device", gpus,
