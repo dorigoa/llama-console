@@ -1,46 +1,26 @@
 from __future__ import annotations
 
+import re
+import json
+import time
 import shlex
 import asyncio
-import json
 import subprocess
-from pathlib import Path
-from typing import Any, Optional
-from urllib.error import HTTPError, URLError
-from urllib.request import Request, urlopen
-from object_models import Model
-import re
-import time
 from nicegui import ui
+from typing import Any, Optional
+from urllib.request import Request, urlopen
+from urllib.error import HTTPError, URLError
 
-#import devices
-
-from llama_command import get_llama_command
-from config_manager import get_settings
-from logging_utils import emit, setup_console_logging
-import model_utils
 import utils
 import persist
-
-
+import model_utils
+from object_models import Model
+from config_manager import get_settings
+from llama_command import get_llama_command
+from logging_utils import emit, setup_console_logging
 
 logger = setup_console_logging()
 
-#_____________________________________________________________________________
-
-# def validate_startup_settings() -> None:
-#     model_base_dir = Path(settings.MODEL_BASE_DIR).expanduser()
-#     if not model_base_dir.exists():
-#         raise SystemExit(
-#             f"ERROR: MODEL_BASE_DIR does not exist: {model_base_dir}"
-#         )
-#     if not model_base_dir.is_dir():
-#         raise SystemExit(
-#             f"ERROR: MODEL_BASE_DIR is not a directory: {model_base_dir}"
-#         )
-#     settings.MODEL_BASE_DIR = str(model_base_dir)
-
-#validate_startup_settings()
 settings = get_settings()
 
 #_____________________________________________________________________________
@@ -70,8 +50,8 @@ def ui_log(message: str) -> None:
             return
         raise
 
+#_____________________________________________________________________________
 def update_data_from_modelname( modelname: str ) -> None:
-    #M = model_utils.get_model_by_name(modelname)
     update_data_from_model( model_utils.get_model_by_name( modelname ) )
 
 #_____________________________________________________________________________
@@ -123,9 +103,6 @@ def refresh_model_list() -> None:
     else:
         update_data_from_model(None)
 
-    #if selected_model:
-    #    model_select.set_options(models, value=selected_model.model_name)
-    #    update_data_from_model( selected_model )
     emit(f"Model list refreshed: {len(models)} models found", ui_log)
     notify_user(f"Model list refreshed: {len(models)} models found", type="positive")
 
@@ -187,7 +164,7 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
     url = f"http://{settings.LLAMA_SERVER_BIND}:{settings.LLAMA_SERVER_PORT}/v1/models"
     try:
         payload = _json_get(url)
-        model = (payload)
+        model = (payload['models'][0]['name'])
         return True, model, url, None
     except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
         last_error = f"{url}: {exc}"
@@ -300,19 +277,6 @@ class LlamaManager:
             emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
         emit(f"-----------------------------", ui_log)
         
-        # try:
-        #     if run_local_only:
-        #         gpus = devices.list_local_usable_devices(settings.LLAMA_SERVER, ui_log)
-        #     else:
-        #         gpus = devices.list_remote_usable_devices(settings.RPC_SERVERS, ui_log)
-        # except Exception as exc:
-        #     msg = f"Device discovery failed: {exc}"
-        #     emit(msg, ui_log)
-        #     notify_user(msg, type="negative")
-        #     status_label.set_text("llama-server status: device discovery failed")
-        #     status_detail_label.set_text(str(exc))
-        #     return False
-
         try:
             cmd = await asyncio.to_thread(
                 get_llama_command,
@@ -320,7 +284,6 @@ class LlamaManager:
                 ui_log,
                 run_local_only=run_local_only,
                 load_mmproj=load_mmproj,
-                #gpus=gpus,
             )
 
             cmd = [str(arg) for arg in cmd]
@@ -360,11 +323,11 @@ class LlamaManager:
                 shard_balance=shard_balance,
                 last_started=0,
             )
-            #self._reader_task = asyncio.create_task(self._read_process_output(M, self.process))
+            
             self._reader_task = asyncio.create_task(self._read_process_output(M, process))
 
             await asyncio.sleep(0.5)
-            #if self.process.returncode is not None:
+            
             if process.returncode is not None:
                 #emit(f"llama-server exited immediately with return code {self.process.returncode}", ui_log)
                 emit(f"llama-server exited immediately with return code {process.returncode}", ui_log)
@@ -387,7 +350,6 @@ class LlamaManager:
                 notify_user(msg, type="warning")
                 return False
 
-            #if self.process.returncode is not None:
             if process.returncode is not None:
                 #emit(f"llama-server exited before readiness completed with return code {self.process.returncode}", ui_log)
                 emit(f"llama-server exited before readiness completed with return code {process.returncode}", ui_log)
@@ -593,55 +555,6 @@ with ui.header().classes("items-center justify-between"):
     ui.button("Stop Model", on_click=manager.stop_server, icon="stop", color="red")
 
 #_____________________________________________________________________________
-# async def ping_servers() -> dict[str, float]:
-#     ping_results = {}
-    
-#     servers_to_ping = []
-    
-#     # Add RPC servers
-#     for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
-#         servers_to_ping.append(server.hostname)
-    
-#     # Ping each server
-#     for server in servers_to_ping:
-#         try:
-#             # Use a timeout to avoid hanging
-#             ping_time = await asyncio.wait_for(
-#                 asyncio.to_thread(utils.ping, server), 
-#                 timeout=5.0
-#             )
-#             ping_results[server] = ping_time if ping_time is not None else float('inf')
-#         except asyncio.TimeoutError:
-#             ping_results[server] = float('inf')
-#         except Exception as e:
-#             logger.error(f"Error pinging {server}: {e}")
-#             ping_results[server] = float('inf')
-    
-#     return ping_results
-
-#_____________________________________________________________________________
-# async def update_ping_status() -> None:
-#     ping_results = await ping_servers()
-    
-#     for label in ping_labels.values():
-#         label.set_text("Pinging...")
-    
-#     for hostname, ping_time in ping_results.items():
-#         if hostname in ping_labels:
-#             if ping_time == float('inf'):
-#                 ping_labels[hostname].set_text("Ping failed")
-#             else:
-#                 ping_labels[hostname].set_text(f"{ping_time:.2f} ms")
-
-# #_____________________________________________________________________________
-# async def refresh_ping_status() -> None:
-#     """Refresh ping status for all servers."""
-#     await update_ping_status()
-
-# #_____________________________________________________________________________
-# ping_labels: dict[str, ui.label] = {}
-
-#_____________________________________________________________________________
 with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
     with ui.card().classes("w-full p-4"):
         status_label = ui.label("llama-server status: not checked yet").classes("font-bold")
@@ -656,23 +569,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 icon="open_in_new",
             )
             status_chat_button.visible = False
-
-    ####################################
-    # with ui.card().classes("w-full p-4"):
-    #     ui.label("Server Ping Status").classes("font-bold")
-
-    #     for server in settings.RPC_SERVERS + [settings.LLAMA_SERVER]:
-    #         with ui.row().classes("items-center gap-2"):
-    #             ui.label(f"{server.hostname} ({server.type.value}):").classes("w-40")
-    #             ping_labels[server.hostname] = ui.label("Pinging...").classes("font-mono")
-
-    #     def _schedule_ping_refresh() -> None:
-    #         """Schedule a single execution of `refresh_ping_status`."""
-    #         asyncio.create_task(refresh_ping_status())
-
-    #     ui.timer(0.2, _schedule_ping_refresh, once=True)
-    #     ui.timer(20.0, _schedule_ping_refresh)
-    ####################################
 
     with ui.card().classes("w-full p-4"):
         ui.label("Select a model").classes("text-subtitle1 font-bold")
@@ -697,7 +593,6 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
-            #M = model_utils.get_model_by_name(model_select.value)
             M = model_utils.get_model_by_name(model_select.value) if model_select.value else None
             context_select = ui.select(
                 options=utils.configured_context_options(),
@@ -880,10 +775,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         </style>
         """)
 
-
 ui.timer(0.5, detect_existing_llama_server, once=True)
-
-
 
 emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
