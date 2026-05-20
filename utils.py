@@ -1,17 +1,9 @@
 import os
-import ping3
 import signal
-import statistics
 
 from config_manager import get_settings
 
 settings = get_settings()
-
-def get_all_rpc_servers() -> list[str]:
-    all_endpoints = []
-    for rpc_server in settings.RPC_SERVERS:
-        all_endpoints.append(f"{rpc_server.hostname}:{rpc_server.tcpport}")
-    return all_endpoints
 
 #_____________________________________________________________________________
 def _format_context_size(value: int) -> str:
@@ -77,16 +69,3 @@ def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple
             errors.append(f"PID {pid}: failed to send SIGKILL: {exc}")
 
     return killed, errors
-  
-#_____________________________________________________________________________
-def ping(hostname: str, count: int = 4):
-    latencies=[]
-    #print(f"Pinging {hostname}")
-    for _ in range(count):
-        latency = ping3.ping(hostname, timeout=5)
-        if latency is not None and latency > 0:
-            latencies.append(latency*1000)
-    #print(f"{hostname}: {latency}")
-    if latencies:
-        return statistics.mean(latencies)
-    return None

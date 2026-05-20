@@ -1,7 +1,6 @@
 from dataclasses import dataclass, field
 from typing import List, Optional
-#from object_models import Server, ServerType
-from pathlib import Path
+import threading
 
 @dataclass
 class Settings:
@@ -9,43 +8,14 @@ class Settings:
     UI_HOST: str = "127.0.0.1"
     UI_PORT: int = 8080
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
-    # RPC_SERVERS: list[Server] = field(default_factory=lambda: [
-    #     Server(
-    #         hostname="192.168.20.1",
-    #         tcpport=50000,
-    #         bindaddress=None,
-    #         platform="Darwin",
-    #         cachepath=Path("/Volumes/Home/llama.cpp/"),
-    #         binarypath=Path("/usr/local/bin/rpc-server"),
-    #         type=ServerType.RPCSERVER
-    #     ),
-    #     Server(
-    #         hostname="192.168.30.2",
-    #         tcpport=50000,
-    #         bindaddress=None,
-    #         platform="Windows",
-    #         cachepath=Path("/Volumes/Home/llama.cpp/"),
-    #         binarypath=Path(r"C:\llama.cpp\bin\rpc-server.exe"),
-    #         type=ServerType.RPCSERVER
-    #     ),
-    # ])
     
-    # LLAMA_SERVER: Server = field(default_factory=lambda: Server(
-    #         hostname="192.168.20.2",
-    #         tcpport=8088,
-    #         bindaddress="127.0.0.1",
-    #         platform="Darwin",
-    #         cachepath=None,
-    #         binarypath=Path("/usr/local/bin/llama-server"),
-    #         type=ServerType.LLAMASERVER
-    #     ))
-    RPC_SERVERS = "192.168.20.1:50000,192.168.30.2:50000"
-    LOCAL_GPU = "MTL0"
-    REMOTE_GPUS = "RPC0,RPC2,RPC3"
-    LLAMA_SERVER_HOST = "192.168.20.2"
-    LLAMA_SERVER_PORT = "8088"
-    LLAMA_SERVER_BIND = "127.0.0.1"
-    LLAMA_SERVER_BIN  = "/usr/local/bin/llama-server"
+    RPC_SERVERS: str = "192.168.20.1:50000,192.168.30.2:50000"
+    LOCAL_GPU: str = "MTL0"
+    REMOTE_GPUS: str = "RPC0,RPC2,RPC3"
+    LLAMA_SERVER_HOST: str = "192.168.20.2"
+    LLAMA_SERVER_PORT: int = 8088
+    LLAMA_SERVER_BIND: str = "127.0.0.1"
+    LLAMA_SERVER_BIN: str  = "/usr/local/bin/llama-server"
     
     OPENBROWSER: bool = True
 
@@ -55,7 +25,7 @@ class Settings:
         0, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152,
         65536, 98304, 131072, 196608, 262144
     ])
-    DEFAULT_SHARD_BALANCE: str = "1,1"
+    DEFAULT_SHARD_BALANCE: str = "1,1,1,1"
     DEFAULT_SPLIT_MODE: str = "layer"
     DEFAULT_NGL: str = "all"
     DEFAULT_FIT: str = "off"
@@ -67,15 +37,18 @@ class Settings:
     DEFAULT_TOP_K: int = 40
     DEFAULT_TEMP: float = 0.8
 
+_settings_lock = threading.Lock()
 _settings_instance: Optional[Settings] = None
 
 def get_settings() -> Settings:
     global _settings_instance
-    if _settings_instance is None:
-        _settings_instance = Settings()
+    #if _settings_instance is None:
+    with _settings_lock:
+        if _settings_instance is None:
+            _settings_instance = Settings()
     return _settings_instance
 
-def reload_settings() -> Settings:
-    global _settings_instance
-    _settings_instance = Settings()
-    return _settings_instance
+# def reload_settings() -> Settings:
+#     global _settings_instance
+#     _settings_instance = Settings()
+#     return _settings_instance
