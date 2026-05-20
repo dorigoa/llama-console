@@ -268,7 +268,7 @@ class LlamaManager:
         
         emit("------ Start requested ------", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
-        emit(f"RPC server(s)  : {",".join( utils.get_all_rpc_servers() )}", ui_log)
+        emit(f"RPC server(s)  : {settings.RPC_SERVERS}", ui_log)
         emit(f"Selected model : {M.model_name}", ui_log)
         emit(f"Configured path: {str(M.model_path)}", ui_log)
         emit(f"Context size   : {M.ctxsize}", ui_log)
@@ -538,13 +538,12 @@ with ui.dialog() as chat_dialog, ui.card().classes("w-full max-w-lg"):
 
 #_____________________________________________________________________________
 async def ask_shard_balance(default_value: str) -> str | None:
-    """Ask for tensor split/shard balance only when RPC execution is enabled."""
     result: dict[str, str | None] = {"value": None}
     done = asyncio.Event()
 
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
         ui.label("Shard balance").classes("text-h6")
-        ui.label("Insert tensor split values, for example: 6,12").classes("text-sm text-gray-600")
+        ui.label(f"Insert tensor split values for GPUs: {settings.LOCAL_GPU},{settings.REMOTE_GPUS}").classes("text-sm text-gray-600")
         shard_input = ui.input(
             label="Shard balance",
             value=default_value,
