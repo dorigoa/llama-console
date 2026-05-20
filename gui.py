@@ -22,10 +22,28 @@ import model_utils
 import utils
 import persist
 
-settings = get_settings()
+
 
 logger = setup_console_logging()
 
+#_____________________________________________________________________________
+
+# def validate_startup_settings() -> None:
+#     model_base_dir = Path(settings.MODEL_BASE_DIR).expanduser()
+#     if not model_base_dir.exists():
+#         raise SystemExit(
+#             f"ERROR: MODEL_BASE_DIR does not exist: {model_base_dir}"
+#         )
+#     if not model_base_dir.is_dir():
+#         raise SystemExit(
+#             f"ERROR: MODEL_BASE_DIR is not a directory: {model_base_dir}"
+#         )
+#     settings.MODEL_BASE_DIR = str(model_base_dir)
+
+#validate_startup_settings()
+settings = get_settings()
+
+#_____________________________________________________________________________
 LLAMA_READY_LOG_MARKERS = (
     "server is listening on",
     "all slots are idle",
@@ -88,25 +106,26 @@ def update_data_from_model( M: Model ) -> None:
     else:
         emit(f"No persisted parameters for model: {M.model_name}; using model defaults", ui_log)
 
-    # if M:
-    #     context_select.set_value( M.ctxsize )
-    #     temperature_select.set_value(f"{float(M.temperature):.1f}")
-    #     top_p_input.set_value(f"{float(M.top_p):.1f}")
-    #     top_k_input.set_value(f"{int(M.top_k)}")
-    # else:
-    #     context_select.set_value( settings.DEFAULT_CONTEXT_SIZE )
-    #     temperature_select.set_value(f"{float(settings.DEFAULT_TEMP):.1f}")
-    #     top_p_input.set_value(f"{float(settings.DEFAULT_TOP_P):.1f}")
-    #     top_k_input.set_value(f"{int(settings.DEFAULT_TOP_K)}")
-
 #_____________________________________________________________________________
 def refresh_model_list() -> None:
-    models = model_utils.get_available_model_names( refresh = False ) # refresh has been already done in the previous call
+    models = model_utils.get_available_model_names( refresh = True ) or [] # refresh has been already done in the previous call
 
     selected_model = model_utils.get_last_started_model()
-    model_select.set_options(models, value=selected_model.model_name)
+    selected_name = selected_model.model_name if selected_model else None
+    safe_value = (
+        selected_name
+        if selected_name in models
+        else (models[0] if models else None)
+    )
+    model_select.set_options(models, value=safe_value)
+    if safe_value:
+        update_data_from_modelname(safe_value)
+    else:
+        update_data_from_model(None)
 
-    update_data_from_model( selected_model )
+    #if selected_model:
+    #    model_select.set_options(models, value=selected_model.model_name)
+    #    update_data_from_model( selected_model )
     emit(f"Model list refreshed: {len(models)} models found", ui_log)
     notify_user(f"Model list refreshed: {len(models)} models found", type="positive")
 
@@ -659,38 +678,46 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ui.label("Select a model").classes("text-subtitle1 font-bold")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
-
+            available_models = model_utils.get_available_model_names(refresh=False) or []
+            last_started = model_utils.get_last_started_model()
+            last_model_name = last_started.model_name if last_started else None
+            initial_model_name = (
+                last_model_name
+                if last_model_name in available_models
+                else (available_models[0] if available_models else None)
+            )
+            
             model_select = ui.select(
-                options=model_utils.get_available_model_names( refresh = False ),#available_model_names(),#next(iter(available_model_names()), None),
-                value=model_utils.get_last_started_model( ).model_name,
-                label="Select a model from the list below...",
+                options=available_models,
+                value=initial_model_name,
+                label="Select a model from the list below..." if available_models else f"No model found in {settings.MODEL_BASE_DIR}",
                 on_change=lambda e: update_data_from_modelname( e.value ),
             ).classes("flex-1")
 
             model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
-            #ctx, temp, top_p, top_k, shard_balance = selected_data_for_model( next(iter(available_model_names()), None) )
-            M = model_utils.get_model_by_name(model_select.value)
+            #M = model_utils.get_model_by_name(model_select.value)
+            M = model_utils.get_model_by_name(model_select.value) if model_select.value else None
             context_select = ui.select(
                 options=utils.configured_context_options(),
-                value=M.ctxsize,#ctx,#utils.normalize_context_size_for_select( ctx ),
+                value=M.ctxsize if M else settings.DEFAULT_CONTEXT_SIZE,#ctx,#utils.normalize_context_size_for_select( ctx ),
                 label="Context size (0 = auto)",
             ).classes("flex-[2]")
 
             temperature_select = ui.select(
                 options=[f"{i / 10:.1f}" for i in range(1, 11)],
-                value=f"{float(M.temperature):.1f}",
+                value=f"{float(M.temperature if M else settings.DEFAULT_TEMP):.1f}",
                 label="Temperature",
             ).classes("flex-[1]")
 
             top_p_input = ui.input(
-                value=M.top_p,#"0.9",
+                value=M.top_p if M else settings.DEFAULT_TOP_P,#"0.9",
                 label="Top_p",
             ).classes("flex-[1]")
             
             top_k_input = ui.input(
-                value=M.top_k,#"40",
+                value=M.top_k if M else settings.DEFAULT_TOP_K,#"40",
                 label="Top_k",
             ).classes("flex-[1]")
 
@@ -855,6 +882,8 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
 
 ui.timer(0.5, detect_existing_llama_server, once=True)
+
+
 
 emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)

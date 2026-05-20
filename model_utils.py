@@ -26,7 +26,10 @@ def get_last_started_model( ) -> Model:
     if candidate:
         return candidate
     
-    return _AVAILABLE_MODELS[0]
+    if len(_AVAILABLE_MODELS):
+        return _AVAILABLE_MODELS[0]
+    else:
+        return None
     
 #_____________________________________________________________________________
 def get_available_model_names( refresh: bool = False ) -> list[str]:
