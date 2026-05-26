@@ -1,0 +1,21 @@
+sudo cp org.llama.rpcserver.plist /Library/LaunchDaemons/
+
+sudo chown root:wheel /Library/LaunchDaemons/org.llama.rpcserver.plist
+
+sudo chmod 644 /Library/LaunchDaemons/org.llama.rpcserver.plist
+
+
+plutil -lint /Library/LaunchDaemons/org.llama.rpcserver.plist
+
+
+# To Launch
+sudo launchctl bootstrap system /Library/LaunchDaemons/org.llama.rpcserver.plist
+
+# Manual start/stop
+sudo launchctl kickstart -k system/org.llama.rpcserver
+
+# Check status
+sudo launchctl print system/org.llama.rpcserver
+
+# Disable
+sudo launchctl bootout system /Library/LaunchDaemons/org.llama.rpcserver.plist
