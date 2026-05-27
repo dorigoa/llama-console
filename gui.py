@@ -32,9 +32,9 @@ LLAMA_READY_LOG_MARKERS = (
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
     try:
-        ui.notify(message, type=type, timeout=0, close_button=True)
+        ui.notify(message, type=type, timeout=20, close_button=True)
     except TypeError:
-        ui.notify(message, type=type, timeout=0)
+        ui.notify(message, type=type, timeout=20)
 
 #_____________________________________________________________________________
 def is_llama_ready_log_line(text: str) -> bool:
@@ -437,7 +437,8 @@ class LlamaManager:
             emit("Stopping GUI-started llama-server...", ui_log)
             status_label.set_text("llama-server status: stopping")
             self.process.terminate()
-            ui.notify("Initiated Stopping llama-server", type="info", timeout=0, close_button=True)
+            #ui.notify("Initiated Stopping llama-server", type="info", timeout=20, close_button=True)
+            notify_user( "Initiated Stopping llama-server", type="info" )
             try:
                 await asyncio.wait_for(self.process.wait(), timeout=10)
                 emit("GUI-started llama-server terminated", ui_log)
