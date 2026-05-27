@@ -19,7 +19,7 @@ class Settings:
     
     OPENBROWSER: bool = True
 
-    PERSIST_FILE: str = "persist.json"
+    PERSIST_FILE: str = "/Users/dorigo_a/llama-console-persist.json"
     MODEL_BASE_DIR: str = "/Volumes/Home/gguf_models"
     CONTEXT_SIZE_OPTIONS: List[int] = field(default_factory=lambda: [
         0, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152,
@@ -42,13 +42,7 @@ _settings_instance: Optional[Settings] = None
 
 def get_settings() -> Settings:
     global _settings_instance
-    #if _settings_instance is None:
     with _settings_lock:
         if _settings_instance is None:
             _settings_instance = Settings()
     return _settings_instance
-
-# def reload_settings() -> Settings:
-#     global _settings_instance
-#     _settings_instance = Settings()
-#     return _settings_instance
