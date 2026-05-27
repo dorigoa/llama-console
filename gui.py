@@ -184,8 +184,9 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         chat_url = await get_browser_based_llama_url()
 
         status_label.set_text("llama-server status: already running")
+        display_model_ = display_model.replace(".gguf", "")
         status_detail_label.set_text(
-            f"Detected endpoint: {chat_url} | Model: {display_model} "
+            f"Detected endpoint: {chat_url} | Model: {display_model_} "
         )
         set_link_target(status_chat_link, chat_url)
         status_chat_link.visible = True
