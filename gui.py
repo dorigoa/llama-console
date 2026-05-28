@@ -32,9 +32,9 @@ LLAMA_READY_LOG_MARKERS = (
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
     try:
-        ui.notify(message, type=type, timeout=20, close_button=True)
+        ui.notify(message, type=type, timeout=15000, close_button=True)
     except TypeError:
-        ui.notify(message, type=type, timeout=20)
+        ui.notify(message, type=type, timeout=0, close_button=True)
 
 #_____________________________________________________________________________
 def is_llama_ready_log_line(text: str) -> bool:
