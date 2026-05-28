@@ -19,19 +19,7 @@ def get_llama_command(
     emit(f"-> Called with Model={M}", log_sink)
     logger.info(f"DEBUG - Called with Model={M}")
 
-    # if not run_local_only:
-    #     for rpc_server in settings.RPC_SERVERS:
-    #         emit(f"-> Checking remote rpc: {rpc_server.hostname}:{rpc_server.tcpport}", log_sink)
-    #         #logger.info(f"DEBUG - {rpc_server}")
-    #         rpc.ensure_remote_rpc(rpc_server, log_sink=log_sink)
-
-    #all_endpoints = []
-    #all_endpoints.extend(f"{s.hostname}:{s.tcpport}" for s in settings.RPC_SERVERS)
-
     cmd: list[str] = []
-
-#    if not settings.LLAMA_SERVER_HOST:
-#        raise Exception("Passed None settings.LLAMA_SERVER to get_llama_command")
 
     cmd.extend([
         settings.LLAMA_SERVER_BIN,
@@ -62,6 +50,7 @@ def get_llama_command(
         "--parallel", str(settings.DEFAULT_PARALLEL),
         "--top-p", M.top_p,
         "--top-k", M.top_k,
+        "--seed", "123456789",
     ])
 
     #if temperature is not None:
