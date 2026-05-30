@@ -9,9 +9,11 @@ class Settings:
     UI_PORT: int = 8080
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
     
-    RPC_SERVERS: str = "192.168.20.1:50000,192.168.30.2:50000"
+    #RPC_SERVERS: str = "192.168.20.1:50000,192.168.30.2:50000"
+    RPC_SERVERS: str = "192.168.20.1:50000"
     LOCAL_GPU: str = "MTL0"
-    REMOTE_GPUS: str = "RPC0,RPC2,RPC3"
+    #REMOTE_GPUS: str = "RPC0,RPC2,RPC3"
+    REMOTE_GPUS: str = "RPC0"
     LLAMA_SERVER_HOST: str = "192.168.20.2"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BIND: str = "127.0.0.1"
@@ -25,7 +27,8 @@ class Settings:
         0, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152,
         65536, 98304, 131072, 196608, 262144
     ])
-    DEFAULT_SHARD_BALANCE: str = "1,1,1,1"
+    #DEFAULT_SHARD_BALANCE: str = "1,1,1,1"
+    DEFAULT_SHARD_BALANCE: str = "30,22"
     DEFAULT_SPLIT_MODE: str = "layer"
     DEFAULT_NGL: str = "all"
     DEFAULT_FIT: str = "off"
