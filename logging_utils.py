@@ -74,8 +74,8 @@ def _configure_logzero(level: int) -> None:
     # The original format used by the project:
     #   "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
     # logzero’s formatter works with the same ``logging`` record fields.
-    fmt = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
-    _lz_formatter(fmt)
+    #fmt = "%(asctime)s %(levelname)-8s %(name)s: %(message)s"
+    #_lz_formatter(fmt)
 
     # ``setup_logger`` creates a fresh logger instance with the formatter
     # attached to *stderr* (the default).  We keep the default stream because
