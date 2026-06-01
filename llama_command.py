@@ -48,7 +48,7 @@ def get_llama_command(
         "-t", str(settings.DEFAULT_THREADS),
         "-tb", str(settings.DEFAULT_THREAD_BUNCHES),
         "--parallel", str(settings.DEFAULT_PARALLEL),
-        "--top-p", f"{float(M.top_p):.1f}", #str(M.top_p),
+        "--top-p", f"{float(M.top_p):.2f}", #str(M.top_p),
         "--top-k", str(M.top_k),
         "--seed", "123456789",
     ])

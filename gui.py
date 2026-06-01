@@ -165,7 +165,8 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
     url = f"http://{settings.LLAMA_SERVER_BIND}:{settings.LLAMA_SERVER_PORT}/v1/models"
     try:
         payload = _json_get(url)
-        model = (payload['models'][0]['name'])
+        #model = (payload['models'][0]['name'])
+        model = (payload['data'][0]['id'])
         return True, model, url, None
     except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError, KeyError, IndexError) as exc:
         last_error = f"{url}: {exc}"
@@ -217,7 +218,7 @@ async def get_browser_based_llama_url() -> str:
     """
     url = str(await ui.run_javascript(js))
     if settings.LLAMA_SERVER_BIND not in url:
-        url=url.replace('http','https')
+        url=url.replace('http','https',1)
         url=url.replace(f':{settings.LLAMA_SERVER_PORT}','')
     return url
 
