@@ -31,10 +31,10 @@ LLAMA_READY_LOG_MARKERS = (
 
 #_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
-    try:
-        ui.notify(message, type=type, timeout=15000, close_button=True)
-    except TypeError:
-        ui.notify(message, type=type, timeout=0, close_button=True)
+    #try:
+    ui.notify(message, type=type, timeout=15000, close_button=True)
+    #except TypeError:
+    #    ui.notify(message, type=type, timeout=0, close_button=True)
 
 #_____________________________________________________________________________
 def is_llama_ready_log_line(text: str) -> bool:
@@ -133,7 +133,7 @@ def _parse_pid_lines(output: str) -> list[int]:
     return pids
 
 #_____________________________________________________________________________
-def find_listening_pids_on_port(port: int) -> list[int]:
+def find_listening_pids_on_port(port: int) -> list[int] | None:
     """Return local PIDs listening on the given TCP port.
 
     lsof works on macOS and most Linux systems. ss is used as a Linux fallback.
@@ -145,6 +145,7 @@ def find_listening_pids_on_port(port: int) -> list[int]:
             return pids
     except Exception as exc:
         emit(f"lsof lookup failed: {exc}", ui_log)
+    return
 
 #_____________________________________________________________________________
 def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
@@ -166,7 +167,7 @@ def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[st
         payload = _json_get(url)
         model = (payload['models'][0]['name'])
         return True, model, url, None
-    except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError) as exc:
+    except (HTTPError, URLError, TimeoutError, ConnectionError, json.JSONDecodeError, OSError, KeyError, IndexError) as exc:
         last_error = f"{url}: {exc}"
 
     return False, None, None, last_error
@@ -250,7 +251,8 @@ class LlamaManager:
                            M: Model,
                            load_mmproj: bool,
                            run_local_only: bool = False,
-                           shard_balance: str | None = None ) -> bool:
+                            ) -> bool:
+                           #shard_balance: str | None = None ) -> bool:
         if self.is_running():
             msg = "llama-server is already running"
             emit(msg, ui_log)
@@ -272,7 +274,7 @@ class LlamaManager:
         emit(f"Temperature    : {M.temperature}", ui_log)
         emit(f"Top_p          : {M.top_p}", ui_log)
         emit(f"Top_k          : {M.top_k}", ui_log)
-        emit(f"Sharding       : {shard_balance}", ui_log)
+        emit(f"Sharding       : {M.shard_balance}", ui_log)
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
         if M.mmproj_path and load_mmproj:
             emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
@@ -287,7 +289,7 @@ class LlamaManager:
                 load_mmproj=load_mmproj,
             )
 
-            cmd = [str(arg) for arg in cmd]
+            #cmd = [str(arg) for arg in cmd]
             logger.info(f"DEBUG = cmd={cmd}")
             emit(f"-> Launching command: {" ".join(shlex.quote(str(x)) for x in cmd)}", ui_log)
             emit("->", ui_log)
@@ -316,12 +318,12 @@ class LlamaManager:
             M = Model(
                 model_name=M.model_name,
                 model_path=str(M.model_path),
-                mmproj_path=str(M.mmproj_path),
+                mmproj_path=(str(M.mmproj_path) if M.mmproj_path else None),#str(M.mmproj_path),
                 ctxsize=M.ctxsize,
                 temperature=M.temperature,
                 top_p=M.top_p,
                 top_k=M.top_k,
-                shard_balance=shard_balance,
+                shard_balance=M.shard_balance,
                 last_started=0,
             )
             
@@ -432,6 +434,7 @@ class LlamaManager:
 
     #_____________________________________________________________________________________
     async def stop_server(self) -> None:
+        port = settings.LLAMA_SERVER_PORT
         if self.is_running():
             assert self.process is not None
             emit("Stopping GUI-started llama-server...", ui_log)
@@ -465,7 +468,7 @@ class LlamaManager:
             notify_user("Server stopped", type="info")
             return
 
-        port = settings.LLAMA_SERVER_PORT
+        #port = settings.LLAMA_SERVER_PORT
         emit(f"No GUI-started process handle; looking for external listener on TCP port {port}...", ui_log)
         status_label.set_text("llama-server status: stopping external process")
         status_detail_label.set_text(f"Searching for listener on TCP port {port}")
@@ -626,10 +629,16 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         ).classes("flex-[1] mt-2")
 
         async def start_selected_model() -> None:
-            m = model_utils.get_model_by_name(str(model_select.value))
-            if not model_select.value:
+            
+            if not model_select.value or model_select.value.strip()=="":
                 emit("Start ignored: no model selected", ui_log)
                 notify_user("Select a model!", type="warning")
+                return
+
+            m = model_utils.get_model_by_name(str(model_select.value))
+            if not m:
+                emit(f"Start ignored: model_utils.get_model_by_name({str(model_select.value)} returned None)", ui_log)
+                notify_user(f"Start ignored: model_utils.get_model_by_name({str(model_select.value)} returned None)", type="warning")
                 return
 
             if context_select.value is None:
@@ -646,10 +655,12 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
             if top_p_input.value is None:
                 emit("Start ignored: no Top_p selected", ui_log)
                 notify_user("Input a Top_p between 0 and 1 (1 decimal digit)", type="warning")
+                return
 
             if top_k_input.value is None:
                 emit("Start ignored: no Top_k selected", ui_log)
                 notify_user("Input a Top_k integer between 20 and 100", type="warning")
+                return
 
             try:
                 temperature = float(temperature_select.value)
@@ -719,7 +730,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 effective_model,
                 bool(mmproj_select.value),
                 bool(run_local_only_checkbox.value),
-                _shard_balance,
+                #_shard_balance,
             )
 
             if started:
@@ -736,7 +747,7 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
 
     with ui.row().classes("w-full gap-4 mt-4 items-end"):
         ui.label("Server Logs").classes("flex-1 font-bold")
-        clear_log = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
+        clear_log_button = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
     
     log_area = (
         ui.log()

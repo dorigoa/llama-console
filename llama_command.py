@@ -13,7 +13,7 @@ def get_llama_command(
         log_sink: LogSink = None, 
         run_local_only: bool = False,
         load_mmproj: bool = False,
-        gpus: str = None,
+        #gpus: str = None,
         ) -> list[str]:
 
     emit(f"-> Called with Model={M}", log_sink)
@@ -48,8 +48,8 @@ def get_llama_command(
         "-t", str(settings.DEFAULT_THREADS),
         "-tb", str(settings.DEFAULT_THREAD_BUNCHES),
         "--parallel", str(settings.DEFAULT_PARALLEL),
-        "--top-p", M.top_p,
-        "--top-k", M.top_k,
+        "--top-p", f"{float(M.top_p):.1f}", #str(M.top_p),
+        "--top-k", str(M.top_k),
         "--seed", "123456789",
     ])
 

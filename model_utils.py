@@ -84,7 +84,7 @@ def _discover_available_models( ) -> list[Model]:
                 top_p           = settings.DEFAULT_TOP_P,
                 top_k           = settings.DEFAULT_TOP_K,
                 shard_balance   = "1,1",
-                last_started    = False
+                last_started    = 0
             )
         models.append(M)
 
