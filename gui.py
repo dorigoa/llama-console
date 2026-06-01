@@ -8,6 +8,7 @@ import asyncio
 import subprocess
 from nicegui import ui
 from typing import Any, Optional
+from gguf import GGUFReader, GGUFValueType
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
@@ -35,6 +36,61 @@ def notify_user(message: str, *, type: str = "info") -> None:
     ui.notify(message, type=type, timeout=15000, close_button=True)
     #except TypeError:
     #    ui.notify(message, type=type, timeout=0, close_button=True)
+
+#_____________________________________________________________________________
+def _gguf_value(field) -> Any:
+    """Estrae uno scalare/stringa da un ReaderField, robusto rispetto alla
+    versione di `gguf` (le versioni recenti espongono .contents())."""
+    if field is None:
+        return None
+    contents = getattr(field, "contents", None)
+    if callable(contents):
+        try:
+            return field.contents()
+        except Exception:
+            pass
+    if not field.parts or not field.data:
+        return None
+    part = field.parts[field.data[-1]]
+    if field.types and field.types[0] == GGUFValueType.STRING:
+        return bytes(part).decode("utf-8", errors="replace")
+    return part[0] if len(part) else None
+
+#_____________________________________________________________________________
+def read_gguf_trained_context_length(model_path: str) -> Optional[int]:
+    """Context length di addestramento letta dal .gguf, o None.
+    Chiave: '<general.architecture>.context_length'."""
+    try:
+        reader = GGUFReader(model_path, mode="r")
+    except Exception as exc:
+        emit(f"GGUFReader: impossibile aprire {model_path}: {exc}", ui_log)
+        return None
+
+    arch = _gguf_value(reader.fields.get("general.architecture"))
+    if not arch:
+        emit(f"general.architecture assente in {model_path}", ui_log)
+        return None
+
+    ctx = _gguf_value(reader.fields.get(f"{arch}.context_length"))
+    if ctx is None:
+        emit(f"{arch}.context_length assente in {model_path}", ui_log)
+        return None
+    try:
+        return int(ctx)
+    except (TypeError, ValueError):
+        emit(f"Valore context_length inatteso: {ctx!r}", ui_log)
+        return None
+
+#_____________________________________________________________________________
+def update_trained_ctx_label(modelname: Optional[str]) -> None:
+    M = model_utils.get_model_by_name(modelname) if modelname else None
+    if M is None or not M.model_path:
+        trained_ctx_label.set_text("Trained context: —")
+        return
+    n = read_gguf_trained_context_length(str(M.model_path))
+    trained_ctx_label.set_text(
+        f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
+    )
 
 #_____________________________________________________________________________
 def is_llama_ready_log_line(text: str) -> bool:
@@ -100,8 +156,10 @@ def refresh_model_list() -> None:
     model_select.set_options(models, value=safe_value)
     if safe_value:
         update_data_from_modelname(safe_value)
+        update_trained_ctx_label(safe_value)
     else:
         update_data_from_model(None)
+        update_trained_ctx_label(None)
 
     emit(f"Model list refreshed: {len(models)} models found", ui_log)
     notify_user(f"Model list refreshed: {len(models)} models found", type="positive")
@@ -219,7 +277,7 @@ async def get_browser_based_llama_url() -> str:
     url = str(await ui.run_javascript(js))
     if settings.LLAMA_SERVER_BIND not in url:
         url=url.replace('http','https',1)
-        url=url.replace(f':{settings.LLAMA_SERVER_PORT}','')
+        url=url.replace(f'{settings.LLAMA_SERVER_PORT}','8443')
     return url
 
 #_____________________________________________________________________________
@@ -593,8 +651,15 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 options=available_models,
                 value=initial_model_name,
                 label="Select a model from the list below..." if available_models else f"No model found in {settings.MODEL_BASE_DIR}",
-                on_change=lambda e: update_data_from_modelname( e.value ),
+                #on_change=lambda e: update_data_from_modelname( e.value ),
+                on_change=lambda e: (update_data_from_modelname(e.value), update_trained_ctx_label(e.value)),
             ).classes("flex-1")
+
+            trained_ctx_label = ui.label("Trained context: —").classes(
+                #"text-sm text-gray-600 self-center whitespace-nowrap"
+                "text-base text-gray-600 self-stretch flex items-center whitespace-nowrap"
+            )
+            update_trained_ctx_label(initial_model_name)
 
             model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
 
@@ -648,6 +713,13 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
                 return
             try:
                 context_size = int(context_select.value)
+                digits = re.sub(r"\D", "", trained_ctx_label.text or "")
+                trained_ctx_size = int(digits) if digits else 0
+                if context_size > trained_ctx_size:
+                    mex = f"Start ignored: invalid context size > trained context size ({trained_ctx_size})"
+                    emit(mex, ui_log)
+                    notify_user(mex, type="warning")
+                    return
             except (TypeError, ValueError):
                 emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
                 notify_user("Invalid context size!", type="warning")

@@ -17,7 +17,7 @@ class Settings:
     LLAMA_SERVER_HOST: str = "192.168.20.2"
     LLAMA_SERVER_PORT: int = 8088
     #LLAMA_SERVER_BIND: str = "127.0.0.1"
-    LLAMA_SERVER_BIND: str = "192.168.1.191"
+    LLAMA_SERVER_BIND: str = "0.0.0.0"
     LLAMA_SERVER_BIN: str  = "/usr/local/bin/llama-server"
     #GGUF_DUMP_BIN: str = "~/miniforge3/envs/llama-orc/bin/gguf-dump"
     
