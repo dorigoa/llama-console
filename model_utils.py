@@ -83,7 +83,7 @@ def _discover_available_models( ) -> list[Model]:
                 temperature     = settings.DEFAULT_TEMP,
                 top_p           = settings.DEFAULT_TOP_P,
                 top_k           = settings.DEFAULT_TOP_K,
-                shard_balance   = "1,1",
+                shard_balance   = settings.DEFAULT_SHARD_BALANCE,
                 last_started    = 0
             )
         models.append(M)
