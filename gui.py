@@ -4,10 +4,13 @@ import re
 import json
 import time
 import shlex
+import logzero
 import asyncio
 import subprocess
 from nicegui import ui
+from logzero import logger
 from typing import Any, Optional
+from collections.abc import Callable
 from gguf import GGUFReader, GGUFValueType
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
@@ -18,11 +21,15 @@ import model_utils
 from object_models import Model
 from config_manager import get_settings
 from llama_command import get_llama_command
-from logging_utils import emit, setup_console_logging
+#from logging_utils import emit, setup_console_logging
 
-logger = setup_console_logging()
+#logger = setup_console_logging()
+
+logzero.loglevel(logzero.DEBUG)
 
 settings = get_settings()
+
+LogSink = Optional[Callable[[str], None]]
 
 #_____________________________________________________________________________
 LLAMA_READY_LOG_MARKERS = (
@@ -31,8 +38,19 @@ LLAMA_READY_LOG_MARKERS = (
 )
 
 #_____________________________________________________________________________
+def emit(message: str, sink: LogSink = None) -> None:
+    logger.info(message, message)
+
+    if sink is not None:
+        try:
+            sink(message)
+        except Exception:  # pragma: no cover – defensive, should never crash the app
+            logger.error("Unable to write message to UI log sink")
+
+#_____________________________________________________________________________
 def notify_user(message: str, *, type: str = "info") -> None:
     #try:
+    logger.info(message)
     ui.notify(message, type=type, timeout=15000, close_button=True)
     #except TypeError:
     #    ui.notify(message, type=type, timeout=0, close_button=True)
@@ -349,7 +367,7 @@ class LlamaManager:
             )
 
             #cmd = [str(arg) for arg in cmd]
-            logger.info(f"DEBUG = cmd={cmd}")
+            logger.debug(f"Executing command: {cmd}")
             emit(f"-> Launching command: {" ".join(shlex.quote(str(x)) for x in cmd)}", ui_log)
             emit("->", ui_log)
             emit("->", ui_log)

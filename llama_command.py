@@ -2,10 +2,11 @@ from __future__ import annotations
 from config_manager import get_settings
 from logging_utils import emit, LogSink, setup_console_logging
 from object_models import Model
+from logzero import logger
 
 settings = get_settings()
 
-logger = setup_console_logging()
+#logger = setup_console_logging()
 
 #_____________________________________________________________________________
 def get_llama_command(
@@ -16,8 +17,8 @@ def get_llama_command(
         #gpus: str = None,
         ) -> list[str]:
 
-    emit(f"-> Called with Model={M}", log_sink)
-    logger.info(f"DEBUG - Called with Model={M}")
+    #emit(f"-> Called with Model={M}", log_sink)
+    logger.debug(f"Called with Model={M}")
 
     cmd: list[str] = []
 
