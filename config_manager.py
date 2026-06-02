@@ -71,6 +71,8 @@ def _load_overrides(path: Path) -> Dict[str, Any]:
             f"File {path} must contain a JSON object, found {type(data).__name__}."
         )
     logger.info("Config override loaded from %s (%d keys).", path, len(data))
+    for k in data:
+        logger.debug(f"'{k}': '{data[k]}'")
     return data
 
 #_________________________________________________________________________________________
