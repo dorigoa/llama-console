@@ -1,24 +1,26 @@
 from dataclasses import dataclass, field
+from typing import Optional
 from pathlib import Path
 from object_models import Model
 import persist
 from config_manager import get_settings
+from logzero import logger
 
 settings = get_settings()
     
 _AVAILABLE_MODELS: list[Model] = []
 
 #_____________________________________________________________________________
-def get_model_by_name( name: str ) -> Model:
+def get_model_by_name( name: str ) -> Optional[Model]:
     for model in _AVAILABLE_MODELS:
         if name == model.model_name:
             return model
     return None
     
 #_____________________________________________________________________________
-def get_last_started_model( ) -> Model:
+def get_last_started_model( ) -> Optional[Model]:
     last_start_time = 0
-    candidate: Model = None
+    candidate: Optional[Model] = None
     for m in _AVAILABLE_MODELS:
         if m.last_started > last_start_time:
             last_start_time = m.last_started
@@ -61,7 +63,10 @@ def _discover_available_models( ) -> list[Model]:
 
     for m in model_list:
         pmmproj = _find_mmproj_file( m )
-    
+        f = Path(m) / f"{m.name}.gguf"
+        if not f.is_file():
+            logger.warning(f"File {f} does not exist!")
+
         if m.name in data:
             M = Model(
                 model_name    = m.name,

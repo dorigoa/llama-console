@@ -1,6 +1,5 @@
 from __future__ import annotations
 from config_manager import get_settings
-#from logging_utils import emit, LogSink, setup_console_logging
 from object_models import Model
 from logzero import logger
 
@@ -11,13 +10,10 @@ settings = get_settings()
 #_____________________________________________________________________________
 def get_llama_command(
         M: Model,
-        #log_sink: LogSink = None, 
         run_local_only: bool = False,
         load_mmproj: bool = False,
-        #gpus: str = None,
         ) -> list[str]:
 
-    #emit(f"-> Called with Model={M}", log_sink)
     logger.debug(f"Called with Model={M}")
 
     cmd: list[str] = []
@@ -25,7 +21,7 @@ def get_llama_command(
     cmd.extend([
         settings.LLAMA_SERVER_BIN,
         "--host", settings.LLAMA_SERVER_BIND,
-        "--port", settings.LLAMA_SERVER_PORT,
+        "--port", str(settings.LLAMA_SERVER_PORT),
         "-m", str(M.model_path),
     ])
 

@@ -1,4 +1,5 @@
 import os
+import time
 import signal
 
 from config_manager import get_settings
@@ -18,8 +19,6 @@ def configured_context_options() -> dict[int, str]:
     
 #_____________________________________________________________________________
 def kill_pids_sync(pids: list[int], *, terminate_timeout: float = 10.0) -> tuple[list[int], list[str]]:
-    import time
-
     current_pid = os.getpid()
     targets = [pid for pid in pids if pid != current_pid]
     killed: list[int] = []

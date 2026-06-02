@@ -1,7 +1,6 @@
 
 from dataclasses import dataclass, field, fields
 from typing import List, Optional, Any, Dict
-from dataclasses import dataclass, field
 from typing import List, Optional
 from logzero import logger
 from pathlib import Path
@@ -59,17 +58,21 @@ def _config_path() -> Path:
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
     if not path.is_file():
-        logger.info("Config override not found in %s: using defaults.", path)
+        logger.warn("Config override not found in %s: using defaults.", path)
         return {}
     try:
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        raise ValueError(f"Invalid JSON in {path}: {e}") from e
+        #raise ValueError(f"Invalid JSON in {path}: {e}") from e
+        logger.error(f"Invalid JSON in {path}: {e}")
+        return {}
     if not isinstance(data, dict):
-        raise ValueError(
-            f"File {path} must contain a JSON object, found {type(data).__name__}."
-        )
+        #raise ValueError(
+        #    
+        #)
+        logger.error(f"File {path} must contain a JSON object, found {type(data).__name__}.")
+        return {}
     logger.info("Config override loaded from %s (%d keys).", path, len(data))
     for k in data:
         logger.debug(f"'{k}': '{data[k]}'")
@@ -77,7 +80,6 @@ def _load_overrides(path: Path) -> Dict[str, Any]:
 
 #_________________________________________________________________________________________
 def _coerce(value: Any, target_type: Any, key: str) -> Any:
-    """Coercion sui tipi scalari. List[...] e tipi non semplici passano invariati."""
     try:
         if target_type is bool:
             if isinstance(value, bool):
@@ -87,7 +89,7 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
             return bool(value)
         if target_type in (int, float, str):
             return target_type(value)
-        return value  # es. List[int]: JSON fornisce gia' una lista
+        return value
     except (TypeError, ValueError) as e:
         raise ValueError(
             f"Valore non valido per '{key}': atteso {getattr(target_type, '__name__', target_type)}, "
