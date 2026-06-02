@@ -119,5 +119,5 @@ def get_settings() -> Settings:
     global _settings_instance
     with _settings_lock:
         if _settings_instance is None:
-            _settings_instance = Settings()
+            _settings_instance = _build_settings()#Settings()
     return _settings_instance
