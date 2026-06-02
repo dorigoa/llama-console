@@ -9,6 +9,7 @@ import asyncio
 import subprocess
 from nicegui import ui
 from logzero import logger
+from nicegui import app, ui
 from typing import Any, Optional
 from collections.abc import Callable
 from gguf import GGUFReader, GGUFValueType
@@ -885,6 +886,14 @@ emit("GUI loaded", None)
 emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
 emit(f"Available models: {len(model_utils.get_available_model_names())}", None)
 emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
+
+@app.on_startup
+def _log_startup() -> None:
+    emit("GUI loaded", None)
+    emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
+    emit(f"Available models: {len(model_utils.get_available_model_names())}", None)
+    emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
+
 
 #_____________________________________________________________________________
 ui.run(
