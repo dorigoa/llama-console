@@ -1,0 +1,10 @@
+{
+        "UI_HOST": "192.168.1.191",
+        "RPC_SERVERS": "192.168.20.1:50000,192.168.30.2:50000",
+        "REMOTE_GPUS": "RPC0,RPC2,RPC3",
+        "LLAMA_SERVER_BIND": "0.0.0.0",
+        "MODEL_BASE_DIR": "/Volumes/Home/gguf_models",
+        "PERSIST_FILE": "/Volumes/Users/dorigo_a/llama-console-persist.json",
+        "DEFAULT_SHARD_BALANCE": "30,18,16,16",
+        "DEFAULT_TEMP": 0.7
+}
