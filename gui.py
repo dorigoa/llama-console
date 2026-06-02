@@ -286,6 +286,14 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
 #_____________________________________________________________________________
 async def get_browser_based_llama_url() -> str:
+    """Return the appropriate llama-server URL for the browser.
+
+    The function obtains the hostname from the browser and constructs a URL using the
+    configured server port. If the hostname is *not* a local address (localhost,
+    127.0.0.1, or a private‑subnet IP such as 10.*, 172.16‑31.*, 192.168.*), the URL is
+    rewritten to use HTTPS on port 8443 as required when the server is bound to a
+    different interface (settings.LLAMA_SERVER_BIND).
+    """
     port = settings.LLAMA_SERVER_PORT
     js = f"""
         (() => {{
@@ -294,9 +302,24 @@ async def get_browser_based_llama_url() -> str:
         }})()
     """
     url = str(await ui.run_javascript(js))
-    if settings.LLAMA_SERVER_BIND not in url:
-        url=url.replace('http','https',1)
-        url=url.replace(f'{settings.LLAMA_SERVER_PORT}','8443')
+    # Extract hostname from the generated URL
+    try:
+        # url format: http://hostname:port/
+        hostname = re.search(r"//([^/:]+)", url).group(1)
+    except Exception:
+        hostname = ""
+    # Determine if hostname is a local address
+    is_local = (
+        hostname == "localhost"
+        or hostname == "127.0.0.1"
+        or re.match(r"^10(?:\.\d{1,3}){3}$", hostname)
+        or re.match(r"^192\.168(?:\.\d{1,3}){2}$", hostname)
+        or re.match(r"^172\.(?:1[6-9]|2[0-9]|3[0-1])(?:\.\d{1,3}){2}$", hostname)
+    )
+    if not is_local and settings.LLAMA_SERVER_BIND not in url:
+        # Switch to HTTPS and the external port
+        url = url.replace('http', 'https', 1)
+        url = url.replace(f'{settings.LLAMA_SERVER_PORT}', '8443')
     return url
 
 #_____________________________________________________________________________
