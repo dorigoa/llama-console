@@ -611,7 +611,7 @@ async def ask_shard_balance(default_value: str) -> str | None:
         shard_input = ui.input(
             label="Shard balance",
             value=default_value,
-            placeholder="6,12",
+            placeholder=settings.DEFAULT_SHARD_BALANCE,#"6,12",
         ).classes("w-full")
 
         def confirm() -> None:
