@@ -39,7 +39,7 @@ LLAMA_READY_LOG_MARKERS = (
 
 #_____________________________________________________________________________
 def emit(message: str, sink: LogSink = None) -> None:
-    logger.info(message, message)
+    logger.info(message)
 
     if sink is not None:
         try:
