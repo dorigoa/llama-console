@@ -1,24 +1,5 @@
-
-#from enum import Enum, unique
 from dataclasses import dataclass
 from pathlib import Path
-
-#_________________________________________
-# @unique
-# class ServerType(Enum):
-#     RPCSERVER = "rpc"
-#     LLAMASERVER = "llama"
-
-#_________________________________________
-# @dataclass
-# class Server:
-#     hostname: str
-#     tcpport: int
-#     bindaddress: str | None
-#     platform: str
-#     cachepath: Path | None
-#     binarypath: Path
-#     type: ServerType
 
 #_________________________________________
 @dataclass
