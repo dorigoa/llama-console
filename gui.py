@@ -361,7 +361,7 @@ class LlamaManager:
             cmd = await asyncio.to_thread(
                 get_llama_command,
                 M,
-                ui_log,
+                #ui_log,
                 run_local_only=run_local_only,
                 load_mmproj=load_mmproj,
             )

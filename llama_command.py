@@ -1,6 +1,6 @@
 from __future__ import annotations
 from config_manager import get_settings
-from logging_utils import emit, LogSink, setup_console_logging
+#from logging_utils import emit, LogSink, setup_console_logging
 from object_models import Model
 from logzero import logger
 
@@ -11,7 +11,7 @@ settings = get_settings()
 #_____________________________________________________________________________
 def get_llama_command(
         M: Model,
-        log_sink: LogSink = None, 
+        #log_sink: LogSink = None, 
         run_local_only: bool = False,
         load_mmproj: bool = False,
         #gpus: str = None,
