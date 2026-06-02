@@ -117,10 +117,25 @@ def is_llama_ready_log_line(text: str) -> bool:
     return any(marker in lowered for marker in LLAMA_READY_LOG_MARKERS)
 
 #_____________________________________________________________________________
+# Global buffer to retain log messages across page reloads
+LOG_BUFFER: list[str] = []
+
 def ui_log(message: str) -> None:
+    """Push a log message to the UI and store it in a buffer.
+
+    The NiceGUI ``ui.log`` component does not retain its contents when the
+    browser reloads, causing the UI to appear empty. By keeping a copy of each
+    message in ``LOG_BUFFER`` we can replay the history for new client
+    connections.
+    """
+    # Store the raw message for later replay
+    LOG_BUFFER.append(str(message))
     try:
         log_area.push(str(message))
     except RuntimeError as exc:
+        # When the client disconnects the component may be detached;
+        # ignore the specific error that indicates the UI element was
+        # removed and let future pushes succeed for new connections.
         if "client this element belongs to has been deleted" in str(exc):
             return
         raise
@@ -869,6 +884,9 @@ with ui.column().classes("w-full max-w-4xl mx-auto p-4 gap-4"):
         .classes("w-full h-96 font-mono text-xs bg-black text-green-400 custom-log-scrollbar")
         .style("overflow: auto; white-space: pre;")
     )
+# Replay any buffered log messages for clients that connect after a reload
+for _msg in LOG_BUFFER:
+    log_area.push(_msg)
 
     ui.add_head_html("""
         <style>
