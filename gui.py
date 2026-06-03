@@ -71,12 +71,12 @@ def _gguf_value(field) -> Any:
 
 #_____________________________________________________________________________
 def read_gguf_trained_context_length(model_path: str) -> Optional[int]:
-    """Context length di addestramento letta dal .gguf, o None.
-    Chiave: '<general.architecture>.context_length'."""
+    """Training Context length read from .gguf, or None.
+    Key: '<general.architecture>.context_length'."""
     try:
         reader = GGUFReader(model_path, mode="r")
     except Exception as exc:
-        emit(f"GGUFReader: impossibile aprire {model_path}: {exc}", ui_log)
+        emit(f"GGUFReader: cannot open {model_path}: {exc}", ui_log)
         return None
 
     arch = _gguf_value(reader.fields.get("general.architecture"))
@@ -91,16 +91,57 @@ def read_gguf_trained_context_length(model_path: str) -> Optional[int]:
     try:
         return int(ctx)
     except (TypeError, ValueError):
-        emit(f"Valore context_length inatteso: {ctx!r}", ui_log)
+        emit(f"Unexpected context_length value: {ctx!r}", ui_log)
         return None
 
 #_____________________________________________________________________________
-def update_trained_ctx_label(modelname: Optional[str]) -> None:
+# def update_trained_ctx_label(modelname: Optional[str]) -> None:
+#     M = model_utils.get_model_by_name(modelname) if modelname else None
+#     if M is None or not M.model_path:
+#         trained_ctx_label.set_text("Trained context: —")
+#         return
+#     n = read_gguf_trained_context_length(str(M.model_path))
+#     trained_ctx_label.set_text(
+#         f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
+#     )
+
+# _ctx_label_epoch = 0  # anti-race on quick change model 
+
+#_____________________________________________________________________________
+# async def update_trained_ctx_label(modelname: Optional[str]) -> None:
+#     global _ctx_label_epoch
+#     _ctx_label_epoch += 1
+#     my_epoch = _ctx_label_epoch
+
+#     M = model_utils.get_model_by_name(modelname) if modelname else None
+#     if M is None or not M.model_path:
+#         trained_ctx_label.set_text("Trained context: —")
+#         return
+
+#     trained_ctx_label.set_text("Trained context: …")  # feedback immediato
+#     n = await asyncio.to_thread(read_gguf_trained_context_length, str(M.model_path))
+
+#     if my_epoch != _ctx_label_epoch:
+#         return  # una richiesta più recente è già partita: scarto questo risultato
+
+#     trained_ctx_label.set_text(
+#         f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
+#     )
+
+#_____________________________________________________________________________
+async def update_trained_ctx_label(modelname: Optional[str]) -> None:
     M = model_utils.get_model_by_name(modelname) if modelname else None
     if M is None or not M.model_path:
         trained_ctx_label.set_text("Trained context: —")
         return
-    n = read_gguf_trained_context_length(str(M.model_path))
+
+    trained_ctx_label.set_text("Trained context: …")  # feedback immediato
+    n = await asyncio.to_thread(read_gguf_trained_context_length, str(M.model_path))
+
+    # Applica il risultato solo se nel frattempo la selezione non è cambiata.
+    if model_select.value != modelname:
+        return
+
     trained_ctx_label.set_text(
         f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
     )
@@ -110,16 +151,12 @@ def is_llama_ready_log_line(text: str) -> bool:
     lowered = text.lower()
     return any(marker in lowered for marker in LLAMA_READY_LOG_MARKERS)
 
-#_____________________________________________________________________________
-# Righe di log "di rumore" generate dal polling periodico di /slots (la GUI
-# legge i t/s da lì): a server idle, ogni richiesta a /slots fa loggare a
-# llama-server "update_slots: all slots are idle". Le sopprimiamo da console e
-# LOG_BUFFER (vedi _read_process_output), tranne quando coincidono col marker di
-# readiness allo startup. Estendi la tupla se compare altro rumore periodico.
+
 LLAMA_LOG_NOISE_MARKERS = (
     "update_slots: all slots are idle",
 )
 
+#_____________________________________________________________________________
 def is_llama_log_noise(text: str) -> bool:
     lowered = text.lower()
     return any(marker in lowered for marker in LLAMA_LOG_NOISE_MARKERS)
@@ -133,6 +170,7 @@ LOG_BUFFER: list[str] = []
 LOG_DROPPED: int = 0            # lines trimmed from the front of LOG_BUFFER
 MAX_LOG_LINES: int = 5000       # cap to bound memory
 
+#_____________________________________________________________________________
 def ui_log(message: str) -> None:
     """Append a log line to the shared buffer (no direct UI access)."""
     global LOG_DROPPED
@@ -179,7 +217,7 @@ def update_data_from_model( M: Model ) -> None:
         emit(f"No persisted parameters for model: {M.model_name}; using model defaults", ui_log)
 
 #_____________________________________________________________________________
-def refresh_model_list() -> None:
+async def refresh_model_list() -> None:
     models = model_utils.get_available_model_names( refresh = True ) or []
 
     selected_model = model_utils.get_last_started_model()
@@ -192,10 +230,10 @@ def refresh_model_list() -> None:
     model_select.set_options(models, value=safe_value)
     if safe_value:
         update_data_from_modelname(safe_value)
-        update_trained_ctx_label(safe_value)
+        await update_trained_ctx_label(safe_value)
     else:
         update_data_from_model(None)
-        update_trained_ctx_label(None)
+        await update_trained_ctx_label(None)
 
     emit(f"Model list refreshed: {len(models)} models found", ui_log)
     notify_user(f"Model list refreshed: {len(models)} models found", type="positive")
@@ -795,19 +833,26 @@ def main_page() -> None:
                     else (available_models[0] if available_models else None)
                 )
 
+                async def _on_model_change(e) -> None:
+                    update_data_from_modelname(e.value)
+                    await update_trained_ctx_label(e.value)
+
                 model_select = ui.select(
                     options=available_models,
                     value=initial_model_name,
                     label="Select a model from the list below..." if available_models else f"No model found in {settings.MODEL_BASE_DIR}",
-                    on_change=lambda e: (update_data_from_modelname(e.value), update_trained_ctx_label(e.value)),
+                    #on_change=lambda e: (update_data_from_modelname(e.value), update_trained_ctx_label(e.value)),
+                    on_change=_on_model_change
                 ).classes("flex-1")
 
                 trained_ctx_label = ui.label("Trained context: —").classes(
                     "text-base text-gray-600 self-stretch flex items-center whitespace-nowrap"
-                )
-                update_trained_ctx_label(initial_model_name)
+                ).classes("flex-1")
+                #update_trained_ctx_label(initial_model_name)
+                ui.timer(0.1, lambda: update_trained_ctx_label(initial_model_name), once=True)
 
-                model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
+                #model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
+                model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("flex-1")
 
             with ui.row().classes("w-full gap-4 mt-4 items-end"):
                 M = model_utils.get_model_by_name(model_select.value) if model_select.value else None
