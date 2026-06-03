@@ -890,7 +890,25 @@ def main_page() -> None:
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
             ui.label("Server Logs").classes("flex-1 font-bold")
+            # Token‑per‑second label (updated every second)
+            tps_label = ui.label("# t/s: 0").classes("flex-none font-mono text-sm")
             clear_log_button = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
+            # Function to compute tokens per second from LOG_BUFFER
+            def _update_tps() -> None:
+                total_tokens = 0
+                for line in LOG_BUFFER:
+                    if "n_decoded =" in line:
+                        parts = line.strip().split()
+                        if len(parts) >= 2:
+                            try:
+                                total_tokens += int(parts[-2])
+                            except ValueError:
+                                pass
+                seconds = max(1, len(LOG_BUFFER))
+                tps = total_tokens // seconds
+                tps_label.set_text(f"# t/s: {tps}")
+            # Update every second
+            ui.timer(1.0, _update_tps)
 
         log_area = (
             ui.log()
