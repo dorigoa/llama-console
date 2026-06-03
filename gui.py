@@ -111,6 +111,20 @@ def is_llama_ready_log_line(text: str) -> bool:
     return any(marker in lowered for marker in LLAMA_READY_LOG_MARKERS)
 
 #_____________________________________________________________________________
+# Righe di log "di rumore" generate dal polling periodico di /slots (la GUI
+# legge i t/s da lì): a server idle, ogni richiesta a /slots fa loggare a
+# llama-server "update_slots: all slots are idle". Le sopprimiamo da console e
+# LOG_BUFFER (vedi _read_process_output), tranne quando coincidono col marker di
+# readiness allo startup. Estendi la tupla se compare altro rumore periodico.
+LLAMA_LOG_NOISE_MARKERS = (
+    "update_slots: all slots are idle",
+)
+
+def is_llama_log_noise(text: str) -> bool:
+    lowered = text.lower()
+    return any(marker in lowered for marker in LLAMA_LOG_NOISE_MARKERS)
+
+#_____________________________________________________________________________
 # Shared, UI-agnostic log buffer. The llama-server reader task only APPENDS
 # here; rendering to the browser is done by a per-client ui.timer created
 # inside the @ui.page('/') function. This is what makes the log survive a
@@ -531,21 +545,36 @@ class LlamaManager:
 
                 text = line.decode(errors="replace").rstrip()
                 if text:
+                    # La rilevazione di readiness deve girare anche sulle righe
+                    # che poi sopprimiamo come rumore.
+                    is_ready_line = (
+                        self.process is process
+                        and self._ready_event is not None
+                        and not self._ready_event.is_set()
+                        and is_llama_ready_log_line(text)
+                    )
+
+                    # Sopprime il rumore periodico del nostro polling di /slots
+                    # ("update_slots: all slots are idle"), tranne quando quella
+                    # riga è ciò che conferma la readiness allo startup.
+                    if is_llama_log_noise(text) and not is_ready_line:
+                        continue
+
                     emit(f"[llama-server] {text}", ui_log)
-                    if self.process is process and self._ready_event is not None and not self._ready_event.is_set():
-                        if is_llama_ready_log_line(text):
-                            self._ready_reason = text
-                            self._ready_event.set()
-                            emit(f"llama-server readiness confirmed by log line: {text}", ui_log)
-                            model_persist_data = {
-                                "context_size": context_select.value,
-                                "temperature": temperature_select.value,
-                                "top_p": top_p_input.value,
-                                "top_k": top_k_input.value,
-                                "shard_balance": M.shard_balance,
-                                "last_started": int(time.time()),
-                            }
-                            persist.get_params_handler().save_param(M.model_name, model_persist_data)
+
+                    if is_ready_line:
+                        self._ready_reason = text
+                        self._ready_event.set()
+                        emit(f"llama-server readiness confirmed by log line: {text}", ui_log)
+                        model_persist_data = {
+                            "context_size": context_select.value,
+                            "temperature": temperature_select.value,
+                            "top_p": top_p_input.value,
+                            "top_k": top_k_input.value,
+                            "shard_balance": M.shard_balance,
+                            "last_started": int(time.time()),
+                        }
+                        persist.get_params_handler().save_param(M.model_name, model_persist_data)
 
 
             return_code = await process.wait()
