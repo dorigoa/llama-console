@@ -239,6 +239,56 @@ def _json_get(url: str, timeout: float = 2.0) -> dict[str, Any]:
         return json.loads(raw)
 
 #_____________________________________________________________________________
+def _http_get_text(url: str, timeout: float = 1.5) -> Optional[str]:
+    """Blocking text GET; returns None on any failure (no exceptions raised).
+    Run it via asyncio.to_thread()."""
+    req = Request(url, headers={"Accept": "text/plain"})
+    try:
+        with urlopen(req, timeout=timeout) as response:
+            return response.read().decode("utf-8", errors="replace")
+    except (HTTPError, URLError, TimeoutError, ConnectionError, OSError):
+        return None
+
+#_____________________________________________________________________________
+def _extract_n_decoded(slot: dict) -> Optional[int]:
+    """Token generati finora dalla richiesta in corso su uno slot.
+    Struttura osservata: slot['next_token'][0]['n_decoded']."""
+    nt = slot.get("next_token")
+    if isinstance(nt, list) and nt:
+        nt = nt[0]
+    if isinstance(nt, dict) and isinstance(nt.get("n_decoded"), int):
+        return nt["n_decoded"]
+    # fallback: alcune versioni espongono n_decoded sullo slot
+    if isinstance(slot.get("n_decoded"), int):
+        return slot["n_decoded"]
+    return None
+
+#_____________________________________________________________________________
+def fetch_active_slot_progress_sync() -> Optional[tuple[int, int]]:
+    """Ritorna (id_task, n_decoded) del primo slot in elaborazione, oppure None
+    se nessuno sta generando / server non raggiungibile.
+    Bloccante: chiamare via asyncio.to_thread().
+    Richiede l'endpoint /slots abilitato in llama-server."""
+    url = f"http://{settings.LLAMA_SERVER_BIND}:{settings.LLAMA_SERVER_PORT}/slots"
+    text = _http_get_text(url)
+    if not text:
+        return None
+    try:
+        slots = json.loads(text)
+    except (json.JSONDecodeError, ValueError):
+        return None
+    if not isinstance(slots, list):
+        return None
+    for slot in slots:
+        if not isinstance(slot, dict) or not slot.get("is_processing"):
+            continue
+        n_decoded = _extract_n_decoded(slot)
+        id_task = slot.get("id_task")
+        if isinstance(n_decoded, int) and isinstance(id_task, int):
+            return (id_task, n_decoded)
+    return None
+
+#_____________________________________________________________________________
 def probe_existing_llama_server_sync() -> tuple[bool, Optional[str], Optional[str], Optional[str]]:
     last_error: Optional[str] = None
 
@@ -890,25 +940,55 @@ def main_page() -> None:
 
         with ui.row().classes("w-full gap-4 mt-4 items-end"):
             ui.label("Server Logs").classes("flex-1 font-bold")
-            # Token‑per‑second label (updated every second)
-            tps_label = ui.label("# t/s: 0").classes("flex-none font-mono text-sm")
+            # Tokens-per-second label, aggiornata via polling dell'endpoint
+            # /metrics di llama-server (vedi _update_tps qui sotto).
+            tps_label = ui.label("# t/s: —").classes("flex-none font-mono text-sm")
             clear_log_button = ui.button("Clear Logs", on_click=clear_log, icon="delete").classes("mt-4")
-            # Function to compute tokens per second from LOG_BUFFER
-            def _update_tps() -> None:
-                total_tokens = 0
-                for line in LOG_BUFFER:
-                    if "n_decoded =" in line:
-                        parts = line.strip().split()
-                        if len(parts) >= 2:
-                            try:
-                                total_tokens += int(parts[-2])
-                            except ValueError:
-                                pass
-                seconds = max(1, len(LOG_BUFFER))
-                tps = total_tokens // seconds
-                tps_label.set_text(f"# t/s: {tps}")
-            # Update every second
-            ui.timer(1.0, _update_tps)
+
+            # Stato per il calcolo del rate live (per-client): t/s come
+            # Δn_decoded/Δt tra due poll consecutivi dello stesso task.
+            tps_state: dict[str, Any] = {"task": None, "n": None, "t": None, "last": None}
+
+            async def _update_tps() -> None:
+                # I/O di rete fuori dall'event loop; nessun errore deve uccidere
+                # il loop del timer.
+                try:
+                    prog = await asyncio.to_thread(fetch_active_slot_progress_sync)
+                except Exception:
+                    prog = None
+
+                now = time.monotonic()
+
+                if prog is None:
+                    # Nessuno slot in elaborazione: idle o generazione finita.
+                    # Azzeriamo il baseline ma teniamo a video l'ultimo rate.
+                    tps_state["task"] = tps_state["n"] = tps_state["t"] = None
+                    last = tps_state["last"]
+                    tps_label.set_text("# t/s: —" if last is None else f"# t/s: {last:.1f} (idle)")
+                    return
+
+                task, n = prog
+
+                # Nuovo task o primo campione: (ri)fissa il baseline, niente Δ.
+                if task != tps_state["task"] or tps_state["n"] is None or tps_state["t"] is None:
+                    tps_state["task"], tps_state["n"], tps_state["t"] = task, n, now
+                    last = tps_state["last"]
+                    tps_label.set_text("# t/s: …" if last is None else f"# t/s: {last:.1f}")
+                    return
+
+                dn = n - tps_state["n"]
+                dt = now - tps_state["t"]
+                tps_state["n"], tps_state["t"] = n, now  # avanza la finestra
+
+                if dt > 0 and dn >= 0:
+                    rate = dn / dt
+                    tps_state["last"] = rate
+                    tps_label.set_text(f"# t/s: {rate:.1f}")
+
+            # Polling ogni 2 secondi (= finestra di media del rate). Riferimento
+            # conservato per fermarlo all'uscita del client (vedi
+            # _stop_client_timers in fondo).
+            tps_timer = ui.timer(2.0, _update_tps)
 
         log_area = (
             ui.log()
@@ -942,6 +1022,21 @@ def main_page() -> None:
 
     log_timer = ui.timer(0.2, _tail)
     ui.timer(0.5, detect_existing_llama_server, once=True)
+
+    # Stop dei timer per-client alla disconnessione del tab (reload/chiusura),
+    # PRIMA che NiceGUI distrugga gli slot della pagina. Evita il
+    # RuntimeError "The parent slot of the element has been deleted." che un
+    # timer orfano solleverebbe al tick successivo: l'eccezione nasce dentro il
+    # loop del timer di NiceGUI (nell'ingresso del parent_slot), quindi un
+    # try/except dentro la callback non può intercettarla.
+    def _stop_client_timers() -> None:
+        for t in (tps_timer, log_timer):
+            try:
+                t.delete()
+            except Exception:
+                pass
+
+    ui.context.client.on_disconnect(_stop_client_timers)
 
 
 emit("GUI loaded", None)

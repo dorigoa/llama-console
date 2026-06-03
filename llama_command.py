@@ -39,6 +39,7 @@ def get_llama_command(
     cmd.extend([
         "--device", gpus,
         "--jinja",
+        "--metrics",                 # abilita l'endpoint Prometheus /metrics (t/s nella GUI)
         "-ngl", str(settings.DEFAULT_NGL),
         "--fit", str(settings.DEFAULT_FIT),
         "-c", str(M.ctxsize),
