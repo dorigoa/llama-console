@@ -128,7 +128,7 @@ def _build_settings() -> Settings:
                     sys.exit(1)
             
         if k == "REMOTE_GPUS":
-            REMOTE_GPUS_RE = re.compile(r"^RPC\d(?:,RPC\d)*$")
+            REMOTE_GPUS_RE = re.compile(r"^RPC\d+(?:,RPC\d+)*$")
             if not REMOTE_GPUS_RE.match(v):
                 logger.error(f"REMOTE_GPUS={v} is not allowed.")
                 sys.exit(1)    

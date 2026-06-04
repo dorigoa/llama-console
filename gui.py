@@ -908,7 +908,7 @@ def main_page() -> None:
                     context_size = int(context_select.value)
                     digits = re.sub(r"\D", "", trained_ctx_label.text or "")
                     trained_ctx_size = int(digits) if digits else 0
-                    if context_size > trained_ctx_size:
+                    if trained_ctx_size > 0 and context_size > trained_ctx_size:
                         mex = f"Start ignored: invalid context size > trained context size ({trained_ctx_size})"
                         emit(mex, ui_log)
                         notify_user(mex, type="warning")
