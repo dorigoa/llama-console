@@ -57,10 +57,12 @@ def _load_overrides(path: Path) -> Dict[str, Any]:
             data = json.load(f)
     except json.JSONDecodeError as e:
         logger.error(f"Invalid JSON in {path}: {e}")
-        return {}
+        sys.exit(1)
+#        return {}
     if not isinstance(data, dict):
         logger.error(f"File {path} must contain a JSON object, found {type(data).__name__}.")
-        return {}
+        sys.exit(1)
+#        return {}
     logger.info("Config override loaded from %s (%d keys).", path, len(data))
     for k in data:
         logger.debug(f"'{k}': '{data[k]}'")
