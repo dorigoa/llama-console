@@ -105,15 +105,15 @@ def _build_settings() -> Settings:
     unknown = set(overrides) - set(type_by_name)
     if unknown:
         raise ValueError(
-            f"Chiavi sconosciute nel config: {sorted(unknown)}. "
-            f"Valide: {sorted(type_by_name)}"
+            f"Unknown keys in config: {sorted(unknown)}. "
+            f"Valid ones are: {sorted(type_by_name)}"
         )
 
     for k, v in overrides.items():
         setattr(s, k, _coerce(v, type_by_name[k], k))
         if k == "RPC_SERVERS":
             if v:
-                logger.debug(f"RPC_SERVERS={v}")
+                logger.debug(f"ALVISE RPC_SERVERS={v}")
                 try:
                     _validate_rpc_servers(v)
                 except ValueError as e:
