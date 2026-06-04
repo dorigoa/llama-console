@@ -116,7 +116,7 @@ def _build_settings() -> Settings:
         setattr(s, k, _coerce(v, type_by_name[k], k))
         if k == "RPC_SERVERS":
             if v:
-                logger.debug(f"RPC_SERVERS={v}")
+                #logger.debug(f"RPC_SERVERS={v}")
                 _OCTET = r"(?:25[0-5]|2[0-4]\d|1\d\d|[1-9]?\d)"
                 _IPV4  = rf"(?:{_OCTET}\.){{3}}{_OCTET}"
                 _PORT  = r"(?:6553[0-5]|655[0-2]\d|65[0-4]\d\d|6[0-4]\d{3}|[1-5]\d{4}|[1-9]\d{0,3})"  # 1-65535
@@ -125,6 +125,12 @@ def _build_settings() -> Settings:
                 if not RPC_SERVERS_RE.match(v):
                     logger.error(f"RPC_SERVERS={v} is not allowed.")
                     sys.exit(1)
+            
+        if k == "REMOTE_GPUS":
+            REMOTE_GPUS_RE = re.compile(r"^RPC\d(?:,RPC\d)*$")
+            if not REMOTE_GPUS_RE.match(v):
+                logger.error(f"REMOTE_GPUS={v} is not allowed.")
+                sys.exit(1)        
 
     return s
 
