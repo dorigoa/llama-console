@@ -8,7 +8,7 @@ import threading
 import json
 import os
 
-CONFIG_FILE = os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json")
+CONFIG_FILE = Path(os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json"))
 
 #_________________________________________________________________________________________
 @dataclass
