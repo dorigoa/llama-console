@@ -8,7 +8,7 @@ import threading
 import json
 import os
 
-DEFAULT_CONFIG_FILENAME = "llama-console-config.json"
+DEFAULT_CONFIG_FILENAME = os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json")
 CONFIG_ENV_VAR = "LLAMA_CONSOLE_CONFIG"
 
 #_________________________________________________________________________________________
