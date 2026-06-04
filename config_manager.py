@@ -112,6 +112,8 @@ def _build_settings() -> Settings:
             f"Valid ones are: {sorted(type_by_name)}"
         )
 
+    #num_shards=0
+    #num_rem_gpus=0
     for k, v in overrides.items():
         setattr(s, k, _coerce(v, type_by_name[k], k))
         if k == "RPC_SERVERS":
@@ -145,10 +147,6 @@ def _build_settings() -> Settings:
             if not v or v=="":
                 logger.error(f"LOCAL_GPU={v} is not allowed.")
                 sys.exit(1)
-        
-        if num_shards != 1+num_rem_gpus:
-            logger.error(f"Specified {num_rem_gpus} + local one, is different than number of shards {num_shards}")
-            sys.exit(1) 
 
     return s
 
