@@ -141,7 +141,7 @@ def _build_settings() -> Settings:
             if not SHARD_BALANCE_RE.match(v):
                 logger.error(f"SHARD_BALANCE_RE={v} is not allowed.")
                 sys.exit(1)
-            num_shards = len(v.split(','))
+            #num_shards = len(v.split(','))
 
         if k == "LOCAL_GPU":
             if not v or v=="":
