@@ -72,12 +72,12 @@ def _discover_available_models( ) -> list[Model]:
                 model_name    = m.name,
                 model_path    = m / f"{m.name}.gguf",
                 mmproj_path   = pmmproj,
-                ctxsize       = data[m.name]['context_size'],
-                temperature   = data[m.name]['temperature'],
-                top_p         = data[m.name]['top_p'],
-                top_k         = data[m.name]['top_k'],
-                shard_balance = data[m.name]['shard_balance'],
-                last_started  = data[m.name]['last_started']
+                ctxsize       = data[m.name].get('context_size') or settings.DEFAULT_CONTEXT_SIZE,
+                temperature   = data[m.name].get('temperature') or settings.DEFAULT_TEMP,
+                top_p         = data[m.name].get('top_p') or settings.DEFAULT_TOP_P,
+                top_k         = data[m.name].get('top_k') or settings.DEFAULT_TOP_K,
+                shard_balance = data[m.name].get('shard_balance') or settings.DEFAULT_SHARD_BALANCE,
+                last_started  = data[m.name].get('last_started') or 0
             )
         else:
             M = Model(

@@ -7,7 +7,6 @@ import shlex
 import logzero
 import asyncio
 import subprocess
-from nicegui import ui
 from logzero import logger
 from nicegui import app, ui
 from typing import Any, Optional
@@ -266,10 +265,6 @@ def _parse_pid_lines(output: str) -> list[int]:
 
 #_____________________________________________________________________________
 def find_listening_pids_on_port(port: int) -> list[int] | None:
-    """Return local PIDs listening on the given TCP port.
-
-    lsof works on macOS and most Linux systems. ss is used as a Linux fallback.
-    """
     try:
         lsof = _run_command(["lsof", "-nP", f"-iTCP:{port}", "-sTCP:LISTEN", "-t"])
         pids = _parse_pid_lines(lsof.stdout)
@@ -412,7 +407,7 @@ async def get_browser_based_llama_url() -> str:
     )
     if not is_local and settings.LLAMA_SERVER_BIND not in url:
         url = url.replace('http', 'https', 1)
-        url = url.replace(f'{settings.LLAMA_SERVER_PORT}', '8443')
+        url = url.replace(f'{settings.LLAMA_SERVER_PORT}', '8443', count=1)
     return url
 
 #_____________________________________________________________________________
@@ -881,13 +876,16 @@ def main_page() -> None:
 
             mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
             label = "Run local only (no --rpc flag)"
-            if settings.RPC_SERVERS and settings.RPC_SERVERS != "":
+            if settings.RPC_SERVERS:
                 label = f"{label} - rpc servers={settings.RPC_SERVERS}"
                 
             run_local_only_checkbox = ui.checkbox(
                 label,
                 value=False,
             ).classes("flex-[1] mt-2").set_enabled( settings.RPC_SERVERS is not None and settings.RPC_SERVERS!="" )
+
+            if not settings.RPC_SERVERS or settings.RPC_SERVERS == "":
+                run_local_only_checkbox.set_value( True )
 
             async def start_selected_model() -> None:
 
@@ -1117,10 +1115,10 @@ def main_page() -> None:
     ui.context.client.on_disconnect(_stop_client_timers)
 
 
-emit("GUI loaded", None)
-emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
-emit(f"Available models: {len(model_utils.get_available_model_names())}", None)
-emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
+# emit("GUI loaded", None)
+# emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
+# emit(f"Available models: {len(model_utils.get_available_model_names())}", None)
+# emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
 
 @app.on_startup
 def _log_startup() -> None:

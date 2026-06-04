@@ -1,7 +1,6 @@
 
 from dataclasses import dataclass, field, fields
 from typing import List, Optional, Any, Dict
-from typing import List, Optional
 from logzero import logger
 from pathlib import Path
 import threading
@@ -133,8 +132,7 @@ def _build_settings() -> Settings:
             if not REMOTE_GPUS_RE.match(v):
                 logger.error(f"REMOTE_GPUS={v} is not allowed.")
                 sys.exit(1)    
-            num_rem_gpus = len(v.split(','))
-
+            
         if k == "DEFAULT_SHARD_BALANCE":
             _INT = r"(?:0|[1-9]\d*)"
             SHARD_BALANCE_RE = re.compile(rf"^{_INT}(?:,{_INT})*$")
