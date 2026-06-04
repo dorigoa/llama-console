@@ -885,8 +885,8 @@ def main_page() -> None:
                 label = f"{label} - rpc servers={settings.RPC_SERVERS}"
                 
             run_local_only_checkbox = ui.checkbox(
-                "Run local only (no --rpc flag)",
-                value=label,
+                label,
+                value=False,
             ).classes("flex-[1] mt-2").set_enabled( settings.RPC_SERVERS is not None and settings.RPC_SERVERS!="" )
 
             async def start_selected_model() -> None:
