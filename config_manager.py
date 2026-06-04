@@ -8,8 +8,8 @@ import threading
 import json
 import os
 
-DEFAULT_CONFIG_FILENAME = os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json")
-CONFIG_ENV_VAR = "LLAMA_CONSOLE_CONFIG"
+CONFIG_FILE = os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json")
+#CONFIG_ENV_VAR = "LLAMA_CONSOLE_CONFIG"
 
 #_________________________________________________________________________________________
 @dataclass
@@ -49,11 +49,11 @@ class Settings:
     DEFAULT_TEMP: float = 0.8
 
 #_________________________________________________________________________________________
-def _config_path() -> Path:
-    env = os.environ.get(CONFIG_ENV_VAR)
-    if env:
-        return Path(env).expanduser()
-    return Path.home() / DEFAULT_CONFIG_FILENAME
+# def _config_path() -> Path:
+#     env = os.environ.get(CONFIG_ENV_VAR)
+#     if env:
+#         return Path(env).expanduser()
+#     return Path.home() / DEFAULT_CONFIG_FILENAME
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
@@ -99,7 +99,7 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
 #_________________________________________________________________________________________
 def _build_settings() -> Settings:
     s = Settings()
-    overrides = _load_overrides(_config_path())
+    overrides = _load_overrides( CONFIG_FILE )
     if not overrides:
         return s
 
