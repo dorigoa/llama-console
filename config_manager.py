@@ -130,7 +130,25 @@ def _build_settings() -> Settings:
             REMOTE_GPUS_RE = re.compile(r"^RPC\d(?:,RPC\d)*$")
             if not REMOTE_GPUS_RE.match(v):
                 logger.error(f"REMOTE_GPUS={v} is not allowed.")
-                sys.exit(1)        
+                sys.exit(1)    
+            num_rem_gpus = len(v.split(','))
+
+        if k == "DEFAULT_SHARD_BALANCE":
+            _INT = r"(?:0|[1-9]\d*)"
+            SHARD_BALANCE_RE = re.compile(rf"^{_INT}(?:,{_INT})*$")
+            if not SHARD_BALANCE_RE.match(v):
+                logger.error(f"SHARD_BALANCE_RE={v} is not allowed.")
+                sys.exit(1)
+            num_shards = len(v.split(','))
+
+        if k == "LOCAL_GPU":
+            if not v or v=="":
+                logger.error(f"LOCAL_GPU={v} is not allowed.")
+                sys.exit(1)
+        
+        if num_shards != 1+num_rem_gpus:
+            logger.error(f"Specified {num_rem_gpus} + local one, is different than number of shards {num_shards}")
+            sys.exit(1) 
 
     return s
 
