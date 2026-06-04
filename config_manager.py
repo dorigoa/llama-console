@@ -88,14 +88,14 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
         ) from e
 
 #_________________________________________________________________________________________
-def _validate_rpc_servers(raw: str) -> None:
-    entries = [e.strip() for e in raw.split(",") if e.strip()]
-    if not entries:
-        raise ValueError(f"RPC_SERVERS='{raw}' is empty")
-    for entry in entries:
-        host, sep, port = entry.rpartition(":")
-        if not (sep and host and port and 1 <= int(port) <= 65535):
-            raise ValueError(f"RPC_SERVERS entry '{entry}' must be 'host:port' with valid port")
+# def _validate_rpc_servers(raw: str) -> None:
+#     entries = [e.strip() for e in raw.split(",") if e.strip()]
+#     if not entries:
+#         raise ValueError(f"RPC_SERVERS='{raw}' is empty")
+#     for entry in entries:
+#         host, sep, port = entry.rpartition(":")
+#         if not (sep and host and port and 1 <= int(port) <= 65535):
+#             raise ValueError(f"RPC_SERVERS entry '{entry}' must be 'host:port' with valid port")
 
 #_________________________________________________________________________________________
 def _build_settings() -> Settings:
@@ -125,13 +125,6 @@ def _build_settings() -> Settings:
                 if not RPC_SERVERS_RE.match(v):
                     logger.error(f"RPC_SERVERS={v} is not allowed.")
                     sys.exit(1)
-                # try:
-                #     _validate_rpc_servers(v)
-                # except ValueError as e:
-                #     logger.error("%s. Stop!", e)
-                #     sys.exit(1)
-
-
 
     return s
 
