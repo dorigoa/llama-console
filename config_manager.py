@@ -6,6 +6,7 @@ from logzero import logger
 from pathlib import Path
 import threading
 import json
+import sys
 import os
 
 CONFIG_FILE = Path(os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json"))
@@ -84,6 +85,16 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
         ) from e
 
 #_________________________________________________________________________________________
+def _validate_rpc_servers(raw: str) -> None:
+    entries = [e.strip() for e in raw.split(",") if e.strip()]
+    if not entries:
+        raise ValueError(f"RPC_SERVERS='{raw}' is empty")
+    for entry in entries:
+        host, sep, port = entry.rpartition(":")
+        if not (sep and host and port and 1 <= int(port) <= 65535):
+            raise ValueError(f"RPC_SERVERS entry '{entry}' must be 'host:port' with valid port")
+
+#_________________________________________________________________________________________
 def _build_settings() -> Settings:
     s = Settings()
     overrides = _load_overrides( CONFIG_FILE )
@@ -100,6 +111,16 @@ def _build_settings() -> Settings:
 
     for k, v in overrides.items():
         setattr(s, k, _coerce(v, type_by_name[k], k))
+        if k == "RPC_SERVERS":
+            if v:
+                try:
+                    _validate_rpc_servers(v)
+                except ValueError as e:
+                    logger.error("%s. Stop!", e)
+                    sys.exit(1)
+
+
+
     return s
 
 _settings_lock = threading.Lock()

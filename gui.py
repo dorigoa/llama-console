@@ -880,7 +880,10 @@ def main_page() -> None:
                 ).classes("flex-[1]")
 
             mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
-
+            #label = "Run local only (no --rpc flag)"
+            #if settings.RPC_SERVERS and settings.RPC_SERVERS!="":
+            #    rpc_servers=settings.RPC_SERVERS.split(",")
+                
             run_local_only_checkbox = ui.checkbox(
                 "Run local only (no --rpc flag)",
                 value=False or (not settings.RPC_SERVERS),
