@@ -113,6 +113,7 @@ def _build_settings() -> Settings:
         setattr(s, k, _coerce(v, type_by_name[k], k))
         if k == "RPC_SERVERS":
             if v:
+                logger.debug(f"RPC_SERVERS={v}")
                 try:
                     _validate_rpc_servers(v)
                 except ValueError as e:
