@@ -94,40 +94,6 @@ def read_gguf_trained_context_length(model_path: str) -> Optional[int]:
         return None
 
 #_____________________________________________________________________________
-# def update_trained_ctx_label(modelname: Optional[str]) -> None:
-#     M = model_utils.get_model_by_name(modelname) if modelname else None
-#     if M is None or not M.model_path:
-#         trained_ctx_label.set_text("Trained context: —")
-#         return
-#     n = read_gguf_trained_context_length(str(M.model_path))
-#     trained_ctx_label.set_text(
-#         f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
-#     )
-
-# _ctx_label_epoch = 0  # anti-race on quick change model 
-
-#_____________________________________________________________________________
-# async def update_trained_ctx_label(modelname: Optional[str]) -> None:
-#     global _ctx_label_epoch
-#     _ctx_label_epoch += 1
-#     my_epoch = _ctx_label_epoch
-
-#     M = model_utils.get_model_by_name(modelname) if modelname else None
-#     if M is None or not M.model_path:
-#         trained_ctx_label.set_text("Trained context: —")
-#         return
-
-#     trained_ctx_label.set_text("Trained context: …")  # feedback immediato
-#     n = await asyncio.to_thread(read_gguf_trained_context_length, str(M.model_path))
-
-#     if my_epoch != _ctx_label_epoch:
-#         return  # una richiesta più recente è già partita: scarto questo risultato
-
-#     trained_ctx_label.set_text(
-#         f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
-#     )
-
-#_____________________________________________________________________________
 async def update_trained_ctx_label(modelname: Optional[str]) -> None:
     M = model_utils.get_model_by_name(modelname) if modelname else None
     if M is None or not M.model_path:
@@ -363,8 +329,16 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
 
         status_label.set_text("llama-server status: already running")
         display_model_ = display_model.replace(".gguf", "")
+        #ctx = persist.get_settings()
+        all_persisted_params = persist.get_params_handler().load_params()
+        persisted = all_persisted_params.get(display_model_)
+        c = persisted.get("context_size")
+        t = persisted.get("temperature")
+        tp= persisted.get("top_p")
+        tk= persisted.get("top_k")
+        sb= persisted.get("shard_balance")
         status_detail_label.set_text(
-            f"Detected endpoint: {chat_url} | Model: {display_model_} "
+            f"Detected endpoint: {chat_url} | Model: {display_model_} | ctx: {c} | temp: {t} | top_p: {tp} | top_k: {tk} | shard_balance: {sb}"
         )
         set_link_target(status_chat_link, chat_url)
         status_chat_link.visible = True
