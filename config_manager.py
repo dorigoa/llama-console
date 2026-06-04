@@ -9,7 +9,6 @@ import json
 import os
 
 CONFIG_FILE = os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json")
-#CONFIG_ENV_VAR = "LLAMA_CONSOLE_CONFIG"
 
 #_________________________________________________________________________________________
 @dataclass
@@ -35,7 +34,6 @@ class Settings:
         0, 2048, 3072, 4096, 6144, 8192, 12288, 16384, 24576, 32768, 49152,
         65536, 98304, 131072, 196608, 262144
     ])
-    #DEFAULT_SHARD_BALANCE: str = "1,1,1,1"
     DEFAULT_SHARD_BALANCE: str = "30,22"
     DEFAULT_SPLIT_MODE: str = "layer"
     DEFAULT_NGL: str = "all"
@@ -49,13 +47,6 @@ class Settings:
     DEFAULT_TEMP: float = 0.8
 
 #_________________________________________________________________________________________
-# def _config_path() -> Path:
-#     env = os.environ.get(CONFIG_ENV_VAR)
-#     if env:
-#         return Path(env).expanduser()
-#     return Path.home() / DEFAULT_CONFIG_FILENAME
-
-#_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
     if not path.is_file():
         logger.warn("Config override not found in %s: using defaults.", path)
@@ -64,13 +55,9 @@ def _load_overrides(path: Path) -> Dict[str, Any]:
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        #raise ValueError(f"Invalid JSON in {path}: {e}") from e
         logger.error(f"Invalid JSON in {path}: {e}")
         return {}
     if not isinstance(data, dict):
-        #raise ValueError(
-        #    
-        #)
         logger.error(f"File {path} must contain a JSON object, found {type(data).__name__}.")
         return {}
     logger.info("Config override loaded from %s (%d keys).", path, len(data))

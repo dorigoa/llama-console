@@ -460,7 +460,8 @@ class LlamaManager:
 
         emit("------ Start requested ------", ui_log)
         emit(f"Run local      : {run_local_only}", ui_log)
-        emit(f"RPC server(s)  : {settings.RPC_SERVERS}", ui_log)
+        if settings.RPC_SERVERS:
+            emit(f"RPC server(s)  : {settings.RPC_SERVERS}", ui_log)
         emit(f"Selected model : {M.model_name}", ui_log)
         emit(f"Configured path: {str(M.model_path)}", ui_log)
         emit(f"Context size   : {M.ctxsize}", ui_log)
@@ -882,7 +883,7 @@ def main_page() -> None:
 
             run_local_only_checkbox = ui.checkbox(
                 "Run local only (no --rpc flag)",
-                value=False,
+                value=False or (not settings.RPC_SERVERS),
             ).classes("flex-[1] mt-2")
 
             async def start_selected_model() -> None:
