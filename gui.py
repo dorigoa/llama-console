@@ -987,11 +987,12 @@ def main_page() -> None:
                 if not settings.RPC_SERVERS:
                     notify_user("No RPC servers configured", type="warning")
                     return
-                script = Path(__file__).parent / "scripts" / "start_rpc.sh"
                 emit("------ Launch RPC servers ------", ui_log)
                 for host, cfg in settings.RPC_SERVERS.items():
                     cachedisk = cfg.get("cachedisk", "")
-                    emit(f"Launching RPC on {host} (disk: {cachedisk})...", ui_log)
+                    rpc_type = cfg.get("type", "posix")
+                    script = Path(__file__).parent / "scripts" / f"start_rpc_{rpc_type}.sh"
+                    emit(f"Launching RPC on {host} (disk: {cachedisk}, script: {script.name})...", ui_log)
                     try:
                         result = await asyncio.to_thread(
                             subprocess.run,

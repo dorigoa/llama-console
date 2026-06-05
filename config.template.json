@@ -4,10 +4,17 @@
                 "192.168.1.191": {
                         "port" : 50000,
                         "cachedisk": "/dev/disk4",
+                        "type": "posix"
                 },
                 "192.168.1.101": {
                         "port": 50000,
-                        "cachedisk": "/dev/disk6"
+                        "cachedisk": "/dev/disk6",
+                        "type": "posix"
+                },
+                "192.168.1.200": {
+                        "port": 50000,
+                        "cachedisk": "none",
+                        "type": "win"
                 }
         },
         "REMOTE_GPUS": "RPC0,RPC2,RPC3",

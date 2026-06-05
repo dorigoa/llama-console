@@ -19,7 +19,7 @@ class Settings:
     UI_PORT: int = 8080
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
     
-    RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4"}})
+    RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4", "type": "posix"}})
     LOCAL_GPU: str = "MTL0"
     REMOTE_GPUS: str = "RPC0"
     LLAMA_SERVER_HOST: str = "192.168.1.40"
