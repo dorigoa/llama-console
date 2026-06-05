@@ -19,10 +19,10 @@ class Settings:
     UI_PORT: int = 8080
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
     
-    RPC_SERVERS: str = "192.168.20.1:50000"
+    RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4"}})
     LOCAL_GPU: str = "MTL0"
     REMOTE_GPUS: str = "RPC0"
-    LLAMA_SERVER_HOST: str = "192.168.20.2"
+    LLAMA_SERVER_HOST: str = "192.168.1.40"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BIND: str = "127.0.0.1"
     LLAMA_SERVER_BIN: str  = "/usr/local/bin/llama-server"

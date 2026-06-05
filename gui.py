@@ -7,6 +7,7 @@ import shlex
 import logzero
 import asyncio
 import subprocess
+from pathlib import Path
 from logzero import logger
 from nicegui import app, ui
 from typing import Any, Optional
@@ -851,7 +852,8 @@ def main_page() -> None:
             mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
             label = "Run local only (no --rpc flag)"
             if settings.RPC_SERVERS:
-                label = f"{label} - rpc servers={settings.RPC_SERVERS}"
+                keys = settings.RPC_SERVERS.keys()
+                label = f"{label} - rpc servers={','.join(keys)}"
                 
             run_local_only_checkbox = ui.checkbox(
                 label,
@@ -980,6 +982,71 @@ def main_page() -> None:
                     open_chat_dialog(m.model_name, chat_url)
 
             ui.button("Launch Model", on_click=start_selected_model, icon="play_arrow").classes("mt-4")
+
+            async def launch_rpc_servers() -> None:
+                if not settings.RPC_SERVERS:
+                    notify_user("No RPC servers configured", type="warning")
+                    return
+                script = Path(__file__).parent / "scripts" / "start_rpc.sh"
+                emit("------ Launch RPC servers ------", ui_log)
+                for host, cfg in settings.RPC_SERVERS.items():
+                    cachedisk = cfg.get("cachedisk", "")
+                    emit(f"Launching RPC on {host} (disk: {cachedisk})...", ui_log)
+                    try:
+                        result = await asyncio.to_thread(
+                            subprocess.run,
+                            [str(script), host, cachedisk],
+                            text=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            timeout=30,
+                        )
+                        for line in (result.stdout or "").splitlines():
+                            emit(f"[rpc:{host}] {line}", ui_log)
+                        if result.returncode == 0:
+                            emit(f"RPC server launched on {host} (exit 0)", ui_log)
+                            notify_user(f"RPC server launched on {host}", type="positive")
+                        else:
+                            emit(f"RPC launch failed on {host} (exit {result.returncode})", ui_log)
+                            notify_user(f"RPC launch failed on {host} (exit {result.returncode})", type="negative")
+                    except Exception as exc:
+                        emit(f"RPC launch error on {host}: {exc}", ui_log)
+                        notify_user(f"RPC launch error on {host}: {exc}", type="negative")
+                emit("--------------------------------", ui_log)
+
+            async def stop_rpc_servers() -> None:
+                if not settings.RPC_SERVERS:
+                    notify_user("No RPC servers configured", type="warning")
+                    return
+                emit("------ Stop RPC servers ------", ui_log)
+                for host in settings.RPC_SERVERS:
+                    emit(f"Stopping RPC on {host}...", ui_log)
+                    try:
+                        result = await asyncio.to_thread(
+                            subprocess.run,
+                            ["ssh", "-n", f"dorigo_a@{host}", "killall rpc-server"],
+                            text=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            timeout=15,
+                        )
+                        for line in (result.stdout or "").splitlines():
+                            emit(f"[rpc-stop:{host}] {line}", ui_log)
+                        if result.returncode == 0:
+                            emit(f"RPC server stopped on {host}", ui_log)
+                            notify_user(f"RPC server stopped on {host}", type="positive")
+                        else:
+                            emit(f"RPC stop on {host} (exit {result.returncode}) — may not have been running", ui_log)
+                            notify_user(f"RPC stop on {host}: exit {result.returncode}", type="warning")
+                    except Exception as exc:
+                        emit(f"RPC stop error on {host}: {exc}", ui_log)
+                        notify_user(f"RPC stop error on {host}: {exc}", type="negative")
+                emit("------------------------------", ui_log)
+
+            if settings.RPC_SERVERS:
+                with ui.row().classes("mt-4 gap-2"):
+                    ui.button("Launch RPC servers", on_click=launch_rpc_servers, icon="dns")
+                    ui.button("Stop RPC servers", on_click=stop_rpc_servers, icon="power_off", color="orange")
 
         async def clear_log() -> None:
             global LOG_DROPPED

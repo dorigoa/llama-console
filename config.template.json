@@ -1,6 +1,15 @@
 {
-        "UI_HOST": "192.168.1.191",
-        "RPC_SERVERS": "192.168.20.1:50000,192.168.30.2:50000",
+        "UI_HOST": "192.168.1.40",
+        "RPC_SERVERS": {
+                "192.168.1.191": {
+                        "port" : 50000,
+                        "cachedisk": "/dev/disk4",
+                },
+                "192.168.1.101": {
+                        "port": 50000,
+                        "cachedisk": "/dev/disk6"
+                }
+        },
         "REMOTE_GPUS": "RPC0,RPC2,RPC3",
         "LLAMA_SERVER_BIND": "0.0.0.0",
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models",
