@@ -19,7 +19,7 @@ class Settings:
     UI_PORT: int = 8080
     LLAMA_READY_TIMEOUT_SECONDS: int = 600
     
-    RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4", "cachepath": "/Volumes/Home/llama.cpp", "type": "posix", "rpcserver": "/usr/local/bin/rpc-server"}})
+    RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4", "cachepath": "/Volumes/Home/llama.cpp", "type": "darwin", "rpcserver": "/usr/local/bin/rpc-server", "remuser": "dorigo_a"}})
     #LOCAL_GPU: str = "MTL0"
     #REMOTE_GPUS: str = "RPC0"
     GPUS: str = "RPC0"

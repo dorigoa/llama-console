@@ -813,16 +813,17 @@ def main_page() -> None:
                     emit("------ Launch RPC servers ------", ui_log)
                     for host in selected:
                         cfg = settings.RPC_SERVERS[host]
+                        remuser = cfg.get("remuser", "")
                         cachedisk = cfg.get("cachedisk", "")
-                        rpc_type = cfg.get("type", "posix")
+                        rpc_type = cfg.get("type", "")
                         rpcserver = cfg.get("rpcserver", "")
                         rpccachepath = cfg.get("cachepath", "")
                         script = Path(__file__).parent / "scripts" / f"start_rpc_{rpc_type}.sh"
-                        emit(f"Launching RPC on {host} (disk: {cachedisk}, bin: {rpcserver}, script: {script.name})...", ui_log)
+                        emit(f"Launching RPC on {host} (user: {remuser}, disk: {cachedisk}, bin: {rpcserver}, script: {script.name})...", ui_log)
                         try:
                             result = await asyncio.to_thread(
                                 subprocess.run,
-                                [str(script), host, cachedisk, rpcserver, rpccachepath],
+                                [str(script), host, remuser, cachedisk, rpcserver, rpccachepath],
                                 text=True,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
@@ -848,11 +849,15 @@ def main_page() -> None:
                         return
                     emit("------ Stop RPC servers ------", ui_log)
                     for host in selected:
-                        emit(f"Stopping RPC on {host}...", ui_log)
+                        cfg = settings.RPC_SERVERS[host]
+                        remuser = cfg.get("remuser", "")
+                        rpc_type = cfg.get("type", "posix")
+                        stop_script = Path(__file__).parent / "scripts" / f"stop_rpc_{rpc_type}.sh"
+                        emit(f"Stopping RPC on {host} (user: {remuser}, script: {stop_script.name})...", ui_log)
                         try:
                             result = await asyncio.to_thread(
                                 subprocess.run,
-                                ["ssh", "-n", f"dorigo_a@{host}", "killall rpc-server"],
+                                [str(stop_script), host, remuser],
                                 text=True,
                                 stdout=subprocess.PIPE,
                                 stderr=subprocess.STDOUT,
