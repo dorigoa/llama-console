@@ -2,6 +2,7 @@ from __future__ import annotations
 from config_manager import get_settings
 from object_models import Model
 from logzero import logger
+from typing import Optional
 
 settings = get_settings()
 
@@ -12,6 +13,7 @@ def get_llama_command(
         M: Model,
         run_local_only: bool = False,
         load_mmproj: bool = False,
+        devices: Optional[list[str]] = None,
         ) -> list[str]:
 
     logger.debug(f"Called with Model={M}")
@@ -31,7 +33,12 @@ def get_llama_command(
                    "--tensor-split", M.shard_balance,
                    ])
 
-    if not run_local_only:
+    if devices:
+        if run_local_only:
+            gpus = ",".join(d for d in devices if not d.upper().startswith("RPC"))
+        else:
+            gpus = ",".join(devices)
+    elif not run_local_only:
         gpus = f"{settings.LOCAL_GPU},{settings.REMOTE_GPUS}"
     else:
         gpus = f"{settings.LOCAL_GPU}"

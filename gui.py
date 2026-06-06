@@ -136,6 +136,8 @@ LOG_BUFFER: list[str] = []
 LOG_DROPPED: int = 0            # lines trimmed from the front of LOG_BUFFER
 MAX_LOG_LINES: int = 5000       # cap to bound memory
 
+detected_devices: list[str] = []   # populated by "List devices" button
+
 #_____________________________________________________________________________
 def ui_log(message: str) -> None:
     """Append a log line to the shared buffer (no direct UI access)."""
@@ -442,6 +444,10 @@ class LlamaManager:
         emit(f"Load mmproj    : {load_mmproj}", ui_log)
         if M.mmproj_path and load_mmproj:
             emit(f"MMProj file    : {str(M.mmproj_path)}", ui_log)
+        if detected_devices:
+            emit(f"Devices        : {', '.join(detected_devices)}", ui_log)
+        else:
+            emit(f"Devices        : {settings.GPUS} (from config GPUS)", ui_log)
         emit(f"-----------------------------", ui_log)
 
         try:
@@ -450,6 +456,7 @@ class LlamaManager:
                 M,
                 run_local_only=run_local_only,
                 load_mmproj=load_mmproj,
+                devices=detected_devices if detected_devices else [g.strip() for g in settings.GPUS.split(",") if g.strip()],
             )
 
             logger.debug(f"Executing command: {cmd}")
@@ -882,6 +889,7 @@ def main_page() -> None:
                 devices_label = ui.label("").classes("text-caption text-grey mt-1")
 
                 async def list_devices() -> None:
+                    global detected_devices
                     rpc_arg = ",".join(
                         f"{host}:{cfg.get('port', 50000)}"
                         for host, cfg in settings.RPC_SERVERS.items()
@@ -906,7 +914,10 @@ def main_page() -> None:
                         for line in lines:
                             emit(line, ui_log)
                         found = [line.split(":")[0].strip() for line in lines if ":" in line]
+                        detected_devices = found
                         devices_label.set_text(", ".join(found) if found else "no devices found")
+                        if found:
+                            emit(f"Detected devices: {', '.join(found)}", ui_log)
                     except Exception as exc:
                         emit(f"List devices error: {exc}", ui_log)
                         notify_user(f"List devices error: {exc}", type="negative")
