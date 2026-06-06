@@ -801,7 +801,7 @@ def main_page() -> None:
                         f"{host}"
                         f"  port={cfg.get('port', '?')}"
                         f"  disk={cfg.get('cachedisk', '?')}"
-                        f"  type={cfg.get('type', 'posix')}"
+                        f"  type={cfg.get('type', 'darwin')}"
                     )
                     rpc_checkboxes[host] = ui.checkbox(cb_label, value=True)
 

@@ -5,14 +5,14 @@
                         "port" : 50000,
                         "cachedisk": "/dev/disk4",
                         "cachepath": "/Volumes/Home/llama",
-                        "type": "posix",
+                        "type": "darwin",
                         "rpcserver": "/usr/local/bin/rpc-server"
                 },
                 "192.168.1.101": {
                         "port": 50000,
                         "cachedisk": "/dev/disk6",
                         "cachepath": "/Volumes/Home/llama",
-                        "type": "posix",
+                        "type": "darwin",
                         "rpcserver": "/usr/local/bin/rpc-server"
                 },
                 "192.168.1.200": {
