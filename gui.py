@@ -879,9 +879,43 @@ def main_page() -> None:
                             notify_user(f"RPC stop error on {host}: {exc}", type="negative")
                     emit("------------------------------", ui_log)
 
+                devices_label = ui.label("").classes("text-caption text-grey mt-1")
+
+                async def list_devices() -> None:
+                    rpc_arg = ",".join(
+                        f"{host}:{cfg.get('port', 50000)}"
+                        for host, cfg in settings.RPC_SERVERS.items()
+                    )
+                    cmd = (
+                        f"LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/llama-server"
+                        f" --rpc {rpc_arg} --list-devices"
+                        f" | grep -v '0 MiB free'"
+                    )
+                    emit(f"------ List devices ({rpc_arg}) ------", ui_log)
+                    try:
+                        result = await asyncio.to_thread(
+                            subprocess.run,
+                            cmd,
+                            shell=True,
+                            text=True,
+                            stdout=subprocess.PIPE,
+                            stderr=subprocess.STDOUT,
+                            timeout=30,
+                        )
+                        lines = (result.stdout or "").splitlines()
+                        for line in lines:
+                            emit(line, ui_log)
+                        found = [line.split(":")[0].strip() for line in lines if ":" in line]
+                        devices_label.set_text(", ".join(found) if found else "no devices found")
+                    except Exception as exc:
+                        emit(f"List devices error: {exc}", ui_log)
+                        notify_user(f"List devices error: {exc}", type="negative")
+                    emit("--------------------------------------", ui_log)
+
                 with ui.row().classes("mt-4 gap-2"):
                     ui.button("Launch RPC servers", on_click=launch_rpc_servers, icon="dns")
                     ui.button("Stop RPC servers", on_click=stop_rpc_servers, icon="power_off", color="orange")
+                    ui.button("List devices", on_click=list_devices, icon="devices")
 
         with ui.card().classes("w-full p-4"):
             ui.label("Select a model").classes("text-subtitle1 font-bold")
