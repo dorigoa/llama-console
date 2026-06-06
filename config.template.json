@@ -1,23 +1,29 @@
 {
-        "UI_HOST": "192.168.1.40",
+        "UI_HOST": "0.0.0.0",
         "RPC_SERVERS": {
                 "192.168.1.191": {
                         "port" : 50000,
                         "cachedisk": "/dev/disk4",
-                        "type": "posix"
+                        "cachepath": "/Volumes/Home/llama",
+                        "type": "posix",
+                        "rpcserver": "/usr/local/bin/rpc-server"
                 },
                 "192.168.1.101": {
                         "port": 50000,
                         "cachedisk": "/dev/disk6",
-                        "type": "posix"
+                        "cachepath": "/Volumes/Home/llama",
+                        "type": "posix",
+                        "rpcserver": "/usr/local/bin/rpc-server"
                 },
                 "192.168.1.200": {
                         "port": 50000,
                         "cachedisk": "none",
-                        "type": "win"
+                        "cachepath": "D:\\llama-rpc-cache",
+                        "type": "win",
+                        "rpcserver": "c:\\llama.cpp\\bin\\rpc-server.exe"
                 }
         },
-        "REMOTE_GPUS": "RPC0,RPC2,RPC3",
+        "GPUS": "RPC0,RPC1,RPC2,RPC3",
         "LLAMA_SERVER_BIND": "0.0.0.0",
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models",
         "PERSIST_FILE": "/Volumes/Users/dorigo_a/llama-console-persist.json",
