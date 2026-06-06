@@ -815,11 +815,14 @@ def main_page() -> None:
                         cfg = settings.RPC_SERVERS[host]
                         remuser = cfg.get("remuser", "")
                         cachedisk = cfg.get("cachedisk", "")
-                        rpc_type = cfg.get("type", "")
+                        type = cfg.get("type", "")
                         rpcserver = cfg.get("rpcserver", "")
                         rpccachepath = cfg.get("cachepath", "")
-                        script = Path(__file__).parent / "scripts" / f"start_rpc_{rpc_type}.sh"
-                        emit(f"Launching RPC on {host} (user: {remuser}, disk: {cachedisk}, bin: {rpcserver}, script: {script.name})...", ui_log)
+                        script = Path(__file__).parent / "scripts" / f"start_rpc_{type}.sh"
+                        
+                        rpcserver = rpcserver.replace("\\", "\\\\")
+                        rpccachepath = rpccachepath.replace("\\", "\\\\")
+                        emit(f"Launching: {script} {host} {remuser} {cachedisk} {rpcserver} {rpccachepath}")
                         try:
                             result = await asyncio.to_thread(
                                 subprocess.run,
