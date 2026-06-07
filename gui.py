@@ -691,7 +691,7 @@ async def ask_shard_balance(default_value: str) -> str | None:
 
     with ui.dialog() as dialog, ui.card().classes("w-full max-w-md"):
         ui.label("Shard balance").classes("text-h6")
-        ui.label(f"Insert tensor split values for GPUs: {settings.LOCAL_GPU},{settings.REMOTE_GPUS}").classes("text-sm text-gray-600")
+        ui.label(f"Insert tensor split values for GPUs: {detected_devices}").classes("text-sm text-gray-600")
         shard_input = ui.input(
             label="Shard balance",
             value=default_value,
