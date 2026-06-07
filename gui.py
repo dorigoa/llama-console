@@ -915,7 +915,7 @@ def main_page() -> None:
                             emit(line, ui_log)
                         found = [line.split(":")[0].strip() for line in lines if ":" in line]
                         detected_devices = found
-                        devices_label.set_text("Detected devices: {', '.join(found) if found else 'no devices found'")
+                        devices_label.set_text(f"Detected devices: {', '.join(found) if found else 'no devices found'}")
                         if found:
                             emit(f"Detected devices: {', '.join(found)}", ui_log)
                     except Exception as exc:
