@@ -6,8 +6,6 @@ from typing import Optional
 
 settings = get_settings()
 
-#logger = setup_console_logging()
-
 #_____________________________________________________________________________
 def get_llama_command(
         M: Model,
@@ -46,7 +44,7 @@ def get_llama_command(
     cmd.extend([
         "--device", gpus,
         "--jinja",
-        "--metrics",                 # abilita l'endpoint Prometheus /metrics (t/s nella GUI)
+        "--metrics",
         "-ngl", str(settings.DEFAULT_NGL),
         "--fit", str(settings.DEFAULT_FIT),
         "-c", str(M.ctxsize),
@@ -58,7 +56,6 @@ def get_llama_command(
         "--seed", "123456789",
     ])
 
-    #if temperature is not None:
     cmd.extend(["--temp", f"{float(M.temperature):.1f}"])
 
     if M.mmproj_path and load_mmproj:

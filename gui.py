@@ -988,9 +988,6 @@ def main_page() -> None:
 
             mmproj_select = ui.checkbox('Load MM Projector if available', value=False).classes("flex-[1]")
             label = "Run local only (no --rpc flag)"
-            # if settings.RPC_SERVERS:
-            #     keys = settings.RPC_SERVERS.keys()
-            #     label = f"{label} - rpc servers={','.join(keys)}"
                 
             run_local_only_checkbox = ui.checkbox(
                 label,
@@ -1139,8 +1136,6 @@ def main_page() -> None:
             tps_state: dict[str, Any] = {"task": None, "n": None, "t": None, "last": None}
 
             async def _update_tps() -> None:
-                # I/O di rete fuori dall'event loop; nessun errore deve uccidere
-                # il loop del timer.
                 try:
                     prog = await asyncio.to_thread(fetch_active_slot_progress_sync)
                 except Exception:
@@ -1149,8 +1144,6 @@ def main_page() -> None:
                 now = time.monotonic()
 
                 if prog is None:
-                    # Nessuno slot in elaborazione: idle o generazione finita.
-                    # Azzeriamo il baseline ma teniamo a video l'ultimo rate.
                     tps_state["task"] = tps_state["n"] = tps_state["t"] = None
                     last = tps_state["last"]
                     tps_label.set_text("# t/s: —" if last is None else f"# t/s: {last:.1f} (idle)")
@@ -1158,7 +1151,6 @@ def main_page() -> None:
 
                 task, n = prog
 
-                # Nuovo task o primo campione: (ri)fissa il baseline, niente Δ.
                 if task != tps_state["task"] or tps_state["n"] is None or tps_state["t"] is None:
                     tps_state["task"], tps_state["n"], tps_state["t"] = task, n, now
                     last = tps_state["last"]
@@ -1174,9 +1166,6 @@ def main_page() -> None:
                     tps_state["last"] = rate
                     tps_label.set_text(f"# t/s: {rate:.1f}")
 
-            # Polling ogni 2 secondi (= finestra di media del rate). Riferimento
-            # conservato per fermarlo all'uscita del client (vedi
-            # _stop_client_timers in fondo).
             tps_timer = ui.timer(2.0, _update_tps)
 
         log_area = (
@@ -1226,12 +1215,6 @@ def main_page() -> None:
                 pass
 
     ui.context.client.on_disconnect(_stop_client_timers)
-
-
-# emit("GUI loaded", None)
-# emit(f"Models directory: {settings.MODEL_BASE_DIR}", None)
-# emit(f"Available models: {len(model_utils.get_available_model_names())}", None)
-# emit(f"NiceGUI listening on http://{settings.UI_HOST}:{settings.UI_PORT}", None)
 
 @app.on_startup
 def _log_startup() -> None:
