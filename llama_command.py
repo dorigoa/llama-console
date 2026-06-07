@@ -36,7 +36,7 @@ def get_llama_command(
             gpus = ",".join(d for d in devices if not d.upper().startswith("RPC"))
         else:
             gpus = ",".join(devices)
-    elif: #not run_local_only:
+    else: #not run_local_only:
         gpus = f"{settings.GPUS}"
     # else:
     #     gpus = None
