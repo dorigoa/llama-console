@@ -25,8 +25,12 @@ def get_llama_command(
         "-m", str(M.model_path),
     ])
 
+    rpcs=[]
+    for k in settings.RPC_SERVERS.keys():
+        rpcs.append(f"{k}:{settings.RPC_SERVERS[k]['port']}")
+
     if not run_local_only:
-        cmd.extend(["--rpc", f"{','.join(settings.RPC_SERVERS.keys()) }",
+        cmd.extend(["--rpc", f"{','.join(rpcs) }",
                    "--split-mode", settings.DEFAULT_SPLIT_MODE,
                    "--tensor-split", M.shard_balance,
                    ])
