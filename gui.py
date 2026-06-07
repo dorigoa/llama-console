@@ -897,7 +897,7 @@ def main_page() -> None:
                     cmd = (
                         f"LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/llama-server"
                         f" --rpc {rpc_arg} --list-devices"
-                        f" | grep -v '0 MiB free'"
+                        f" | grep -v '0 MiB free'|grep -v 'Available devices'"
                     )
                     emit(f"------ List devices ({rpc_arg}) ------", ui_log)
                     try:
@@ -915,7 +915,7 @@ def main_page() -> None:
                             emit(line, ui_log)
                         found = [line.split(":")[0].strip() for line in lines if ":" in line]
                         detected_devices = found
-                        devices_label.set_text(", ".join(found) if found else "no devices found")
+                        devices_label.set_text("Detected devices: {', '.join(found) if found else 'no devices found'")
                         if found:
                             emit(f"Detected devices: {', '.join(found)}", ui_log)
                     except Exception as exc:

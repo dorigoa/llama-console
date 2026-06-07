@@ -26,7 +26,7 @@ def get_llama_command(
     ])
 
     if not run_local_only:
-        cmd.extend(["--rpc", f"{settings.RPC_SERVERS}",
+        cmd.extend(["--rpc", f"{','.join(settings.RPC_SERVERS.keys()) }",
                    "--split-mode", settings.DEFAULT_SPLIT_MODE,
                    "--tensor-split", M.shard_balance,
                    ])
@@ -36,10 +36,10 @@ def get_llama_command(
             gpus = ",".join(d for d in devices if not d.upper().startswith("RPC"))
         else:
             gpus = ",".join(devices)
-    elif not run_local_only:
-        gpus = f"{settings.LOCAL_GPU},{settings.REMOTE_GPUS}"
-    else:
-        gpus = f"{settings.LOCAL_GPU}"
+    elif: #not run_local_only:
+        gpus = f"{settings.GPUS}"
+    # else:
+    #     gpus = None
 
     cmd.extend([
         "--device", gpus,
