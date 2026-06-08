@@ -889,7 +889,9 @@ def main_page() -> None:
                             notify_user(f"RPC stop error on {host}: {exc}", type="negative")
                     emit("------------------------------", ui_log)
 
-                devices_label = ui.label("").classes("text-caption text-grey mt-1")
+                devices_label = ui.label(
+                     f"Detected devices: {', '.join(detected_devices)}" if detected_devices else ""
+                    ).classes("text-caption text-grey mt-1")
 
                 async def list_devices() -> None:
                     global detected_devices
