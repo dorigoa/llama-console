@@ -30,23 +30,28 @@ def get_llama_command(
         rpcs.append(f"{k}:{settings.RPC_SERVERS[k]['port']}")
 
     if not run_local_only:
-        cmd.extend(["--rpc", f"{','.join(rpcs) }",
+        cmd.extend(["--rpc", f"{','.join(rpcs)}",
                    "--split-mode", settings.DEFAULT_SPLIT_MODE,
                    "--tensor-split", M.shard_balance,
                    ])
 
     if devices:
         if run_local_only:
-            gpus = ",".join(d for d in devices if not d.upper().startswith("RPC"))
+            #gpus = ",".join(d for d in devices if not d.upper().startswith("RPC"))
+            gpus = ""
         else:
             gpus = ",".join(devices)
     else: #not run_local_only:
         gpus = f"{settings.GPUS}"
+        
     # else:
     #     gpus = None
 
+    if not run_local_only:
+        cmd.extend(["--device", gpus])
+
     cmd.extend([
-        "--device", gpus,
+        #"--device", gpus,
         "--jinja",
         "--metrics",
         "-ngl", str(settings.DEFAULT_NGL),

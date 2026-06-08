@@ -38,7 +38,7 @@ class Settings:
     ])
     DEFAULT_SHARD_BALANCE: str = "1"
     DEFAULT_SPLIT_MODE: str = "layer"
-    DEFAULT_NGL: str = "all"
+    DEFAULT_NGL: str = "999"
     DEFAULT_FIT: str = "off"
     DEFAULT_THREADS: int = 8
     DEFAULT_THREAD_BUNCHES: int = 8
@@ -112,8 +112,6 @@ def _build_settings() -> Settings:
             f"Valid ones are: {sorted(type_by_name)}"
         )
 
-    #num_shards=0
-    #num_rem_gpus=0
     for k, v in overrides.items():
         setattr(s, k, _coerce(v, type_by_name[k], k))
         # if k == "RPC_SERVERS":
