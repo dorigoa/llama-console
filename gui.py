@@ -893,9 +893,13 @@ def main_page() -> None:
 
                 async def list_devices() -> None:
                     global detected_devices
+                    selected = [h for h, cb in rpc_checkboxes.items() if cb.value]
+                    if not selected:
+                        notify_user("No RPC server selected", type="warning")
+                        return
                     rpc_arg = ",".join(
-                        f"{host}:{cfg.get('port', 50000)}"
-                        for host, cfg in settings.RPC_SERVERS.items()
+                        f"{host}:{settings.RPC_SERVERS[host].get('port', 50000)}"
+                        for host in selected
                     )
                     cmd = (
                         f"LD_LIBRARY_PATH=/usr/local/lib /usr/local/bin/llama-server"
