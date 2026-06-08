@@ -334,12 +334,12 @@ async def detect_existing_llama_server(*, verbose: bool = True) -> bool:
         display_model_ = display_model.replace(".gguf", "")
         #ctx = persist.get_settings()
         all_persisted_params = persist.get_params_handler().load_params()
-        persisted = all_persisted_params.get(display_model_)
-        c = persisted.get("context_size")
-        t = persisted.get("temperature")
-        tp= persisted.get("top_p")
-        tk= persisted.get("top_k")
-        sb= persisted.get("shard_balance")
+        persisted = all_persisted_params.get(display_model_) or {}
+        c = persisted.get("context_size") or {}
+        t = persisted.get("temperature") or {}
+        tp= persisted.get("top_p") or {}
+        tk= persisted.get("top_k") or {}
+        sb= persisted.get("shard_balance") or {}
         status_detail_label.set_text(
             f"Detected endpoint: {chat_url} | Model: {display_model_} | ctx: {c} | temp: {t} | top_p: {tp} | top_k: {tk} | shard_balance: {sb}"
         )
