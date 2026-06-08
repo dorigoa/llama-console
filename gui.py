@@ -37,7 +37,7 @@ LLAMA_READY_LOG_MARKERS = (
 
 #_____________________________________________________________________________
 def emit(message: str, sink: LogSink = None) -> None:
-    logger.info(message)
+    #logger.info(message)
 
     if sink is not None:
         try:
@@ -46,8 +46,13 @@ def emit(message: str, sink: LogSink = None) -> None:
             logger.error("Unable to write message to UI log sink")
 
 #_____________________________________________________________________________
-def notify_user(message: str, *, type: str = "info") -> None:
-    logger.info(message)
+def notify_user(message: str, *, type: str = "positive") -> None:
+    if str == "positive" or str == "info":
+        logger.info(message)
+    if str == "warning":
+        logger.warn(message)
+    if str == "negative":
+        logger.error(message)
     ui.notify(message, type=type, timeout=15000, close_button=True)
 
 #_____________________________________________________________________________
