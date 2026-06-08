@@ -51,7 +51,7 @@ class Settings:
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
     if not path.is_file():
-        logger.warn("Config override not found in %s: using defaults.", path)
+        logger.warning("Config override not found in %s: using defaults.", path)
         return {}
     try:
         with path.open("r", encoding="utf-8") as f:

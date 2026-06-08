@@ -48,7 +48,7 @@ def notify_user(message: str, *, type: str = "positive") -> None:
     if type == "positive" or type == "info":
         logger.info(message)
     if type == "warning":
-        logger.warn(message)
+        logger.warning(message)
     if type == "negative":
         logger.error(message)
     ui.notify(message, type=type, timeout=15000, close_button=True)
