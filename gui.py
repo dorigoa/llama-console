@@ -447,7 +447,7 @@ class LlamaManager:
         if detected_devices:
             emit(f"Devices        : {', '.join(detected_devices)}", ui_log)
         else:
-            emit(f"Devices        : {settings.GPUS} (from config GPUS)", ui_log)
+            emit(f"Devices        : {settings.GPUS} (from config defaults)", ui_log)
         emit(f"-----------------------------", ui_log)
 
         try:
@@ -1000,8 +1000,15 @@ def main_page() -> None:
             async def start_selected_model() -> None:
 
                 if not model_select.value or model_select.value.strip()=="":
-                    emit("Start ignored: no model selected", ui_log)
-                    notify_user("Select a model!", type="warning")
+                    mex="Start ignored: no model selected"
+                    emit(mex, ui_log)
+                    notify_user(mex, type="warning")
+                    return
+
+                if not detected_devices:
+                    mex="No detected device. Please press on 'List Devices' button first"
+                    emit(mex, ui_log)
+                    notify_user(mex, type="warning")
                     return
 
                 m = model_utils.get_model_by_name(str(model_select.value))

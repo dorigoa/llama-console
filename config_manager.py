@@ -22,7 +22,7 @@ class Settings:
     RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4", "cachepath": "/Volumes/Home/llama.cpp", "type": "darwin", "rpcserver": "/usr/local/bin/rpc-server", "remuser": "dorigo_a"}})
     #LOCAL_GPU: str = "MTL0"
     #REMOTE_GPUS: str = "RPC0"
-    GPUS: str = "RPC0"
+    GPUS: str = "MTL0"
     LLAMA_SERVER_HOST: str = "192.168.1.40"
     LLAMA_SERVER_PORT: int = 8088
     LLAMA_SERVER_BIND: str = "127.0.0.1"
