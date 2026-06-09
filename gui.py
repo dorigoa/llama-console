@@ -73,47 +73,55 @@ def _gguf_value(field) -> Any:
     return part[0] if len(part) else None
 
 #_____________________________________________________________________________
-def read_gguf_trained_context_length(model_path: str) -> Optional[int]:
-    """Training Context length read from .gguf, or None.
-    Key: '<general.architecture>.context_length'."""
-    try:
-        reader = GGUFReader(model_path, mode="r")
-    except Exception as exc:
-        emit(f"GGUFReader: cannot open {model_path}: {exc}", ui_log)
-        return None
+# def read_gguf_trained_context_length(model_path: str, spinner: ui.spinner) -> Optional[int]:
+#     logger.debug(f"Reading gguf metadata from {model_path}")
+#     spinner.visible=True
+#     try:
+#         reader = GGUFReader(model_path, mode="r")
+#         #spinner.visible=False
+#     except Exception as exc:
+#         emit(f"GGUFReader: cannot open {model_path}: {exc}", ui_log)
+#         spinner.visible=False
+#         return None
+    
 
-    arch = _gguf_value(reader.fields.get("general.architecture"))
-    if not arch:
-        emit(f"general.architecture assente in {model_path}", ui_log)
-        return None
+#     arch = _gguf_value(reader.fields.get("general.architecture"))
+#     if not arch:
+#         emit(f"general.architecture not found in {model_path}", ui_log)
+#         return None
 
-    ctx = _gguf_value(reader.fields.get(f"{arch}.context_length"))
-    if ctx is None:
-        emit(f"{arch}.context_length assente in {model_path}", ui_log)
-        return None
-    try:
-        return int(ctx)
-    except (TypeError, ValueError):
-        emit(f"Unexpected context_length value: {ctx!r}", ui_log)
-        return None
+#     ctx = _gguf_value(reader.fields.get(f"{arch}.context_length"))
+#     if ctx is None:
+#         emit(f"{arch}.context_length not found in {model_path}", ui_log)
+#         return None
+#     try:
+#         return int(ctx)
+#     except (TypeError, ValueError):
+#         emit(f"Unexpected context_length value: {ctx!r}", ui_log)
+#         return None
 
 #_____________________________________________________________________________
-async def update_trained_ctx_label(modelname: Optional[str]) -> None:
-    M = model_utils.get_model_by_name(modelname) if modelname else None
-    if M is None or not M.model_path:
-        trained_ctx_label.set_text("Trained context: —")
-        return
+# async def update_trained_ctx_label(modelname: Optional[str]) -> None:
+#     M = model_utils.get_model_by_name(modelname) if modelname else None
+#     if M is None or not M.model_path:
+#         trained_ctx_label.set_text("Trained context: —")
+#         #trained_ctx_spinner.visible = False
+#         return
 
-    trained_ctx_label.set_text("Trained context: …")  # feedback immediato
-    n = await asyncio.to_thread(read_gguf_trained_context_length, str(M.model_path))
+#     trained_ctx_label.set_text("Trained context: …")
+#     #trained_ctx_spinner.visible = True
+#     await asyncio.sleep(0)  # flush visible=True to browser before thread starts
+#     #n = await asyncio.to_thread(read_gguf_trained_context_length, str(M.model_path), trained_ctx_spinner )
 
-    # Applica il risultato solo se nel frattempo la selezione non è cambiata.
-    if model_select.value != modelname:
-        return
+#     #trained_ctx_spinner.visible = False
 
-    trained_ctx_label.set_text(
-        f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
-    )
+#     # Applica il risultato solo se nel frattempo la selezione non è cambiata.
+#     if model_select.value != modelname:
+#         return
+
+#     #trained_ctx_label.set_text(
+#     #    f"Trained context: {n:,} tokens" if n is not None else "Trained context: unknown"
+#     #)
 
 #_____________________________________________________________________________
 def is_llama_ready_log_line(text: str) -> bool:
@@ -201,10 +209,10 @@ async def refresh_model_list() -> None:
     model_select.set_options(models, value=safe_value)
     if safe_value:
         update_data_from_modelname(safe_value)
-        await update_trained_ctx_label(safe_value)
+        #await update_trained_ctx_label(safe_value)
     else:
         update_data_from_model(None)
-        await update_trained_ctx_label(None)
+        #await update_trained_ctx_label(None)
 
     emit(f"Model list refreshed: {len(models)} models found", ui_log)
     notify_user(f"Model list refreshed: {len(models)} models found", type="positive")
@@ -727,7 +735,9 @@ async def ask_shard_balance(default_value: str) -> str | None:
 @ui.page('/')
 def main_page() -> None:
     global status_label, status_detail_label, status_chat_link, status_chat_button
-    global model_select, trained_ctx_label, context_select, temperature_select
+    #global model_select, trained_ctx_label, trained_ctx_spinner, context_select, temperature_select
+    #global model_select, trained_ctx_label, context_select, temperature_select
+    global model_select, context_select, temperature_select
     global top_p_input, top_k_input, mmproj_select, run_local_only_checkbox
     global log_area, chat_dialog, chat_model_label, chat_url_link
 
@@ -951,8 +961,9 @@ def main_page() -> None:
                 )
 
                 async def _on_model_change(e) -> None:
+                    #trained_ctx_spinner.visible=True
                     update_data_from_modelname(e.value)
-                    await update_trained_ctx_label(e.value)
+                    #await update_trained_ctx_label(e.value)
 
                 model_select = ui.select(
                     options=available_models,
@@ -962,11 +973,14 @@ def main_page() -> None:
                     on_change=_on_model_change
                 ).classes("flex-1")
 
-                trained_ctx_label = ui.label("Trained context: —").classes(
-                    "text-base text-gray-600 self-stretch flex items-center whitespace-nowrap"
-                ).classes("flex-1")
+                #with ui.row().classes("flex-1 items-center gap-2"):
+                    # trained_ctx_label = ui.label("Trained context: —").classes(
+                    #     "text-base text-gray-600 whitespace-nowrap"
+                    # )
+                    #trained_ctx_spinner = ui.spinner(size="xs").classes("text-gray-500")
+                    #trained_ctx_spinner.visible = False
                 #update_trained_ctx_label(initial_model_name)
-                ui.timer(0.1, lambda: update_trained_ctx_label(initial_model_name), once=True)
+                #ui.timer(0.1, lambda: update_trained_ctx_label(initial_model_name), once=True)
 
                 #model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("mt-4")
                 model_list_refresh = ui.button("Refresh List", on_click=refresh_model_list, icon="refresh").classes("flex-1")
@@ -1032,13 +1046,13 @@ def main_page() -> None:
                     return
                 try:
                     context_size = int(context_select.value)
-                    digits = re.sub(r"\D", "", trained_ctx_label.text or "")
-                    trained_ctx_size = int(digits) if digits else 0
-                    if trained_ctx_size > 0 and context_size > trained_ctx_size:
-                        mex = f"Start ignored: invalid context size > trained context size ({trained_ctx_size})"
-                        emit(mex, ui_log)
-                        notify_user(mex, type="warning")
-                        return
+                    #digits = re.sub(r"\D", "", trained_ctx_label.text or "")
+                    #trained_ctx_size = int(digits) if digits else 0
+                    # if trained_ctx_size > 0 and context_size > trained_ctx_size:
+                    #     mex = f"Start ignored: invalid context size > trained context size ({trained_ctx_size})"
+                    #     emit(mex, ui_log)
+                    #     notify_user(mex, type="warning")
+                    #     return
                 except (TypeError, ValueError):
                     emit(f"Start ignored: invalid context size: {context_select.value!r}", ui_log)
                     notify_user("Invalid context size!", type="warning")
