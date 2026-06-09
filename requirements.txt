@@ -1,3 +1,4 @@
 #ping3
 nicegui
+logzero
 
