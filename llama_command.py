@@ -54,6 +54,7 @@ def get_llama_command(
         #"--device", gpus,
         "--jinja",
         "--metrics",
+        "-fa", "auto",
         "-ngl", str(settings.DEFAULT_NGL),
         "--fit", str(settings.DEFAULT_FIT),
         "-c", str(M.ctxsize),
