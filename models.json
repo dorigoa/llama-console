@@ -19,8 +19,8 @@
                         "TOPP": 0.95,
                         "TOPK": 64,
                         "MINP": -1,
-                        "REAS": "high"
-
+                        "REAS": "high",
+                        "MMPROJ": null
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "RPC_SERVERS": {
@@ -45,8 +45,8 @@
                         "TOPP": 0.95,
                         "TOPK": 64,
                         "MINP": -1,
-                        "REAS": "high"
-
+                        "REAS": "high",
+                        "MMPROJ": null
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "RPC_SERVERS": { },
@@ -57,8 +57,8 @@
                         "TOPP": 0.95,
                         "TOPK": 64,
                         "MINP": -1,
-                        "REAS": "high"
-
+                        "REAS": "high",
+                        "MMPROJ": null
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
                         "RPC_SERVERS": {
@@ -77,8 +77,8 @@
                         "TOPP": 0.95,
                         "TOPK": 64,
                         "MINP": -1,
-                        "REAS": "high"
-
+                        "REAS": "high",
+                        "MMPROJ": null
                 },
                 "gemma-4-12b-it-BF16": {
                         "RPC_SERVERS": {
@@ -97,10 +97,10 @@
                         "TOPP": 0.95,
                         "TOPK": 64,
                         "MINP": -1,
-                        "REAS": "high"
-
+                        "REAS": "high",
+                        "MMPROJ": null
                 },
-                "gemma-4-12b-it-UD-Q8_K_XL.gguf": {
+                "gemma-4-12b-it-UD-Q8_K_XL": {
                         "RPC_SERVERS": { },
                         "ctx": 262144,
                         "FITT": "4096",
@@ -109,10 +109,9 @@
                         "TOPP": 0.95,
                         "TOPK": 64,
                         "MINP": -1,
-                        "REAS": "high"
+                        "REAS": "high",
+                        "MMPROJ": null
                 }
         },
-        "ADDRESS_BIND": "0.0.0.0",
-        "PORT_BIND": 8088,
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
 }

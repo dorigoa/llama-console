@@ -3,6 +3,7 @@ from pathlib import Path
 import json
 import sys
 
+#___________________________________________________________________________________
 @dataclass
 class rpc_address:
     IP: str
@@ -20,14 +21,13 @@ class Model:
     top_k: int
     min_p: int
     reasoning: str
-    #shard_balance: str
     last_started: int
     fitt: str
     gpus: str
     rpcservers: list[rpc_address]
 
 #___________________________________________________________________________________
-def load_models_from_config(config_path: str | Path) -> list[Model]:
+def load_models(config_path: str | Path) -> list[Model]:
     """Istanzia una lista di Model dalla sezione 'models' del config JSON.
 
     Solleva KeyError se mancano campi obbligatori (scelta voluta: meglio
@@ -42,7 +42,6 @@ def load_models_from_config(config_path: str | Path) -> list[Model]:
 
     models: list[Model] = []
     for name, spec in models_section.items():
-        # alcune chiavi includono già l'estensione .gguf, altre no
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
 
         rpcservers = [
@@ -54,14 +53,14 @@ def load_models_from_config(config_path: str | Path) -> list[Model]:
             Model(
                 model_name=name,
                 model_path=base_dir / filename,
-                mmproj_path=None,                       # assente nel JSON
+                mmproj_path=str(spec["MMPROJ"]),                       
                 ctxsize=int(spec["ctx"]),
                 temperature=float(spec["TEMP"]),
                 top_p=float(spec["TOPP"]),
                 top_k=int(spec["TOPK"]),
                 min_p=int(spec["MINP"]),
                 reasoning=str(spec["REAS"]),
-                last_started=0,                         # assente nel JSON
+                last_started=0,                         
                 fitt=str(spec["FITT"]),
                 gpus=str(spec["GPUS"]),
                 rpcservers=rpcservers,
@@ -69,15 +68,18 @@ def load_models_from_config(config_path: str | Path) -> list[Model]:
         )
     return models
 
-
+#___________________________________________________________________________________
 if __name__ == "__main__":
+    if len(sys.argv)<2:
+        print(f"Usage: python model.py <filename>")
+        sys.exit(1)
     if not sys.argv[1]:
         sys.exit(0)
     if not Path(sys.argv[1]).exists():
         print(f"Error: file {sys.argv[1]} not found")
         sys.exit(1)
-    ms = load_models_from_config(sys.argv[1])
+    ms = load_models(sys.argv[1])
     print(f"{len(ms)} modelli caricati")
     for m in ms:
         rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or ""
-        print(f"  {m.model_name:40s} ctx={m.ctxsize:<7d} rpc=[{rpc}]")
+        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}]")
