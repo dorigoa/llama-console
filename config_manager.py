@@ -15,20 +15,22 @@ CONFIG_FILE = Path(os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "
 @dataclass
 class Settings:
     UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
-    UI_HOST: str = "127.0.0.1"
-    UI_PORT: int = 8080
-    LLAMA_READY_TIMEOUT_SECONDS: int = 600
+    #UI_HOST: str = "127.0.0.1"
+    #UI_PORT: int = 8080
+    #LLAMA_READY_TIMEOUT_SECONDS: int = 600
     
-    RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4", "cachepath": "/Volumes/Home/llama.cpp", "type": "darwin", "rpcserver": "/usr/local/bin/rpc-server", "remuser": "dorigo_a"}})
+    #RPC_SERVERS: dict = field(default_factory=lambda: {"192.168.1.191": {"port": 50000, "cachedisk": "/dev/disk4", "cachepath": "/Volumes/Home/llama.cpp", "type": "darwin", "rpcserver": "/usr/local/bin/rpc-server", "remuser": "dorigo_a"}})
     #LOCAL_GPU: str = "MTL0"
     #REMOTE_GPUS: str = "RPC0"
-    GPUS: str = "MTL0"
-    LLAMA_SERVER_HOST: str = "192.168.1.40"
-    LLAMA_SERVER_PORT: int = 8088
-    LLAMA_SERVER_BIND: str = "127.0.0.1"
-    LLAMA_SERVER_BIN: str  = "/usr/local/bin/llama-server"
+    #GPUS: str = "MTL0"
+    #LLAMA_SERVER_HOST: str = "192.168.1.40"
+    #LLAMA_SERVER_PORT: int = 8088
+    #LLAMA_SERVER_BIND: str = "127.0.0.1"
+    #LLAMA_SERVER_BIN: str  = "/usr/local/bin/llama-server"
     
-    OPENBROWSER: bool = True
+    #OPENBROWSER: bool = True
+
+    
 
     PERSIST_FILE: str = "/tmp/llama-console-persist.json"
     MODEL_BASE_DIR: str = "/Storage/LLM/gguf_models"
