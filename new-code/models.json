@@ -1,0 +1,123 @@
+{
+        "_comment1": "validate with: jq . config.template.json",
+        "_comment2": "or validate with: python3 -c 'import json,sys; json.load(open(sys.argv[1])); print(\"OK\")' config.template.json",
+        "models": {
+                "gemma-4-31B-it-UD-Q6_K_XL": {
+                        "ALIAS": "gemma-4-31B-it-UD-Q6_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 65536,
+                        "FITT": "5120,10240",
+                        "GPUS": "MTL0,RPC0",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                },
+                "gemma-4-31B-it-UD-Q8_K_XL": {
+                        "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "5120,10240,1024,1024",
+                        "GPUS": "MTL0,RPC0,RPC2,RPC3",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                },
+                "gemma-4-31B-it-qat-UD-Q4_K_XL": {
+                        "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
+                        "RPC_SERVERS": { },
+                        "ctx": 196608,
+                        "FITT": "4096",
+                        "GPUS": "MTL0",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                },
+                "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
+                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096",
+                        "GPUS": "MTL0",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                },
+                "gemma-4-12b-it-BF16": {
+                        "ALIAS": "gemma-4-12b-it-BF16",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 196608,
+                        "FITT": "4096",
+                        "GPUS": "MTL0",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                },
+                "gemma-4-12b-it-UD-Q8_K_XL": {
+                        "ALIAS": "gemma-4-12b-it-UD-Q8_K_XL",
+                        "RPC_SERVERS": { },
+                        "ctx": 262144,
+                        "FITT": "4096",
+                        "GPUS": "MTL0",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                }
+        },
+        "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
+}
