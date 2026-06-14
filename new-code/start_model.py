@@ -104,20 +104,23 @@ def main() -> None:
         sys.exit(1)
 
     devices = ""
-    if model.rpcservers:
-        rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
-        result = subprocess.run(
-            f"{binary} --rpc {rpc_list} --list-devices"
-            " | grep -v 'Available'"
-            " | grep -v ' 0 MiB free'"
-            " | sed 's+:++g'"
-            " | awk '{{t=t\",\"$1}}END{{print t}}'"
-            " | sed 's+,++'",
-            shell=True,
-            capture_output=True,
-            text=True,
-        )
-        devices = result.stdout.strip()
+    if args.dry_run:
+        devices = "SKIP_DRYRUN"
+    else:
+        if model.rpcservers:
+            rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
+            result = subprocess.run(
+                f"{binary} --rpc {rpc_list} --list-devices"
+                " | grep -v 'Available'"
+                " | grep -v ' 0 MiB free'"
+                " | sed 's+:++g'"
+                " | awk '{{t=t\",\"$1}}END{{print t}}'"
+                " | sed 's+,++'",
+                shell=True,
+                capture_output=True,
+                text=True,
+            )
+            devices = result.stdout.strip()
 
     cmd = _build_command(binary, model, devices)
     print("Command:", " ".join(cmd))
