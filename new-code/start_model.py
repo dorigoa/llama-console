@@ -58,7 +58,16 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
     return cmd
 
 #___________________________________________________________________________________
-def start_model(model_name: str | None, *, dry_run: bool = False, list_models: bool = False) -> None:
+def start_model(
+    model_name: str | None,
+    *,
+    dry_run: bool = False,
+    list_models: bool = False,
+    override_temp: float | None = None,
+    override_top_p: float | None = None,
+    override_top_k: int | None = None,
+    override_min_p: float | None = None,
+) -> None:
     models = load_models(MODELS_JSON)
 
     if list_models:
@@ -74,6 +83,15 @@ def start_model(model_name: str | None, *, dry_run: bool = False, list_models: b
         available = "\n  ".join(m.model_name for m in models)
         print(f"Error: model '{model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
         sys.exit(1)
+
+    if override_temp is not None:
+        model.temperature = override_temp
+    if override_top_p is not None:
+        model.top_p = override_top_p
+    if override_top_k is not None:
+        model.top_k = override_top_k
+    if override_min_p is not None:
+        model.min_p = override_min_p
 
     if not dry_run:
         print("Checking rpc servers...")
@@ -130,8 +148,20 @@ def main() -> None:
     parser.add_argument("model_name", nargs="?", help="Model name as listed in models.json (without .gguf extension)")
     parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it")
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
+    parser.add_argument("--override-temp", type=float, default=None, metavar="FLOAT")
+    parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
+    parser.add_argument("--override-top-k", type=int, default=None, metavar="INT")
+    parser.add_argument("--override-min-p", type=float, default=None, metavar="FLOAT")
     args = parser.parse_args()
-    start_model(args.model_name, dry_run=args.dry_run, list_models=args.list_models)
+    start_model(
+        args.model_name,
+        dry_run=args.dry_run,
+        list_models=args.list_models,
+        override_temp=args.override_temp,
+        override_top_p=args.override_top_p,
+        override_top_k=args.override_top_k,
+        override_min_p=args.override_min_p,
+    )
 
 #___________________________________________________________________________________
 if __name__ == "__main__":
