@@ -122,6 +122,11 @@ def main() -> None:
 
     st.title(settings.UI_TITLE)
 
+    st.markdown(
+        "<style>[data-testid='stSelectbox'] input { pointer-events: none !important; }</style>",
+        unsafe_allow_html=True,
+    )
+
     entries = _load_entries()
 
     # ── model selector ────────────────────────────────────────────────────────
