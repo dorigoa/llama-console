@@ -80,7 +80,7 @@ def main() -> None:
 
     
     dead = unreachable_rpc_servers(model)
-    if dead:
+    if dead and not args.dry_run:
         for addr in dead:
             print(f"RPC server {addr.IP}:{addr.PORT} non raggiungibile — avvio via SSH come {addr.remuser}...", file=sys.stderr)
             start_rpc_server(addr)
