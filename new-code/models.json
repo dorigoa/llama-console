@@ -37,7 +37,7 @@
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
                                         "bin": "/usr/local/bin/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
@@ -75,8 +75,8 @@
                                 }
                         },
                         "ctx": 262144,
-                        "FITT": "4096",
-                        "GPUS": "MTL0",
+                        "FITT": "4096,10240",
+                        "GPUS": "MTL0,RPC0",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -96,8 +96,8 @@
                                 }
                         },
                         "ctx": 196608,
-                        "FITT": "4096",
-                        "GPUS": "MTL0",
+                        "FITT": "4096,10240",
+                        "GPUS": "MTL0,RPC0",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -111,6 +111,33 @@
                         "ctx": 262144,
                         "FITT": "4096",
                         "GPUS": "MTL0",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null
+                }
+                "GPT-OSS-120B-MXFP4": {
+                        "ALIAS": "GPT-OSS-120B-MXFP4",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "alvise"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096,10240,512,512",
+                        "GPUS": "MTL0,RPC0,RPC2,RPC3",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
