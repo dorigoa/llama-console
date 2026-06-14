@@ -11,6 +11,10 @@ import select
 import queue
 import threading
 import subprocess
+import time
+import urllib.request
+import urllib.error
+from datetime import datetime, timezone
 import streamlit as st
 from pathlib import Path
 
@@ -25,6 +29,58 @@ _ANSI_RE = re.compile(rb"\x1b\[[0-9;]*[a-zA-Z]|\x1b[()][AB012]|\r")
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
+
+def _save_persist(model_name: str, alias: str, pid: int, port: int, started_at: str, ready_at: str) -> None:
+    settings = get_settings()
+    data = {
+        "model_name": model_name,
+        "alias": alias,
+        "pid": pid,
+        "port": port,
+        "api_url": f"http://127.0.0.1:{port}/v1",
+        "started_at": started_at,
+        "ready_at": ready_at,
+    }
+    Path(settings.PERSIST_FILE).write_text(json.dumps(data, indent=2), encoding="utf-8")
+
+
+def _clear_persist() -> None:
+    settings = get_settings()
+    p = Path(settings.PERSIST_FILE)
+    if p.exists():
+        p.unlink()
+
+
+def _probe_server(
+    proc: subprocess.Popen,
+    port: int,
+    model_name: str,
+    alias: str,
+    ready_q: queue.Queue,
+    timeout: int = 300,
+) -> None:
+    """Poll /v1/models until the server is ready or timeout/crash."""
+    url = f"http://127.0.0.1:{port}/v1/models"
+    started_at = datetime.now(timezone.utc).isoformat()
+    deadline = time.monotonic() + timeout
+
+    while time.monotonic() < deadline:
+        if proc.poll() is not None:
+            ready_q.put(False)
+            return
+        try:
+            with urllib.request.urlopen(url, timeout=5) as resp:
+                if resp.status == 200:
+                    ready_at = datetime.now(timezone.utc).isoformat()
+                    _save_persist(model_name, alias, proc.pid, port, started_at, ready_at)
+                    ready_q.put(True)
+                    return
+        except Exception:
+            pass
+        time.sleep(3)
+
+    ready_q.put(False)
+
 
 def _fmt_size(path: Path) -> str:
     if not path.exists():
@@ -47,6 +103,7 @@ def _load_entries() -> list[dict]:
         path = base / fname
         entries.append({
             "name": name,
+            "alias": str(spec.get("ALIAS", name)),
             "path": path,
             "size": _fmt_size(path),
             "exists": path.exists(),
@@ -106,6 +163,17 @@ def _pty_reader(master_fd: int, q: queue.Queue) -> None:
 @st.fragment(run_every=1)
 def _log_pane() -> None:
     _drain_queue()
+
+    # Drain probe result — triggers full page rerun on state change
+    ready_q: queue.Queue = st.session_state.get("ready_queue", queue.Queue())
+    try:
+        result = ready_q.get_nowait()
+        if st.session_state.get("server_ready") != result:
+            st.session_state.server_ready = result
+            st.rerun(scope="app")
+    except queue.Empty:
+        pass
+
     proc = st.session_state.get("process")
     lines: list[str] = st.session_state.get("log_lines", [])
 
@@ -143,7 +211,9 @@ def main() -> None:
         "process": None,
         "log_lines": [],
         "log_queue": queue.Queue(),
+        "ready_queue": queue.Queue(),
         "running_model": None,
+        "server_ready": None,  # None=idle, False=loading, True=ready
     }.items():
         if k not in st.session_state:
             st.session_state[k] = v
@@ -174,7 +244,10 @@ def main() -> None:
         st.write("")
         st.write("")
         if _is_running():
-            st.success(f"▶ running")
+            if st.session_state.server_ready:
+                st.success("▶ ready")
+            else:
+                st.warning("⏳ loading…")
         elif st.session_state.process is not None:
             st.info("⏹ stopped")
         else:
@@ -230,7 +303,8 @@ def main() -> None:
 
     with col_info:
         if _is_running():
-            st.write(f"**Model:** {st.session_state.running_model}")
+            status_txt = "ready" if st.session_state.server_ready else "loading model…"
+            st.write(f"**Model:** {st.session_state.running_model}  —  {status_txt}")
 
     if start_clicked:
         cmd = [sys.executable, "-u", str(START_SCRIPT), entry["name"]]
@@ -245,6 +319,8 @@ def main() -> None:
 
         st.session_state.log_lines = []
         st.session_state.log_queue = queue.Queue()
+        st.session_state.ready_queue = queue.Queue()
+        st.session_state.server_ready = False
 
         master_fd, slave_fd = pty.openpty()
         proc = subprocess.Popen(
@@ -260,17 +336,25 @@ def main() -> None:
         st.session_state.process = proc
         st.session_state.running_model = entry["name"]
 
-        t = threading.Thread(
+        threading.Thread(
             target=_pty_reader,
             args=(master_fd, st.session_state.log_queue),
             daemon=True,
-        )
-        t.start()
+        ).start()
+
+        threading.Thread(
+            target=_probe_server,
+            args=(proc, settings.PORT_BIND, entry["name"], entry["alias"], st.session_state.ready_queue),
+            daemon=True,
+        ).start()
+
         st.rerun()
 
     if stop_clicked and st.session_state.process is not None:
         st.session_state.process.terminate()
         st.session_state.running_model = None
+        st.session_state.server_ready = None
+        _clear_persist()
         st.rerun()
 
     # ── log window ────────────────────────────────────────────────────────────

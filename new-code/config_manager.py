@@ -20,7 +20,7 @@ CONFIG_FILE = Path(
 class Settings:
     ADDRESS_BIND: str = "0.0.0.0"
     PORT_BIND: int = 8088
-    PERSIST_FILE: str = "/tmp/llama-console-persist.json",
+    PERSIST_FILE: str = "/tmp/llama-console-persist.json"
     UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
     LLAMA_SERVER_BIN: str = "/usr/local/bin/llama-server"
 

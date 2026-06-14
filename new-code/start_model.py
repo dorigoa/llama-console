@@ -107,7 +107,7 @@ def start_model(
                 print(f"Error: RPC server(s) still unreachable after start attempt: {addrs}", flush=True)
                 sys.exit(1)
 
-        print("Tutti i server RPC sono raggiungibili.", flush=True)
+        print("All RPC servers reachable.", flush=True)
 
     binary = settings.LLAMA_SERVER_BIN
 
