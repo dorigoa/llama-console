@@ -242,4 +242,4 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    main()
+    subprocess.run(["streamlit", "run", __file__] + sys.argv[1:])
