@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from logzero import logger
+from typing import Tuple
 from pathlib import Path
 import json
 import sys
@@ -31,6 +32,7 @@ class Model:
     fitt: str
     #gpus: str
     rpcservers: list[rpc_server]
+    extras: list[str]
 
 #___________________________________________________________________________________
 def load_models(config_path: str | Path) -> list[Model]:
@@ -83,6 +85,7 @@ def load_models(config_path: str | Path) -> list[Model]:
                 fitt=str(spec["FITT"]),
                 #gpus=str(spec["GPUS"]),
                 rpcservers=rpcservers,
+                extras=spec("EXTRAS")
             )
         )
     return models
