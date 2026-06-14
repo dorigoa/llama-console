@@ -4,6 +4,9 @@
 import os
 import sys
 import json
+import pty
+import re
+import select
 import queue
 import threading
 import subprocess
@@ -14,6 +17,10 @@ from config_manager import get_settings
 
 MODELS_JSON = Path(__file__).parent / "models.json"
 START_SCRIPT = Path(__file__).parent / "start_model.py"
+
+# Strip ANSI colour/cursor codes and bare carriage returns written by llama-server
+# when it detects a TTY (which is exactly what we give it via the PTY).
+_ANSI_RE = re.compile(rb"\x1b\[[0-9;]*[a-zA-Z]|\x1b[()][AB012]|\r")
 
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
@@ -65,10 +72,31 @@ def _drain_queue() -> None:
             break
 
 
-def _reader(proc: subprocess.Popen, q: queue.Queue) -> None:
-    for line in iter(proc.stdout.readline, ""):
-        q.put(line)
-    proc.stdout.close()
+def _pty_reader(master_fd: int, q: queue.Queue) -> None:
+    """Read bytes from the PTY master, strip ANSI codes, split on newlines."""
+    buf = b""
+    while True:
+        try:
+            r, _, _ = select.select([master_fd], [], [], 0.2)
+            if not r:
+                continue
+            chunk = os.read(master_fd, 4096)
+            if not chunk:
+                break
+            chunk = _ANSI_RE.sub(b"", chunk)
+            buf += chunk
+            while b"\n" in buf:
+                line, buf = buf.split(b"\n", 1)
+                q.put(line.decode("utf-8", errors="replace"))
+        except OSError:
+            # Slave side closed (process exited) → EIO on macOS/Linux
+            break
+    if buf:
+        q.put(buf.decode("utf-8", errors="replace"))
+    try:
+        os.close(master_fd)
+    except OSError:
+        pass
 
 
 # ─── auto-refreshing log pane ─────────────────────────────────────────────────
@@ -204,7 +232,7 @@ def main() -> None:
             st.write(f"**Model:** {st.session_state.running_model}")
 
     if start_clicked:
-        cmd = [sys.executable, str(START_SCRIPT), entry["name"]]
+        cmd = [sys.executable, "-u", str(START_SCRIPT), entry["name"]]
         if temp_str.strip():
             cmd += ["--override-temp",  temp_str.strip()]
         if topp_str.strip():
@@ -217,20 +245,23 @@ def main() -> None:
         st.session_state.log_lines = []
         st.session_state.log_queue = queue.Queue()
 
+        master_fd, slave_fd = pty.openpty()
         proc = subprocess.Popen(
             cmd,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            bufsize=1,
+            stdin=subprocess.DEVNULL,
+            stdout=slave_fd,
+            stderr=slave_fd,
+            close_fds=True,
             env={**os.environ, "PYTHONUNBUFFERED": "1"},
         )
+        os.close(slave_fd)  # parent does not need the slave end
+
         st.session_state.process = proc
         st.session_state.running_model = entry["name"]
 
         t = threading.Thread(
-            target=_reader,
-            args=(proc, st.session_state.log_queue),
+            target=_pty_reader,
+            args=(master_fd, st.session_state.log_queue),
             daemon=True,
         )
         t.start()
