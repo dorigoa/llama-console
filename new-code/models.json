@@ -150,7 +150,10 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": "--cache-type-k q8_0 --cache-type-v q8_0"
+                        "EXTRAS": {
+                                "--cache-type-k": "q8_0",
+                                "--cache-type-v": "q8_0"
+                        }
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
