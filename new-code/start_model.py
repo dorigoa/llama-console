@@ -80,6 +80,7 @@ def main() -> None:
 
     
     if not args.dry_run:
+        print("Checking rpc servers...")
         dead = unreachable_rpc_servers(model)
         if dead:
             for addr in dead:
