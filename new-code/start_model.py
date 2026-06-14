@@ -79,17 +79,18 @@ def main() -> None:
         sys.exit(1)
 
     
-    dead = unreachable_rpc_servers(model)
-    if dead and not args.dry_run:
-        for addr in dead:
-            print(f"RPC server {addr.IP}:{addr.PORT} non raggiungibile — avvio via SSH come {addr.remuser}...", file=sys.stderr)
-            start_rpc_server(addr)
+    if not args.dry_run:
+        dead = unreachable_rpc_servers(model)
+        if dead:
+            for addr in dead:
+                print(f"RPC server {addr.IP}:{addr.PORT} non raggiungibile — avvio via SSH come {addr.remuser}...", file=sys.stderr)
+                start_rpc_server(addr)
 
-        still_dead = wait_for_rpc_servers(dead)
-        if still_dead:
-            addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
-            print(f"Error: RPC server(s) ancora non raggiungibili dopo il tentativo di avvio: {addrs}", file=sys.stderr)
-            sys.exit(1)
+            still_dead = wait_for_rpc_servers(dead)
+            if still_dead:
+                addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
+                print(f"Error: RPC server(s) ancora non raggiungibili dopo il tentativo di avvio: {addrs}", file=sys.stderr)
+                sys.exit(1)
 
         print("Tutti i server RPC sono raggiungibili.", file=sys.stderr)
 
