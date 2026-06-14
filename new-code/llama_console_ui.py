@@ -430,6 +430,7 @@ def main() -> None:
 
     if stop_clicked and st.session_state.process is not None:
         st.session_state.process.terminate()
+        st.session_state.process = None
         st.session_state.running_model = None
         st.session_state.server_ready = None
         _clear_persist()
