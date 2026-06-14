@@ -132,7 +132,7 @@ def _probe_server(
     model_name: str,
     alias: str,
     ready_q: queue.Queue,
-    timeout: int = 300,
+    timeout: int = 420,
 ) -> None:
     """Poll /v1/models until the server is ready or timeout/crash."""
     url = f"http://127.0.0.1:{port}/v1/models"
