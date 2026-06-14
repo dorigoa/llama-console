@@ -54,7 +54,7 @@ def start_rpc_server(addr: rpc_server) -> bool:
     remote_cmd = (
         f"LLAMA_CACHE={addr.cachepath} "
         f"nohup {addr.bin} --host 0.0.0.0 --port {addr.PORT} -c  "
-        f">/dev/null 2>&1 </dev/null &"
+        f">/tmp/rpc-server.out 2>&1 </dev/null &"
     )
     print(f"  SSH: {addr.remuser}@{addr.IP}  \"{remote_cmd}\"", file=sys.stderr)
     result = subprocess.run(
