@@ -310,7 +310,7 @@ def main() -> None:
         flag = "" if e["exists"] else "  ⚠️ file missing"
         return f"{e['name']}   [{e['size']}]{flag}"
 
-    col_drop, col_status = st.columns([5, 1])
+    col_drop, col_status = st.columns([5, 1], vertical_alignment="bottom")
     with col_drop:
         idx = st.selectbox(
             "Model",
@@ -319,17 +319,21 @@ def main() -> None:
             disabled=_is_running(),
         )
     with col_status:
-        st.write("")
-        st.write("")
         if _is_running():
             if st.session_state.server_ready:
-                st.success("▶ ready")
+                badge_color, badge_text = "#22c55e", "▶ ready"
             else:
-                st.warning("⏳ loading…")
+                badge_color, badge_text = "#f59e0b", "⏳ loading…"
         elif st.session_state.process is not None:
-            st.info("⏹ stopped")
+            badge_color, badge_text = "#6b7280", "⏹ stopped"
         else:
-            st.info("idle")
+            badge_color, badge_text = "#6b7280", "● idle"
+        st.markdown(
+            f'<div style="background:{badge_color}22;border:1px solid {badge_color};'
+            f'border-radius:6px;padding:7px 14px;color:{badge_color};font-size:14px;'
+            f'font-weight:600;text-align:center;margin-bottom:4px">{badge_text}</div>',
+            unsafe_allow_html=True,
+        )
 
     entry = entries[idx]
 
