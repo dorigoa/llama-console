@@ -104,7 +104,7 @@ if __name__ == "__main__":
     print(f"{len(ms)} modelli caricati")
     for m in ms:
         rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or "-"
-        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}] extras=[{m.extras}]")
+        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}] extras={m.extras}")
         for s in m.rpcservers:
             disk = f"  disk={s.cachedisk}" if s.cachedisk else ""
             print(f"    {s.IP}:{s.PORT}  user={s.remuser}  bin={s.bin}  cache={s.cachepath}{disk}")

@@ -41,8 +41,8 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
     cmd += ["-fit", "on"]
     cmd += ["-fitc", "8192"]
     cmd += ["-np", "1"]
-    cmd += ["--cache-type-k", "q8_0"]
-    cmd += ["--cache-type-v", "q8_0"]
+    #cmd += ["--cache-type-k", "q8_0"]
+    #cmd += ["--cache-type-v", "q8_0"]
     cmd += ["--no-warmup"]
     cmd += ["--temp", str(model.temperature)]
     cmd += ["--top-p", str(model.top_p)]
@@ -51,9 +51,10 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
     cmd += ["--alias", str(model.alias)]
     if model.min_p >= 0:
         cmd += ["--min-p", str(model.min_p)]
+    if model.extras:
+        cmd += model.extras
 
     return cmd
-
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Launch llama-server for a model defined in models.json")
