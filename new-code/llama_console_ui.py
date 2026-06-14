@@ -12,6 +12,7 @@ import queue
 import threading
 import subprocess
 import time
+import signal
 import urllib.request
 import urllib.error
 from datetime import datetime, timezone
@@ -49,6 +50,80 @@ def _clear_persist() -> None:
     p = Path(settings.PERSIST_FILE)
     if p.exists():
         p.unlink()
+
+
+class _RecoveredProcess:
+    """Minimal Popen-compatible wrapper for a PID we didn't spawn ourselves."""
+
+    def __init__(self, pid: int) -> None:
+        self.pid = pid
+
+    def poll(self) -> int | None:
+        try:
+            os.kill(self.pid, 0)
+            return None  # still alive
+        except (ProcessLookupError, PermissionError):
+            return 1
+
+    def terminate(self) -> None:
+        try:
+            os.kill(self.pid, signal.SIGTERM)
+        except (ProcessLookupError, PermissionError):
+            pass
+
+
+def _try_recover_from_persist() -> None:
+    """Called once per session: restore running state from the persist file if valid."""
+    if st.session_state.get("_recovery_done"):
+        return
+    st.session_state._recovery_done = True
+
+    settings = get_settings()
+    persist_path = Path(settings.PERSIST_FILE)
+    if not persist_path.exists():
+        return
+
+    try:
+        data = json.loads(persist_path.read_text(encoding="utf-8"))
+    except Exception:
+        return
+
+    pid: int | None = data.get("pid")
+    port: int | None = data.get("port")
+    model_name: str | None = data.get("model_name")
+    alias: str = data.get("alias", model_name or "")
+
+    if not (pid and port and model_name):
+        return
+
+    recovered = _RecoveredProcess(pid)
+    if recovered.poll() is not None:
+        _clear_persist()
+        return
+
+    # Fast API check (refused immediately if not up yet, so 2 s timeout is safe)
+    api_ready = False
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/v1/models", timeout=2) as resp:
+            api_ready = resp.status == 200
+    except Exception:
+        pass
+
+    st.session_state.process = recovered
+    st.session_state.running_model = model_name
+
+    if api_ready:
+        st.session_state.server_ready = True
+    else:
+        # Model still loading — start a probe thread to catch when it's ready
+        st.session_state.server_ready = False
+        rq: queue.Queue = queue.Queue()
+        st.session_state.ready_queue = rq
+        threading.Thread(
+            target=_probe_server,
+            args=(recovered, port, model_name, alias, rq),
+            daemon=True,
+        ).start()
 
 
 def _probe_server(
@@ -214,9 +289,12 @@ def main() -> None:
         "ready_queue": queue.Queue(),
         "running_model": None,
         "server_ready": None,  # None=idle, False=loading, True=ready
+        "_recovery_done": False,
     }.items():
         if k not in st.session_state:
             st.session_state[k] = v
+
+    _try_recover_from_persist()
 
     st.title(settings.UI_TITLE)
 
