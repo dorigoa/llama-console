@@ -21,10 +21,10 @@ def _tcp_reachable(addr: rpc_server) -> bool:
 
 #___________________________________________________________________________________
 def unreachable_rpc_servers(model: Model) -> list[rpc_server]:
-    """Ritorna gli rpc_server di model che non rispondono al ping TCP.
+    """Return the rpc_server entries in model that do not respond to a TCP ping.
 
-    Se la lista rpcservers è vuota ritorna [] senza effettuare alcun tentativo.
-    I check vengono eseguiti in parallelo (un thread per server).
+    Returns [] immediately if rpcservers is empty.
+    Checks are run in parallel (one thread per server).
     """
     servers = model.rpcservers
     if not servers:
@@ -46,10 +46,10 @@ def unreachable_rpc_servers(model: Model) -> list[rpc_server]:
 
 #___________________________________________________________________________________
 def start_rpc_server(addr: rpc_server) -> bool:
-    """Avvia rpc-server sul host remoto via SSH in background.
+    """Start rpc-server on the remote host via SSH in the background.
 
-    </dev/null stacca stdin così nohup non rimane agganciato alla sessione SSH.
-    Ritorna True se SSH ha restituito exit code 0.
+    </dev/null detaches stdin so nohup does not stay bound to the SSH session.
+    Returns True if SSH exited with code 0.
     """
     remote_cmd = (
         f"LLAMA_CACHE={addr.cachepath} "
@@ -69,9 +69,9 @@ def start_rpc_server(addr: rpc_server) -> bool:
 
 #___________________________________________________________________________________
 def wait_for_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
-    """Attende con polling che i server diventino raggiungibili.
+    """Poll until all servers become reachable or the timeout expires.
 
-    Ritorna la lista di quelli ancora non raggiungibili allo scadere del timeout.
+    Returns the list of servers still unreachable when the deadline is reached.
     """
     deadline = time.monotonic() + _RPC_START_TIMEOUT
     remaining = list(servers)
@@ -80,7 +80,7 @@ def wait_for_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
         remaining = [a for a in remaining if not _tcp_reachable(a)]
         if remaining:
             addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in remaining)
-            print(f"  Ancora non raggiungibili: {addrs}", file=sys.stderr)
+            print(f"  Still unreachable: {addrs}", file=sys.stderr)
     return remaining
 
 #___________________________________________________________________________________

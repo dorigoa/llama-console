@@ -223,6 +223,7 @@ def main() -> None:
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
+            env={**os.environ, "PYTHONUNBUFFERED": "1"},
         )
         st.session_state.process = proc
         st.session_state.running_model = entry["name"]

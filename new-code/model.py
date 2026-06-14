@@ -36,10 +36,10 @@ class Model:
 
 #___________________________________________________________________________________
 def load_models(config_path: str | Path) -> list[Model]:
-    """Istanzia una lista di Model dalla sezione 'models' del config JSON.
+    """Instantiate a list of Model objects from the 'models' section of the config JSON.
 
-    Solleva KeyError se mancano campi obbligatori (scelta voluta: meglio
-    fallire esplicitamente che inventare default).
+    Raises KeyError if required fields are missing (intentional: fail explicitly
+    rather than silently inventing defaults).
     """
     config_path = Path(config_path)
     with config_path.open(encoding="utf-8") as f:
@@ -54,7 +54,7 @@ def load_models(config_path: str | Path) -> list[Model]:
         model_path = base_dir / filename
 
         if not model_path.exists():
-            print(f"[SKIP] Model '{name}': file non trovato: {model_path}", file=sys.stderr)
+            print(f"[SKIP] Model '{name}': file not found: {model_path}", file=sys.stderr)
             continue
 
         rpcservers = [
@@ -101,7 +101,7 @@ if __name__ == "__main__":
         print(f"Error: file {sys.argv[1]} not found")
         sys.exit(1)
     ms = load_models(sys.argv[1])
-    print(f"{len(ms)} modelli caricati")
+    print(f"{len(ms)} models loaded")
     for m in ms:
         rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or "-"
         print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}] extras={m.extras}")

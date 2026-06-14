@@ -94,20 +94,20 @@ def start_model(
         model.min_p = override_min_p
 
     if not dry_run:
-        print("Checking rpc servers...")
+        print("Checking rpc servers...", flush=True)
         dead = unreachable_rpc_servers(model)
         if dead:
             for addr in dead:
-                print(f"RPC server {addr.IP}:{addr.PORT} non raggiungibile — avvio via SSH come {addr.remuser}...", file=sys.stderr)
+                print(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...", flush=True)
                 start_rpc_server(addr)
 
             still_dead = wait_for_rpc_servers(dead)
             if still_dead:
                 addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
-                print(f"Error: RPC server(s) ancora non raggiungibili dopo il tentativo di avvio: {addrs}", file=sys.stderr)
+                print(f"Error: RPC server(s) still unreachable after start attempt: {addrs}", flush=True)
                 sys.exit(1)
 
-        print("Tutti i server RPC sono raggiungibili.", file=sys.stderr)
+        print("Tutti i server RPC sono raggiungibili.", flush=True)
 
     binary = settings.LLAMA_SERVER_BIN
 
@@ -121,21 +121,30 @@ def start_model(
     else:
         if model.rpcservers:
             rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
+            print("Running list-devices...", flush=True)
             result = subprocess.run(
-                f"{binary} --rpc {rpc_list} --list-devices"
-                " | grep -v 'Available'"
-                " | grep -v ' 0 MiB free'"
-                " | sed 's+:++g'"
-                " | awk '{{t=t\",\"$1}}END{{print t}}'"
-                " | sed 's+,++'",
+                f"{binary} --rpc {rpc_list} --list-devices",
                 shell=True,
                 capture_output=True,
                 text=True,
             )
-            devices = result.stdout.strip()
+            if result.stdout:
+                print(result.stdout, end="", flush=True)
+            if result.stderr:
+                print(result.stderr, end="", flush=True)
+            # filter and join device names
+            raw_devices = [
+                line.replace(":", "").split()[0]
+                for line in result.stdout.splitlines()
+                if line.strip()
+                and "Available" not in line
+                and "0 MiB free" not in line
+            ]
+            devices = ",".join(raw_devices)
+            print(f"Using devices: {devices or '(none)'}", flush=True)
 
     cmd = _build_command(binary, model, devices)
-    print("Command:", " ".join(cmd))
+    print("Command:", " ".join(cmd), flush=True)
 
     if dry_run:
         return

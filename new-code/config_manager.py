@@ -57,8 +57,8 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
         return value
     except (TypeError, ValueError) as e:
         raise ValueError(
-            f"Valore non valido per '{key}': atteso {getattr(target_type, '__name__', target_type)}, "
-            f"ricevuto {value!r} ({e})."
+            f"Invalid value for '{key}': expected {getattr(target_type, '__name__', target_type)}, "
+            f"got {value!r} ({e})."
         ) from e
 
 #_________________________________________________________________________________________
