@@ -53,7 +53,7 @@
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
                         "RPC_SERVERS": { },
-                        "ctx": 196608,
+                        "ctx": 131072,
                         "FITT": "4096",
                         "TEMP": 1.0,
                         "TOPP": 0.95,

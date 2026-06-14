@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
 """Streamlit GUI for managing llama-server models via start_model.py."""
 
-import json
 import os
-import queue
-import subprocess
 import sys
+import json
+import queue
 import threading
-from pathlib import Path
-
+import subprocess
 import streamlit as st
+from pathlib import Path
 
 from config_manager import get_settings
 
