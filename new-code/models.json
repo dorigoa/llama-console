@@ -21,7 +21,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": null
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
@@ -48,7 +49,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": null
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
@@ -61,7 +63,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": null
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
                         "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
@@ -82,7 +85,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": null
                 },
                 "gemma-4-12b-it-BF16": {
                         "ALIAS": "gemma-4-12b-it-BF16",
@@ -103,7 +107,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": null
                 },
                 "gemma-4-12b-it-UD-Q8_K_XL": {
                         "ALIAS": "gemma-4-12b-it-UD-Q8_K_XL",
@@ -116,7 +121,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": null
                 }
                 "GPT-OSS-120B-MXFP4": {
                         "ALIAS": "GPT-OSS-120B-MXFP4",
@@ -143,7 +149,8 @@
                         "TOPK": 64,
                         "MINP": -1,
                         "REAS": "high",
-                        "MMPROJ": null
+                        "MMPROJ": null,
+                        "EXTRAS": "--cache-type-k q8_0 --cache-type-v q8_0"
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
