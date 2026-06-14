@@ -9,7 +9,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -29,14 +29,14 @@
                                 "192.168.20.1": {
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 },
                                 "192.168.30.2": {
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "alvise"
                                 }
                         },
@@ -70,7 +70,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -91,7 +91,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -124,14 +124,14 @@
                                 "192.168.20.1": {
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 },
                                 "192.168.30.2": {
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "alvise"
                                 }
                         },
@@ -179,7 +179,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -200,7 +200,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -221,7 +221,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -242,7 +242,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 }
                         },
@@ -263,14 +263,14 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
                                 },
                                 "192.168.30.2": {
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/usr/local/bin/rpc-server",
+                                        "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "alvise"
                                 }
                         },
