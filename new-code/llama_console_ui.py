@@ -310,30 +310,12 @@ def main() -> None:
         flag = "" if e["exists"] else "  ⚠️ file missing"
         return f"{e['name']}   [{e['size']}]{flag}"
 
-    col_drop, col_status = st.columns([5, 1], vertical_alignment="bottom")
-    with col_drop:
-        idx = st.selectbox(
-            "Model",
-            range(len(entries)),
-            format_func=lambda i: _label(entries[i]),
-            disabled=_is_running(),
-        )
-    with col_status:
-        if _is_running():
-            if st.session_state.server_ready:
-                badge_color, badge_text = "#22c55e", "▶ ready"
-            else:
-                badge_color, badge_text = "#f59e0b", "⏳ loading…"
-        elif st.session_state.process is not None:
-            badge_color, badge_text = "#6b7280", "⏹ stopped"
-        else:
-            badge_color, badge_text = "#6b7280", "● idle"
-        st.markdown(
-            f'<div style="background:{badge_color}22;border:1px solid {badge_color};'
-            f'border-radius:6px;padding:7px 14px;color:{badge_color};font-size:14px;'
-            f'font-weight:600;text-align:center;margin-bottom:4px">{badge_text}</div>',
-            unsafe_allow_html=True,
-        )
+    idx = st.selectbox(
+        "Model",
+        range(len(entries)),
+        format_func=lambda i: _label(entries[i]),
+        disabled=_is_running(),
+    )
 
     entry = entries[idx]
 
@@ -366,7 +348,7 @@ def main() -> None:
             )
 
     # ── start / stop ──────────────────────────────────────────────────────────
-    col_start, col_stop, col_info = st.columns([1, 1, 5])
+    col_start, col_stop, col_info = st.columns([1, 1, 5], vertical_alignment="center")
 
     with col_start:
         start_clicked = st.button(
@@ -385,8 +367,18 @@ def main() -> None:
 
     with col_info:
         if _is_running():
-            status_txt = "ready" if st.session_state.server_ready else "loading model…"
-            st.write(f"**Model:** {st.session_state.running_model}  —  {status_txt}")
+            if st.session_state.server_ready:
+                badge_color, badge_text = "#22c55e", f"▶ ready — {st.session_state.running_model}"
+            else:
+                badge_color, badge_text = "#f59e0b", f"⏳ loading — {st.session_state.running_model}"
+        elif st.session_state.process is not None:
+            badge_color, badge_text = "#6b7280", "⏹ stopped"
+        else:
+            badge_color, badge_text = "#6b7280", "● idle"
+        st.markdown(
+            f'<span style="color:{badge_color};font-size:14px;font-weight:600">{badge_text}</span>',
+            unsafe_allow_html=True,
+        )
 
     if start_clicked:
         cmd = [sys.executable, "-u", str(START_SCRIPT), entry["name"]]
