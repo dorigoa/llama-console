@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 """Streamlit GUI for managing llama-server models via start_model.py."""
 
+import html as _html
 import os
 import sys
 import json
@@ -77,19 +78,20 @@ def _pty_reader(master_fd: int, q: queue.Queue) -> None:
     buf = b""
     while True:
         try:
-            r, _, _ = select.select([master_fd], [], [], 0.2)
+            r, _, _ = select.select([master_fd], [], [], 0.5)
             if not r:
                 continue
             chunk = os.read(master_fd, 4096)
             if not chunk:
-                break
+                # macOS may return b"" instead of raising OSError; keep going
+                continue
             chunk = _ANSI_RE.sub(b"", chunk)
             buf += chunk
             while b"\n" in buf:
                 line, buf = buf.split(b"\n", 1)
                 q.put(line.decode("utf-8", errors="replace"))
         except OSError:
-            # Slave side closed (process exited) → EIO on macOS/Linux
+            # EIO when slave side is fully closed (process exited)
             break
     if buf:
         q.put(buf.decode("utf-8", errors="replace"))
@@ -115,12 +117,11 @@ def _log_pane() -> None:
             st.error(f"Process exited with code {code}")
 
     tail = "\n".join(lines[-1000:])
-    st.text_area(
-        "log_area",
-        value=tail,
-        height=480,
-        label_visibility="collapsed",
-        key="log_textarea",
+    st.markdown(
+        '<div style="height:480px;overflow-y:scroll;background:#0e1117;color:#d1d5db;'
+        'font-family:monospace;font-size:13px;padding:8px 12px;border-radius:4px;'
+        f'border:1px solid #333;white-space:pre-wrap">{_html.escape(tail)}</div>',
+        unsafe_allow_html=True,
     )
 
     col_clear, _ = st.columns([1, 5])
