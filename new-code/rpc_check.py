@@ -6,10 +6,10 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from model import Model, rpc_server
 
-_TIMEOUT = 2.0   # secondi per il tentativo di connessione TCP
+_TIMEOUT = 2.0
 
-_RPC_START_POLL_INTERVAL = 2   # secondi tra un tentativo e l'altro
-_RPC_START_TIMEOUT      = 20  # secondi massimi di attesa
+_RPC_START_POLL_INTERVAL = 2
+_RPC_START_TIMEOUT      = 20
 
 #___________________________________________________________________________________
 def _tcp_reachable(addr: rpc_server) -> bool:
@@ -67,7 +67,6 @@ def start_rpc_server(addr: rpc_server) -> bool:
         print(f"  SSH stderr: {result.stderr.strip()}", file=sys.stderr)
     return result.returncode == 0
 
-
 #___________________________________________________________________________________
 def wait_for_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
     """Attende con polling che i server diventino raggiungibili.
@@ -83,7 +82,6 @@ def wait_for_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
             addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in remaining)
             print(f"  Ancora non raggiungibili: {addrs}", file=sys.stderr)
     return remaining
-
 
 #___________________________________________________________________________________
 if __name__ == "__main__":

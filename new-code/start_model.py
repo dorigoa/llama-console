@@ -14,6 +14,7 @@ MODELS_JSON = Path(__file__).parent / "models.json"
 
 settings = get_settings()
 
+#___________________________________________________________________________________
 def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
     cmd = [binary, "-m", str(model.model_path), "-c", str(model.ctxsize)]
 
@@ -56,30 +57,25 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
 
     return cmd
 
-def main() -> None:
-    parser = argparse.ArgumentParser(description="Launch llama-server for a model defined in models.json")
-    parser.add_argument("model_name", nargs="?", help="Model name as listed in models.json (without .gguf extension)")
-    parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it")
-    parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
-    args = parser.parse_args()
-
+#___________________________________________________________________________________
+def start_model(model_name: str | None, *, dry_run: bool = False, list_models: bool = False) -> None:
     models = load_models(MODELS_JSON)
 
-    if args.list_models:
+    if list_models:
         print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
         sys.exit(0)
 
-    if not args.model_name:
-        parser.error("model_name is required")
-
-    model = next((m for m in models if m.model_name == args.model_name), None)
-    if model is None:
-        available = "\n  ".join(m.model_name for m in models)
-        print(f"Error: model '{args.model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
+    if not model_name:
+        print("Error: model_name is required", file=sys.stderr)
         sys.exit(1)
 
-    
-    if not args.dry_run:
+    model = next((m for m in models if m.model_name == model_name), None)
+    if model is None:
+        available = "\n  ".join(m.model_name for m in models)
+        print(f"Error: model '{model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
+        sys.exit(1)
+
+    if not dry_run:
         print("Checking rpc servers...")
         dead = unreachable_rpc_servers(model)
         if dead:
@@ -95,8 +91,6 @@ def main() -> None:
 
         print("Tutti i server RPC sono raggiungibili.", file=sys.stderr)
 
-    
-
     binary = settings.LLAMA_SERVER_BIN
 
     if not Path(binary).is_file():
@@ -104,7 +98,7 @@ def main() -> None:
         sys.exit(1)
 
     devices = ""
-    if args.dry_run:
+    if dry_run:
         devices = "SKIP_DRYRUN"
     else:
         if model.rpcservers:
@@ -125,11 +119,20 @@ def main() -> None:
     cmd = _build_command(binary, model, devices)
     print("Command:", " ".join(cmd))
 
-    if args.dry_run:
+    if dry_run:
         return
 
     os.execvp(cmd[0], cmd)
 
+#___________________________________________________________________________________
+def main() -> None:
+    parser = argparse.ArgumentParser(description="Launch llama-server for a model defined in models.json")
+    parser.add_argument("model_name", nargs="?", help="Model name as listed in models.json (without .gguf extension)")
+    parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it")
+    parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
+    args = parser.parse_args()
+    start_model(args.model_name, dry_run=args.dry_run, list_models=args.list_models)
 
+#___________________________________________________________________________________
 if __name__ == "__main__":
     main()
