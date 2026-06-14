@@ -6,7 +6,7 @@ import sys
 
 #___________________________________________________________________________________
 @dataclass
-class rpc_address:
+class rpc_server:
     IP: str
     PORT: int
     cachepath: str
@@ -30,7 +30,7 @@ class Model:
     last_started: int
     fitt: str
     gpus: str
-    rpcservers: list[rpc_address]
+    rpcservers: list[rpc_server]
 
 #___________________________________________________________________________________
 def load_models(config_path: str | Path) -> list[Model]:
@@ -56,7 +56,7 @@ def load_models(config_path: str | Path) -> list[Model]:
             continue
 
         rpcservers = [
-            rpc_address(
+            rpc_server(
                 IP=ip,
                 PORT=int(srv["port"]),
                 cachepath=str(srv["cachepath"]),
