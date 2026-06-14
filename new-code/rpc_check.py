@@ -45,7 +45,7 @@ def unreachable_rpc_servers(model: Model) -> list[rpc_server]:
     return dead
 
 #___________________________________________________________________________________
-def start_rpc_server(addr: rpc_address) -> bool:
+def start_rpc_server(addr: rpc_server) -> bool:
     """Avvia rpc-server sul host remoto via SSH in background.
 
     </dev/null stacca stdin così nohup non rimane agganciato alla sessione SSH.
