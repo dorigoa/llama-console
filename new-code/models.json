@@ -36,7 +36,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "bin": "/usr/local/bin/rpc-server",
                                         "remuser": "alvise"
                                 }
                         },
@@ -131,7 +131,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "bin": "/usr/local/bin/rpc-server",
                                         "remuser": "alvise"
                                 }
                         },
@@ -270,7 +270,7 @@
                                         "port": 50000,
                                         "cachedisk": "/dev/disk6",
                                         "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "bin": "/usr/local/bin/rpc-server",
                                         "remuser": "alvise"
                                 }
                         },
