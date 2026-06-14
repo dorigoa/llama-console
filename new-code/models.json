@@ -145,6 +145,144 @@
                         "MMPROJ": null,
                         "EXTRAS": [ "--cache-type-k", "q8_0", "--cache-type-v", "q8_0" ]
                         
+                },
+                "Qwen3.6-27B-UD-Q4_K_XL": {
+                        "ALIAS": "Qwen3.6-27B-UD-Q4_K_XL",
+                        "RPC_SERVERS": {},
+                        "ctx": 262144,
+                        "FITT": "4096",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
+                },
+                "Qwen3.6-27B-UD-Q6_K_XL": {
+                        "ALIAS": "Qwen3.6-27B-UD-Q6_K_XL",
+                        "RPC_SERVERS": {},
+                        "ctx": 196608,
+                        "FITT": "4096",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
+                },
+                "Qwen3.6-27B-UD-Q8_K_XL": {
+                        "ALIAS": "Qwen3.6-27B-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
+                },
+                "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
+                        "ALIAS": "Qwen3.6-35B-A3B-UD-Q4_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
+                },
+                "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
+                        "ALIAS": "Qwen3.6-35B-A3B-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
+                },
+                "Llama-3.3-70B-Instruct-UD-Q4_K_XL": {
+                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q4_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
+                },
+                "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
+                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "dorigo_a"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/usr/local/bin/rpc-server",
+                                        "remuser": "alvise"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "4096,12288,512,512",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null                        
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
