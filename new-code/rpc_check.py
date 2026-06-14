@@ -4,7 +4,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from model import Model, rpc_address
+from model import Model, rpc_server
 
 _TIMEOUT = 2.0   # secondi per il tentativo di connessione TCP
 
@@ -12,7 +12,7 @@ _RPC_START_POLL_INTERVAL = 2   # secondi tra un tentativo e l'altro
 _RPC_START_TIMEOUT      = 20  # secondi massimi di attesa
 
 #___________________________________________________________________________________
-def _tcp_reachable(addr: rpc_address) -> bool:
+def _tcp_reachable(addr: rpc_server) -> bool:
     try:
         with socket.create_connection((addr.IP, addr.PORT), timeout=_TIMEOUT):
             return True
@@ -20,8 +20,8 @@ def _tcp_reachable(addr: rpc_address) -> bool:
         return False
 
 #___________________________________________________________________________________
-def unreachable_rpc_servers(model: Model) -> list[rpc_address]:
-    """Ritorna gli rpc_address di model che non rispondono al ping TCP.
+def unreachable_rpc_servers(model: Model) -> list[rpc_server]:
+    """Ritorna gli rpc_server di model che non rispondono al ping TCP.
 
     Se la lista rpcservers è vuota ritorna [] senza effettuare alcun tentativo.
     I check vengono eseguiti in parallelo (un thread per server).
@@ -30,7 +30,7 @@ def unreachable_rpc_servers(model: Model) -> list[rpc_address]:
     if not servers:
         return []
 
-    dead: list[rpc_address] = []
+    dead: list[rpc_server] = []
     with ThreadPoolExecutor(max_workers=len(servers)) as pool:
         future_to_addr = {pool.submit(_tcp_reachable, s): s for s in servers}
         for future in as_completed(future_to_addr):
@@ -69,7 +69,7 @@ def start_rpc_server(addr: rpc_address) -> bool:
 
 
 #___________________________________________________________________________________
-def wait_for_rpc_servers(servers: list[rpc_address]) -> list[rpc_address]:
+def wait_for_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
     """Attende con polling che i server diventino raggiungibili.
 
     Ritorna la lista di quelli ancora non raggiungibili allo scadere del timeout.
