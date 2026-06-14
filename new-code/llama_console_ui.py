@@ -242,4 +242,13 @@ def main() -> None:
 
 
 if __name__ == "__main__":
-    subprocess.run(["streamlit", "run", __file__] + sys.argv[1:])
+    try:
+        from streamlit.runtime.scriptrunner import get_script_run_ctx
+        _in_streamlit = get_script_run_ctx() is not None
+    except Exception:
+        _in_streamlit = False
+
+    if _in_streamlit:
+        main()
+    else:
+        subprocess.run(["streamlit", "run", __file__] + sys.argv[1:])
