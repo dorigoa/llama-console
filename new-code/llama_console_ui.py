@@ -190,6 +190,23 @@ def _load_entries() -> list[dict]:
     return entries
 
 
+def _get_llama_url(port: int) -> str:
+    """Return the llama-server URL using the browser's current scheme and hostname."""
+    try:
+        from urllib.parse import urlparse
+        parsed = urlparse(st.context.url)
+        return f"{parsed.scheme}://{parsed.hostname}:{port}"
+    except Exception:
+        pass
+    try:
+        headers = st.context.headers
+        host = headers.get("host", "localhost").split(":")[0]
+        scheme = headers.get("x-forwarded-proto", "http")
+        return f"{scheme}://{host}:{port}"
+    except Exception:
+        return f"http://localhost:{port}"
+
+
 def _is_running() -> bool:
     p = st.session_state.get("process")
     return p is not None and p.poll() is None
@@ -368,17 +385,30 @@ def main() -> None:
     with col_info:
         if _is_running():
             if st.session_state.server_ready:
-                badge_color, badge_text = "#22c55e", f"▶ ready — {st.session_state.running_model}"
+                api_url = _get_llama_url(settings.PORT_BIND)
+                st.markdown(
+                    f'<span style="color:#22c55e;font-size:14px;font-weight:600">'
+                    f'▶ ready — {st.session_state.running_model}</span>'
+                    f'&nbsp;&nbsp;<a href="{api_url}" target="_blank" '
+                    f'style="font-size:13px;color:#60a5fa;text-decoration:none">{api_url}</a>',
+                    unsafe_allow_html=True,
+                )
             else:
-                badge_color, badge_text = "#f59e0b", f"⏳ loading — {st.session_state.running_model}"
+                st.markdown(
+                    '<span style="color:#f59e0b;font-size:14px;font-weight:600">'
+                    f'⏳ loading — {st.session_state.running_model}</span>',
+                    unsafe_allow_html=True,
+                )
         elif st.session_state.process is not None:
-            badge_color, badge_text = "#6b7280", "⏹ stopped"
+            st.markdown(
+                '<span style="color:#6b7280;font-size:14px;font-weight:600">⏹ stopped</span>',
+                unsafe_allow_html=True,
+            )
         else:
-            badge_color, badge_text = "#6b7280", "● idle"
-        st.markdown(
-            f'<span style="color:{badge_color};font-size:14px;font-weight:600">{badge_text}</span>',
-            unsafe_allow_html=True,
-        )
+            st.markdown(
+                '<span style="color:#6b7280;font-size:14px;font-weight:600">● idle</span>',
+                unsafe_allow_html=True,
+            )
 
     if start_clicked:
         cmd = [sys.executable, "-u", str(START_SCRIPT), entry["name"]]
