@@ -18,8 +18,10 @@ import urllib.error
 from datetime import datetime, timezone
 import streamlit as st
 from pathlib import Path
-
 from config_manager import get_settings
+
+# Path to persistent log file (shared across page reloads)
+_LOG_FILE_PATH = Path(get_settings().PERSIST_FILE).with_name("llama-console-logs.txt")
 
 MODELS_JSON = Path(__file__).parent / "models.json"
 START_SCRIPT = Path(__file__).parent / "start_model.py"
@@ -225,7 +227,7 @@ def _drain_queue() -> None:
             break
 
 
-def _pty_reader(master_fd: int, q: queue.Queue) -> None:
+def _pty_reader(master_fd: int, q: queue.Queue, log_path: Path | None = None) -> None:
     """Read bytes from the PTY master, strip ANSI codes, split on newlines."""
     buf = b""
     while True:
@@ -241,12 +243,26 @@ def _pty_reader(master_fd: int, q: queue.Queue) -> None:
             buf += chunk
             while b"\n" in buf:
                 line, buf = buf.split(b"\n", 1)
-                q.put(line.decode("utf-8", errors="replace"))
+                decoded_line = line.decode("utf-8", errors="replace")
+                q.put(decoded_line)
+                if log_path is not None:
+                    try:
+                        with open(log_path, "a", encoding="utf-8") as f:
+                            f.write(decoded_line + "\n")
+                    except Exception:
+                        pass
         except OSError:
             # EIO when slave side is fully closed (process exited)
             break
     if buf:
-        q.put(buf.decode("utf-8", errors="replace"))
+        decoded_buf = buf.decode("utf-8", errors="replace")
+        q.put(decoded_buf)
+        if log_path is not None:
+            try:
+                with open(log_path, "a", encoding="utf-8") as f:
+                    f.write(decoded_buf + "\n")
+            except Exception:
+                pass
     try:
         os.close(master_fd)
     except OSError:
@@ -287,11 +303,7 @@ def _log_pane() -> None:
         unsafe_allow_html=True,
     )
 
-    col_clear, _ = st.columns([1, 5])
-    with col_clear:
-        if st.button("Clear logs", key="clear_btn"):
-            st.session_state.log_lines = []
-            st.rerun(scope="fragment")
+    # Clear logs button moved to top of log section
 
 
 # ─── main ─────────────────────────────────────────────────────────────────────
@@ -314,6 +326,16 @@ def main() -> None:
         if k not in st.session_state:
             st.session_state[k] = v
 
+    # Persistent log file path
+    st.session_state.log_file_path = _LOG_FILE_PATH
+    # Load any existing persisted logs
+    if _LOG_FILE_PATH.is_file():
+        try:
+            persisted = _LOG_FILE_PATH.read_text(encoding="utf-8").splitlines()
+            st.session_state.log_lines = persisted
+        except Exception:
+            # If reading fails, start with empty logs
+            st.session_state.log_lines = []
     _try_recover_from_persist()
 
     st.title(settings.UI_TITLE)
@@ -425,10 +447,18 @@ def main() -> None:
         if minp_str.strip():
             cmd += ["--override-min-p", minp_str.strip()]
 
+        # Reset in-memory logs and queues
         st.session_state.log_lines = []
         st.session_state.log_queue = queue.Queue()
         st.session_state.ready_queue = queue.Queue()
         st.session_state.server_ready = False
+
+        # Truncate persistent log file for a fresh start
+        try:
+            _LOG_FILE_PATH.write_text("", encoding="utf-8")
+        except Exception:
+            # If writing fails, ignore – logs will still be in-memory for this session
+            pass
 
         master_fd, slave_fd = pty.openpty()
         proc = subprocess.Popen(
@@ -446,7 +476,7 @@ def main() -> None:
 
         threading.Thread(
             target=_pty_reader,
-            args=(master_fd, st.session_state.log_queue),
+            args=(master_fd, st.session_state.log_queue, _LOG_FILE_PATH),
             daemon=True,
         ).start()
 
@@ -516,7 +546,18 @@ def main() -> None:
         st.rerun()
 
     # ── log window ────────────────────────────────────────────────────────────
-    st.subheader("Logs")
+    col_label, col_button = st.columns([1, 1], vertical_alignment="center")
+    with col_label:
+        st.subheader("Logs")
+    with col_button:
+        if st.button("Clear logs", key="clear_btn"):
+            st.session_state.log_lines = []
+            # Truncate the persistent log file as well
+            try:
+                _LOG_FILE_PATH.write_text("", encoding="utf-8")
+            except Exception:
+                pass
+            st.rerun(scope="fragment")
     _log_pane()
 
 
