@@ -5,6 +5,7 @@ import argparse
 import os
 import subprocess
 import sys
+import json
 from pathlib import Path
 from model import Model, load_models
 from config_manager import get_settings
@@ -46,7 +47,7 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
     cmd += ["--temp", str(model.temperature)]
     cmd += ["--top-p", str(model.top_p)]
     cmd += ["--top-k", str(model.top_k)]
-    cmd += ["--chat-template-kwargs", f"\"{str(data)}\""]
+    cmd += ["--chat-template-kwargs", json.dump(data)]
     cmd += ["--alias", str(model.alias)]
     if model.min_p >= 0:
         cmd += ["--min-p", str(model.min_p)]
