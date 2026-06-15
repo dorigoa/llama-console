@@ -31,17 +31,10 @@
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachedisk": "/dev/disk6",
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
-                        "FITT": "6144,12288,1024,1024",
+                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -161,9 +154,17 @@
                 },
                 "Qwen3.6-27B-UD-Q6_K_XL": {
                         "ALIAS": "Qwen3.6-27B-UD-Q6_K_XL",
-                        "RPC_SERVERS": {},
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
                         "ctx": 196608,
-                        "FITT": "6144",
+                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
