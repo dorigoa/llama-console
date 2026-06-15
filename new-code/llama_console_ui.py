@@ -328,7 +328,7 @@ def main() -> None:
     # ── model selector ────────────────────────────────────────────────────────
     def _label(e: dict) -> str:
         flag = "" if e["exists"] else "  ⚠️ file missing"
-        rpc = f"  RPC:{e['rpc_count']}" if e["rpc_count"] else ""
+        rpc = f"  #RPC_srv: {e['rpc_count']}" if e["rpc_count"] else ""
         return f"{e['name']}   [{e['size']}]{rpc}{flag}"
 
     idx = st.selectbox(

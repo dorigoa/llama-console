@@ -136,7 +136,7 @@ def start_model(
                 for line in result.stdout.splitlines()
                 if line.strip()
                 and "Available" not in line
-                and "0 MiB free" not in line
+                and " 0 MiB free" not in line
             ]
             devices = ",".join(raw_devices)
             print(f"Using devices: {devices or '(none)'}", flush=True)
