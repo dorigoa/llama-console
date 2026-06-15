@@ -59,7 +59,6 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
 #___________________________________________________________________________________
 def start_model(
     model_name: str | None,
-    *,
     dry_run: bool = False,
     list_models: bool = False,
     override_temp: float | None = None,
