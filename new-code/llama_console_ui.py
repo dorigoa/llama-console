@@ -176,6 +176,7 @@ def _load_entries() -> list[dict]:
     for name, spec in raw.get("models", {}).items():
         fname = name if name.endswith(".gguf") else f"{name}.gguf"
         path = base / fname
+        rpc_servers = spec.get("RPC_SERVERS", {})
         entries.append({
             "name": name,
             "alias": str(spec.get("ALIAS", name)),
@@ -186,6 +187,8 @@ def _load_entries() -> list[dict]:
             "top_p": float(spec["TOPP"]),
             "top_k": int(spec["TOPK"]),
             "min_p": float(spec["MINP"]),
+            "rpc_servers": rpc_servers,
+            "rpc_count": len(rpc_servers),
         })
     return entries
 
@@ -325,7 +328,8 @@ def main() -> None:
     # ── model selector ────────────────────────────────────────────────────────
     def _label(e: dict) -> str:
         flag = "" if e["exists"] else "  ⚠️ file missing"
-        return f"{e['name']}   [{e['size']}]{flag}"
+        rpc = f"  RPC:{e['rpc_count']}" if e["rpc_count"] else ""
+        return f"{e['name']}   [{e['size']}]{rpc}{flag}"
 
     idx = st.selectbox(
         "Model",
@@ -460,6 +464,55 @@ def main() -> None:
         st.session_state.running_model = None
         st.session_state.server_ready = None
         _clear_persist()
+        st.rerun()
+
+    # ── kill RPC servers ──────────────────────────────────────────────────────
+    col_kill, col_kill_status = st.columns([1, 5], vertical_alignment="center")
+    with col_kill:
+        kill_rpc_clicked = st.button(
+            "☠  Kill RPC servers",
+            disabled=(entry["rpc_count"] == 0),
+            use_container_width=True,
+        )
+    with col_kill_status:
+        results = st.session_state.get("rpc_kill_results", {})
+        if results:
+            parts = []
+            for host, (ok, msg) in results.items():
+                color = "#22c55e" if ok else "#ef4444"
+                parts.append(f'<span style="color:{color}">{host}: {msg}</span>')
+            st.markdown(
+                '<span style="font-size:13px;font-family:monospace">'
+                + "&nbsp;&nbsp;|&nbsp;&nbsp;".join(parts)
+                + "</span>",
+                unsafe_allow_html=True,
+            )
+
+    if kill_rpc_clicked:
+        kill_results: dict[str, tuple[bool, str]] = {}
+        for host, srv in entry["rpc_servers"].items():
+            user = srv.get("remuser", "root")
+            binary = os.path.basename(srv.get("bin", "rpc-server"))
+            ssh_cmd = [
+                "ssh",
+                "-o", "StrictHostKeyChecking=no",
+                "-o", "ConnectTimeout=5",
+                "-o", "BatchMode=yes",
+                f"{user}@{host}",
+                f"killall {binary}",
+            ]
+            try:
+                r = subprocess.run(ssh_cmd, capture_output=True, text=True, timeout=10)
+                if r.returncode == 0:
+                    kill_results[host] = (True, "killed")
+                else:
+                    err = r.stderr.strip() or f"exit {r.returncode}"
+                    kill_results[host] = (False, err)
+            except subprocess.TimeoutExpired:
+                kill_results[host] = (False, "timeout")
+            except Exception as exc:
+                kill_results[host] = (False, str(exc))
+        st.session_state.rpc_kill_results = kill_results
         st.rerun()
 
     # ── log window ────────────────────────────────────────────────────────────
