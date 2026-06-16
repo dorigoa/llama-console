@@ -200,13 +200,18 @@ def _get_llama_url(port: int) -> str:
     try:
         from urllib.parse import urlparse
         parsed = urlparse(st.context.url)
-        return f"{parsed.scheme}://{parsed.hostname}:{port}"
+        scheme = parsed.scheme
+        if scheme == "https":
+            port = 8443
+        return f"{scheme}://{parsed.hostname}:{port}"
     except Exception:
         pass
     try:
         headers = st.context.headers
         host = headers.get("host", "localhost").split(":")[0]
         scheme = headers.get("x-forwarded-proto", "http")
+        if scheme == "https":
+            port = 8443
         return f"{scheme}://{host}:{port}"
     except Exception:
         return f"http://localhost:{port}"
