@@ -562,7 +562,7 @@ def main() -> None:
                 _LOG_FILE_PATH.write_text("", encoding="utf-8")
             except Exception:
                 pass
-            st.rerun(scope="fragment")
+            st.rerun()
     _log_pane()
 
 #___________________________________________________________________________________
