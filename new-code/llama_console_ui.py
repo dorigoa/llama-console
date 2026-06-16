@@ -46,14 +46,14 @@ def _save_persist(model_name: str, alias: str, pid: int, port: int, started_at: 
     }
     Path(settings.PERSIST_FILE).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
-
+#___________________________________________________________________________________
 def _clear_persist() -> None:
     settings = get_settings()
     p = Path(settings.PERSIST_FILE)
     if p.exists():
         p.unlink()
 
-
+#___________________________________________________________________________________
 class _RecoveredProcess:
     """Minimal Popen-compatible wrapper for a PID we didn't spawn ourselves."""
 
@@ -73,7 +73,7 @@ class _RecoveredProcess:
         except (ProcessLookupError, PermissionError):
             pass
 
-
+#___________________________________________________________________________________
 def _try_recover_from_persist() -> None:
     """Called once per session: restore running state from the persist file if valid."""
     if st.session_state.get("_recovery_done"):
@@ -127,7 +127,7 @@ def _try_recover_from_persist() -> None:
             daemon=True,
         ).start()
 
-
+#___________________________________________________________________________________
 def _probe_server(
     proc: subprocess.Popen,
     port: int,
@@ -158,7 +158,7 @@ def _probe_server(
 
     ready_q.put(False)
 
-
+#___________________________________________________________________________________
 def _fmt_size(path: Path) -> str:
     if not path.exists():
         return "missing"
@@ -169,7 +169,7 @@ def _fmt_size(path: Path) -> str:
         b /= 1024
     return f"{b:.1f} TB"
 
-
+#___________________________________________________________________________________
 def _load_entries() -> list[dict]:
     """All models from models.json, including ones whose files are missing."""
     raw = json.loads(MODELS_JSON.read_text(encoding="utf-8"))
@@ -194,7 +194,7 @@ def _load_entries() -> list[dict]:
         })
     return entries
 
-
+#___________________________________________________________________________________
 def _get_llama_url(port: int) -> str:
     """Return the llama-server URL using the browser's current scheme and hostname."""
     try:
@@ -211,12 +211,12 @@ def _get_llama_url(port: int) -> str:
     except Exception:
         return f"http://localhost:{port}"
 
-
+#___________________________________________________________________________________
 def _is_running() -> bool:
     p = st.session_state.get("process")
     return p is not None and p.poll() is None
 
-
+#___________________________________________________________________________________
 def _drain_queue() -> None:
     q: queue.Queue = st.session_state.log_queue
     lines: list[str] = st.session_state.log_lines
@@ -226,7 +226,7 @@ def _drain_queue() -> None:
         except queue.Empty:
             break
 
-
+#___________________________________________________________________________________
 def _pty_reader(master_fd: int, q: queue.Queue, log_path: Path | None = None) -> None:
     """Read bytes from the PTY master, strip ANSI codes, split on newlines."""
     buf = b""
@@ -560,7 +560,7 @@ def main() -> None:
             st.rerun(scope="fragment")
     _log_pane()
 
-
+#___________________________________________________________________________________
 if __name__ == "__main__":
     try:
         from streamlit.runtime.scriptrunner import get_script_run_ctx
