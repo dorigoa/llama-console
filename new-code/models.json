@@ -2,6 +2,53 @@
         "_comment1": "validate with: jq . config.template.json",
         "_comment2": "or validate with: python3 -c 'import json,sys; json.load(open(sys.argv[1])); print(\"OK\")' config.template.json",
         "models": {
+                "diffusiongemma-26B-A4B-it-Q4_K_M": {
+                        "ALIAS": "diffusiongemma-26B-A4B-it-Q4_K_M",
+                        "RPC_SERVERS": { },
+                        "ctx": 131072,
+                        "FITT": "6144",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null
+                },
+                "diffusiongemma-26B-A4B-it-Q6_K": {
+                        "ALIAS": "diffusiongemma-26B-A4B-it-Q6_K",
+                        "RPC_SERVERS": { },
+                        "ctx": 131072,
+                        "FITT": "6144",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null
+                },
+                "diffusiongemma-26B-A4B-it-Q8_0": {
+                        "ALIAS": "diffusiongemma-26B-A4B-it-Q8_0",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 131072,
+                        "FITT": "6144,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null
+                },
                 "gemma-4-31B-it-UD-Q6_K_XL": {
                         "ALIAS": "gemma-4-31B-it-UD-Q6_K_XL",
                         "RPC_SERVERS": {
