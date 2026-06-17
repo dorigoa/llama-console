@@ -358,9 +358,18 @@ def main() -> None:
         rpc = f"  #RPC_srv: {e['rpc_count']}" if e["rpc_count"] else ""
         return f"{e['name']}   [{e['size']}]{rpc}{flag}"
 
+    # Determine default selection based on running model
+    default_index = 0
+    running_name = st.session_state.get("running_model")
+    if running_name:
+        for i, e in enumerate(entries):
+            if e["name"] == running_name:
+                default_index = i
+                break
     idx = st.selectbox(
         "Model",
         range(len(entries)),
+        index=default_index,
         format_func=lambda i: _label(entries[i]),
         disabled=_is_running(),
     )
@@ -478,6 +487,9 @@ def main() -> None:
 
         st.session_state.process = proc
         st.session_state.running_model = entry["name"]
+        # Persist the launched model early so it survives page reloads even before the server is ready.
+        started_at = datetime.now(timezone.utc).isoformat()
+        _save_persist(entry["name"], entry["alias"], proc.pid, settings.PORT_BIND, started_at, "")
 
         threading.Thread(
             target=_pty_reader,
