@@ -48,6 +48,7 @@ def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
     cmd += ["--top-p", str(model.top_p)]
     cmd += ["--top-k", str(model.top_k)]
     cmd += ["--chat-template-kwargs", json.dumps(data)]
+    cmd += ["--seed", "123456789"]
     if model.kvquant:
         cmd += ["-ctk", model.kvquant]
         cmd += ["-ctv", model.kvquant]
