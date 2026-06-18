@@ -13,7 +13,8 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null
                 },
                 "gemma-4-12B-it-qat-UD-Q4_K_XL": {
                         "ALIAS": "gemma-4-12B-it-qat-UD-Q4_K_XL",
@@ -26,12 +27,14 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null
                 },
                 "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL": {
+                        "_size": "13G",
                         "ALIAS": "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL",
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
+                        "ctx": 262144,
                         "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -39,9 +42,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
+                        "_size": "16G",
                         "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
@@ -52,12 +58,15 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 10.4GiB @128k ctx size fp16"
                 },
                 "diffusiongemma-26B-A4B-it-Q4_K_M": {
+                        "_size": "16G",
                         "ALIAS": "diffusiongemma-26B-A4B-it-Q4_K_M",
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
+                        "ctx": 262144,
                         "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -65,12 +74,15 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 5.2GiB @256 ctx size fp16"
                 },
                 "diffusiongemma-26B-A4B-it-Q6_K": {
+                        "_size": "21G",
                         "ALIAS": "diffusiongemma-26B-A4B-it-Q6_K",
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
+                        "ctx": 262144,
                         "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -78,9 +90,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "diffusiongemma-26B-A4B-it-Q8_0": {
+                        "_size": "25G",
                         "ALIAS": "diffusiongemma-26B-A4B-it-Q8_0",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -91,7 +106,7 @@
                                         "remuser": "dorigo_a"
                                 }
                         },
-                        "ctx": 131072,
+                        "ctx": 196608,
                         "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -99,9 +114,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "gemma-4-31B-it-UD-Q6_K_XL": {
+                        "_size": "26G",
                         "ALIAS": "gemma-4-31B-it-UD-Q6_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -112,7 +130,7 @@
                                         "remuser": "dorigo_a"
                                 }
                         },
-                        "ctx": 65536,
+                        "ctx": 196608,
                         "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -120,9 +138,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 10.4GiB @128k ctx size fp16"
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
+                        "_size": "33G",
                         "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -140,9 +161,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "KV = 10.4GiB @128k ctx size fp16"
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
+                        "_size": "26G",
                         "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -161,9 +185,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "gemma-4-12b-it-BF16": {
+                        "_size": "22G",
                         "ALIAS": "gemma-4-12b-it-BF16",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -182,9 +209,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "?"
                 },
                 "gemma-4-12b-it-UD-Q8_K_XL": {
+                        "_size": "13G",
                         "ALIAS": "gemma-4-12b-it-UD-Q8_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 262144,
@@ -195,9 +225,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "?"
                 },
                 "GPT-OSS-120B-MXFP4": {
+                        "_size": "59G",
                         "ALIAS": "GPT-OSS-120B-MXFP4",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -222,10 +255,13 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": [ "--cache-type-k", "q8_0", "--cache-type-v", "q8_0" ]
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "KV = 4.6GiB @128k ctx size fp16 - quantization suggested anyway even if it fits... to be verified"
                         
                 },
                 "Qwen3.6-27B-UD-Q4_K_XL": {
+                        "_size": "16",
                         "ALIAS": "Qwen3.6-27B-UD-Q4_K_XL",
                         "RPC_SERVERS": {},
                         "ctx": 262144,
@@ -236,30 +272,28 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "?"                   
                 },
                 "Qwen3.6-27B-UD-Q6_K_XL": {
+                        "_size": "24G",
                         "ALIAS": "Qwen3.6-27B-UD-Q6_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachedisk": "/dev/disk6",
-                                        "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 196608,
-                        "FITT": "6144,12288",
+                        "RPC_SERVERS": {},
+                        "ctx": 131072,
+                        "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "?"                        
                 },
                 "Qwen3.6-27B-UD-Q8_K_XL": {
+                        "_size": "33G",
                         "ALIAS": "Qwen3.6-27B-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -278,19 +312,14 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "_comment": "KV = 5GiB @256k ctx size fp16"                    
                 },
                 "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
+                        "_size": "21G",
                         "ALIAS": "Qwen3.6-35B-A3B-UD-Q4_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachedisk": "/dev/disk6",
-                                        "cachepath": "/Volumes/Home/llama",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
+                        "RPC_SERVERS": {},
                         "ctx": 262144,
                         "FITT": "6144,12288",
                         "TEMP": 1.0,
@@ -299,9 +328,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "KV = 5GiB @256k ctx size fp16"                        
                 },
                 "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
+                        "_size": "36G",
                         "ALIAS": "Qwen3.6-35B-A3B-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -320,20 +352,29 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "KV = 5GiB @256k ctx size fp16"                        
                 },
                 "Llama-3.3-70B-Instruct-UD-Q4_K_XL": {
+                        "_size": "40G",
                         "ALIAS": "Llama-3.3-70B-Instruct-UD-Q4_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
                                         "port": 50000,
-                                        "cachedisk": "/dev/disk6",
-                                        "cachepath": "/Volumes/Home/llama",
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "alvise"
                                 }
                         },
-                        "ctx": 262144,
+                        "ctx": 131072,
                         "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
@@ -341,9 +382,12 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "KV = 40GiB @128k ctx size fp16"                        
                 },
                 "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
+                        "_size": "76G",
                         "ALIAS": "Llama-3.3-70B-Instruct-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
@@ -361,7 +405,7 @@
                                         "remuser": "alvise"
                                 }
                         },
-                        "ctx": 262144,
+                        "ctx": 65536,
                         "FITT": "6144,12288,1024,1024",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
@@ -369,7 +413,9 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": null                        
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "_comment": "KV = 40GiB @128k ctx size fp16"                   
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"

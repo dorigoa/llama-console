@@ -33,6 +33,7 @@ class Model:
     #gpus: str
     rpcservers: list[rpc_server]
     extras: list[str]
+    kvquant: str
 
 #___________________________________________________________________________________
 def load_models(config_path: str | Path) -> list[Model]:
@@ -86,6 +87,7 @@ def load_models(config_path: str | Path) -> list[Model]:
                 #gpus=str(spec["GPUS"]),
                 rpcservers=rpcservers,
                 extras=spec["EXTRAS"]
+                kvquant=spec["KVQUANT"]
             )
         )
     return models
