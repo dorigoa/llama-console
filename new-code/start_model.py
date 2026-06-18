@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
 """Launch llama-server for a given model defined in models.json."""
 
-import argparse
+
 import os
-import subprocess
+import re
 import sys
 import json
+import argparse
+import subprocess
 from pathlib import Path
 from model import Model, load_models
 from config_manager import get_settings
@@ -13,7 +15,15 @@ from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_se
 
 MODELS_JSON = Path(__file__).parent / "models.json"
 
+_CSV_TOKENS = re.compile(r"[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*")
+
 settings = get_settings()
+
+#___________________________________________________________________________________
+def valid_csv_tokens(s) -> bool:
+    """True se s è una str fatta di token alfanumerici (no spazi,
+    no caratteri non alfanumerici) separati eventualmente da virgola."""
+    return isinstance(s, str) and _CSV_TOKENS.fullmatch(s) is not None
 
 #___________________________________________________________________________________
 def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
@@ -69,6 +79,8 @@ def start_model(
     override_top_p: float | None = None,
     override_top_k: int | None = None,
     override_min_p: float | None = None,
+    override_devices: str | None = None,
+    override_fitt: str | None = None
 ) -> None:
     models = load_models(MODELS_JSON)
 
@@ -86,6 +98,16 @@ def start_model(
         print(f"Error: model '{model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
         sys.exit(1)
 
+    if (override_fitt is None) != (override_devices is None):
+        print(f"If override-devices is specified than also override-fitt must be specified, and vice versa")
+        sys.exit(1)
+
+    if (override_fitt):
+        if not (valid_csv_tokens(override_fitt) and valid_csv_tokens(override_devices)):
+            print(f"Invalid format of {override_devices} or {override_fitt}")
+            sys.exit(1)
+        model.fitt = override_fitt
+
     if override_temp is not None:
         model.temperature = override_temp
     if override_top_p is not None:
@@ -95,7 +117,12 @@ def start_model(
     if override_min_p is not None:
         model.min_p = override_min_p
 
-    if not dry_run:
+    binary = settings.LLAMA_SERVER_BIN
+    if not Path(binary).is_file():
+        print(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
+        sys.exit(1)
+
+    if not dry_run and model.rpcservers and not override_devices:
         print("Checking rpc servers...", flush=True)
         dead = unreachable_rpc_servers(model)
         if dead:
@@ -111,39 +138,36 @@ def start_model(
 
         print("All RPC servers reachable.", flush=True)
 
-    binary = settings.LLAMA_SERVER_BIN
-
-    if not Path(binary).is_file():
-        print(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
-        sys.exit(1)
-
     devices = ""
     if dry_run:
-        devices = "SKIP_DRYRUN"
+        devices = "SKIP(DRYRUN)"
     else:
-        if model.rpcservers:
-            rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
-            print("Running list-devices...", flush=True)
-            result = subprocess.run(
-                f"{binary} --rpc {rpc_list} --list-devices",
-                shell=True,
-                capture_output=True,
-                text=True,
-            )
-            if result.stdout:
-                print(result.stdout, end="", flush=True)
-            if result.stderr:
-                print(result.stderr, end="", flush=True)
-            # filter and join device names
-            raw_devices = [
-                line.replace(":", "").split()[0]
-                for line in result.stdout.splitlines()
-                if line.strip()
-                and "Available" not in line
-                and " 0 MiB free" not in line
-            ]
-            devices = ",".join(raw_devices)
-            print(f"Using devices: {devices or '(none)'}", flush=True)
+        if not override_devices:
+            if model.rpcservers:
+                rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
+                print("Running list-devices...", flush=True)
+                result = subprocess.run(
+                    f"{binary} --rpc {rpc_list} --list-devices",
+                    shell=True,
+                    capture_output=True,
+                    text=True,
+                )
+                if result.stdout:
+                    print(result.stdout, end="", flush=True)
+                if result.stderr:
+                    print(result.stderr, end="", flush=True)
+                # filter and join device names
+                raw_devices = [
+                    line.replace(":", "").split()[0]
+                    for line in result.stdout.splitlines()
+                    if line.strip()
+                    and "Available" not in line
+                    and " 0 MiB free" not in line
+                ]
+                devices = ",".join(raw_devices)
+                print(f"Using devices: {devices or '(none)'}", flush=True)
+        else:
+            devices = override_devices
 
     cmd = _build_command(binary, model, devices)
     print("Command:", " ".join(cmd), flush=True)
@@ -163,6 +187,9 @@ def main() -> None:
     parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-k", type=int, default=None, metavar="INT")
     parser.add_argument("--override-min-p", type=float, default=None, metavar="FLOAT")
+    parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
+    parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
+
     args = parser.parse_args()
     start_model(
         args.model_name,
@@ -172,6 +199,8 @@ def main() -> None:
         override_top_p=args.override_top_p,
         override_top_k=args.override_top_k,
         override_min_p=args.override_min_p,
+        override_devices=args.override_devices,
+        override_fitt=args.override_fitt
     )
 
 #___________________________________________________________________________________

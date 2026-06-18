@@ -30,7 +30,6 @@ class Model:
     reasoning: str
     last_started: int
     fitt: str
-    #gpus: str
     rpcservers: list[rpc_server]
     extras: list[str]
     kvquant: str
