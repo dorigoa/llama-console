@@ -192,6 +192,7 @@ def _load_entries() -> list[dict]:
             "rpc_servers": rpc_servers,
             "rpc_count": len(rpc_servers),
         })
+    entries.sort(key=lambda e: e["name"])
     return entries
 
 #___________________________________________________________________________________
