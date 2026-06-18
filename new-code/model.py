@@ -86,7 +86,7 @@ def load_models(config_path: str | Path) -> list[Model]:
                 fitt=str(spec["FITT"]),
                 #gpus=str(spec["GPUS"]),
                 rpcservers=rpcservers,
-                extras=spec["EXTRAS"]
+                extras=spec["EXTRAS"],
                 kvquant=spec["KVQUANT"]
             )
         )
