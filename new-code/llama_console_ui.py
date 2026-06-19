@@ -467,6 +467,7 @@ def main() -> None:
         st.session_state.log_queue = queue.Queue()
         st.session_state.ready_queue = queue.Queue()
         st.session_state.server_ready = False
+        st.session_state.rpc_kill_results = {}
 
         # Truncate persistent log file for a fresh start
         try:
