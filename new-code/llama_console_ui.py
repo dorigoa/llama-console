@@ -33,7 +33,7 @@ _ANSI_RE = re.compile(rb"\x1b\[[0-9;]*[a-zA-Z]|\x1b[()][AB012]|\r")
 
 # ─── helpers ──────────────────────────────────────────────────────────────────
 
-def _save_persist(model_name: str, alias: str, pid: int, port: int, started_at: str, ready_at: str) -> None:
+def _save_persist(model_name: str, alias: str, pid: int, port: int, started_at: str, ready_at: str, ctx: int = 0) -> None:
     settings = get_settings()
     data = {
         "model_name": model_name,
@@ -43,6 +43,7 @@ def _save_persist(model_name: str, alias: str, pid: int, port: int, started_at: 
         "api_url": f"http://127.0.0.1:{port}/v1",
         "started_at": started_at,
         "ready_at": ready_at,
+        "ctx": ctx,
     }
     Path(settings.PERSIST_FILE).write_text(json.dumps(data, indent=2), encoding="utf-8")
 
@@ -113,6 +114,7 @@ def _try_recover_from_persist() -> None:
 
     st.session_state.process = recovered
     st.session_state.running_model = model_name
+    st.session_state.running_ctx = data.get("ctx")
 
     if api_ready:
         st.session_state.server_ready = True
@@ -123,7 +125,7 @@ def _try_recover_from_persist() -> None:
         st.session_state.ready_queue = rq
         threading.Thread(
             target=_probe_server,
-            args=(recovered, port, model_name, alias, rq),
+            args=(recovered, port, model_name, alias, rq, st.session_state.running_ctx or 0),
             daemon=True,
         ).start()
 
@@ -135,6 +137,7 @@ def _probe_server(
     alias: str,
     ready_q: queue.Queue,
     timeout: int = 420,
+    ctx: int = 0,
 ) -> None:
     """Poll /v1/models until the server is ready or timeout/crash."""
     url = f"http://127.0.0.1:{port}/v1/models"
@@ -149,7 +152,7 @@ def _probe_server(
             with urllib.request.urlopen(url, timeout=5) as resp:
                 if resp.status == 200:
                     ready_at = datetime.now(timezone.utc).isoformat()
-                    _save_persist(model_name, alias, proc.pid, port, started_at, ready_at)
+                    _save_persist(model_name, alias, proc.pid, port, started_at, ready_at, ctx)
                     ready_q.put(True)
                     return
         except Exception:
@@ -170,6 +173,19 @@ def _fmt_size(path: Path) -> str:
     return f"{b:.1f} TB"
 
 #___________________________________________________________________________________
+def _fmt_ctx(size: int | None) -> str:
+    """Format context size as human-readable string (e.g. 131072 -> '128K')."""
+    if not size:
+        return ""
+    if size >= 1024:
+        k = size / 1024
+        # Show integer if it's a clean number
+        if k == int(k):
+            return f"{int(k)}K"
+        return f"{k:.1f}K"
+    return str(size)
+
+#___________________________________________________________________________________
 def _load_entries() -> list[dict]:
     """All models from models.json, including ones whose files are missing."""
     raw = json.loads(MODELS_JSON.read_text(encoding="utf-8"))
@@ -185,6 +201,7 @@ def _load_entries() -> list[dict]:
             "path": path,
             "size": _fmt_size(path),
             "exists": path.exists(),
+            "ctx": int(spec.get("CTX", 0)),
             "temp":  float(spec["TEMP"]),
             "top_p": float(spec["TOPP"]),
             "top_k": int(spec["TOPK"]),
@@ -326,6 +343,7 @@ def main() -> None:
         "log_queue": queue.Queue(),
         "ready_queue": queue.Queue(),
         "running_model": None,
+        "running_ctx": None,
         "server_ready": None,  # None=idle, False=loading, True=ready
         "_recovery_done": False,
     }.items():
@@ -425,11 +443,12 @@ def main() -> None:
 
     with col_info:
         if _is_running():
+            ctx_label = f"  ({_fmt_ctx(st.session_state.running_ctx)})" if st.session_state.running_ctx else ""
             if st.session_state.server_ready:
                 api_url = _get_llama_url(settings.PORT_BIND)
                 st.markdown(
                     f'<span style="color:#22c55e;font-size:14px;font-weight:600">'
-                    f'▶ ready — {st.session_state.running_model}</span>'
+                    f'▶ ready — {st.session_state.running_model}{ctx_label}</span>'
                     f'&nbsp;&nbsp;<a href="{api_url}" target="_blank" '
                     f'style="font-size:13px;color:#60a5fa;text-decoration:none">{api_url}</a>',
                     unsafe_allow_html=True,
@@ -437,7 +456,7 @@ def main() -> None:
             else:
                 st.markdown(
                     '<span style="color:#f59e0b;font-size:14px;font-weight:600">'
-                    f'⏳ loading — {st.session_state.running_model}</span>',
+                    f'⏳ loading — {st.session_state.running_model}{ctx_label}</span>',
                     unsafe_allow_html=True,
                 )
         elif st.session_state.process is not None:
@@ -489,9 +508,10 @@ def main() -> None:
 
         st.session_state.process = proc
         st.session_state.running_model = entry["name"]
+        st.session_state.running_ctx = entry["ctx"]
         # Persist the launched model early so it survives page reloads even before the server is ready.
         started_at = datetime.now(timezone.utc).isoformat()
-        _save_persist(entry["name"], entry["alias"], proc.pid, settings.PORT_BIND, started_at, "")
+        _save_persist(entry["name"], entry["alias"], proc.pid, settings.PORT_BIND, started_at, "", entry["ctx"])
 
         threading.Thread(
             target=_pty_reader,
@@ -501,7 +521,7 @@ def main() -> None:
 
         threading.Thread(
             target=_probe_server,
-            args=(proc, settings.PORT_BIND, entry["name"], entry["alias"], st.session_state.ready_queue),
+            args=(proc, settings.PORT_BIND, entry["name"], entry["alias"], st.session_state.ready_queue, entry["ctx"]),
             daemon=True,
         ).start()
 
@@ -511,6 +531,7 @@ def main() -> None:
         st.session_state.process.terminate()
         st.session_state.process = None
         st.session_state.running_model = None
+        st.session_state.running_ctx = None
         st.session_state.server_ready = None
         _clear_persist()
         st.rerun()

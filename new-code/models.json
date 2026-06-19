@@ -1,5 +1,5 @@
 {
-        "_comment1": "validate with: jq . config.template.json",
+        "_comment1": "validate with: jq . models.json",
         "_comment2": "or validate with: python3 -c 'import json,sys; json.load(open(sys.argv[1])); print(\"OK\")' config.template.json",
         "models": {
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
@@ -44,6 +44,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_kb_pt_fp16": 120,
                         "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
@@ -60,6 +61,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_gb_128_fp16": 10.4,
                         "_comment": "KV = 10.4GiB @128k ctx size fp16"
                 },
                 "diffusiongemma-26B-A4B-it-Q4_K_M": {
@@ -76,6 +78,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_gb_128_fp16": 2.6,
                         "_comment": "KV = 5.2GiB @256 ctx size fp16"
                 },
                 "diffusiongemma-26B-A4B-it-Q6_K": {
@@ -92,6 +95,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_gb_128_fp16": 2.6,
                         "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "diffusiongemma-26B-A4B-it-Q8_0": {
@@ -116,6 +120,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_gb_128_fp16": 2.6,
                         "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "gemma-4-31B-it-UD-Q6_K_XL": {
@@ -140,6 +145,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_gb_128_fp16": 10.4,
                         "_comment": "KV = 10.4GiB @128k ctx size fp16"
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
@@ -163,6 +169,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "kvsize_gb_128_fp16": 10.4,
                         "_comment": "KV = 10.4GiB @128k ctx size fp16"
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
@@ -187,6 +194,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kvsize_gb_128_fp16": 2.6,
                         "_comment": "KV = 5.2GiB @256k ctx size fp16"
                 },
                 "gemma-4-12b-it-BF16": {
@@ -257,6 +265,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "kvsize_gb_128_fp16": 4.6,
                         "_comment": "KV = 4.6GiB @128k ctx size fp16 - quantization suggested anyway even if it fits... to be verified"
                         
                 },
@@ -330,6 +339,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "kvsize_kb_pt_fp16": 20,
                         "_comment": "KV = 5GiB @256k ctx size fp16"                        
                 },
                 "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
@@ -354,6 +364,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "kvsize_kb_pt_fp16": 20,
                         "_comment": "KV = 5GiB @256k ctx size fp16"                        
                 },
                 "Llama-3.3-70B-Instruct-UD-Q4_K_XL": {
@@ -384,6 +395,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "kvsize_kb_pt_fp16": 320,
                         "_comment": "KV = 40GiB @128k ctx size fp16"                        
                 },
                 "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
@@ -415,6 +427,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "kvsize_kb_pt_fp16": 320,
                         "_comment": "KV = 40GiB @128k ctx size fp16"                   
                 }
         },
