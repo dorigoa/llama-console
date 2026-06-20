@@ -454,7 +454,7 @@ def main() -> None:
 
     with col_info:
         if _is_running():
-            ctx_label = f"  ({_fmt_ctx(st.session_state.running_ctx)})" if st.session_state.running_ctx else ""
+            ctx_label = f"{_fmt_ctx(st.session_state.running_ctx)}" if st.session_state.running_ctx else ""
             # Inline probe: if still marking as "loading", check if server just became ready
             if not st.session_state.server_ready:
                 is_ready = _check_server_ready(f"http://127.0.0.1:{settings.PORT_BIND}/v1/models")
