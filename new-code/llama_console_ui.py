@@ -14,7 +14,7 @@ import subprocess
 import time
 import signal
 import urllib.request
-import urllib.error
+#import urllib.error
 from datetime import datetime, timezone
 import streamlit as st
 from pathlib import Path
@@ -201,7 +201,7 @@ def _load_entries() -> list[dict]:
             "path": path,
             "size": _fmt_size(path),
             "exists": path.exists(),
-            "ctx": int(spec.get("CTX", 0)),
+            "ctx": int(spec.get("ctx", 0)),
             "temp":  float(spec["TEMP"]),
             "top_p": float(spec["TOPP"]),
             "top_k": int(spec["TOPK"]),
@@ -238,6 +238,16 @@ def _get_llama_url(port: int) -> str:
 def _is_running() -> bool:
     p = st.session_state.get("process")
     return p is not None and p.poll() is None
+
+#___________________________________________________________________________________
+@st.cache_data(ttl=1, show_spinner=False)
+def _check_server_ready(url: str) -> bool:
+    """Probe the llama-server API. Cached for 1s so it doesn't block on every render."""
+    try:
+        with urllib.request.urlopen(url, timeout=2) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
 
 #___________________________________________________________________________________
 def _drain_queue() -> None:
@@ -298,13 +308,14 @@ def _pty_reader(master_fd: int, q: queue.Queue, log_path: Path | None = None) ->
 def _log_pane() -> None:
     _drain_queue()
 
-    # Drain probe result — triggers full page rerun on state change
+    # Drain probe result from background thread (fallback — inline probe in col_info is primary)
     ready_q: queue.Queue = st.session_state.get("ready_queue", queue.Queue())
     try:
-        result = ready_q.get_nowait()
-        if st.session_state.get("server_ready") != result:
-            st.session_state.server_ready = result
-            st.rerun(scope="app")
+        while True:
+            result = ready_q.get_nowait()
+            if result and not st.session_state.server_ready:
+                st.session_state.server_ready = True
+                st.rerun()
     except queue.Empty:
         pass
 
@@ -444,11 +455,18 @@ def main() -> None:
     with col_info:
         if _is_running():
             ctx_label = f"  ({_fmt_ctx(st.session_state.running_ctx)})" if st.session_state.running_ctx else ""
+            # Inline probe: if still marking as "loading", check if server just became ready
+            if not st.session_state.server_ready:
+                is_ready = _check_server_ready(f"http://127.0.0.1:{settings.PORT_BIND}/v1/models")
+                if is_ready:
+                    st.session_state.server_ready = True
+                    st.session_state.ready_queue = queue.Queue()  # discard old queue
+                    st.rerun()  # rerun to show "ready" immediately
             if st.session_state.server_ready:
                 api_url = _get_llama_url(settings.PORT_BIND)
                 st.markdown(
                     f'<span style="color:#22c55e;font-size:14px;font-weight:600">'
-                    f'▶ ready — {st.session_state.running_model}{ctx_label}</span>'
+                    f'▶ ready — {st.session_state.running_model} | {ctx_label} | </span>'
                     f'&nbsp;&nbsp;<a href="{api_url}" target="_blank" '
                     f'style="font-size:13px;color:#60a5fa;text-decoration:none">{api_url}</a>',
                     unsafe_allow_html=True,
