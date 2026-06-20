@@ -125,7 +125,8 @@ def _try_recover_from_persist() -> None:
         st.session_state.ready_queue = rq
         threading.Thread(
             target=_probe_server,
-            args=(recovered, port, model_name, alias, rq, st.session_state.running_ctx or 0),
+            args=(recovered, port, model_name, alias, rq),
+            kwargs={"ctx": st.session_state.running_ctx or 0},
             daemon=True,
         ).start()
 
@@ -539,7 +540,8 @@ def main() -> None:
 
         threading.Thread(
             target=_probe_server,
-            args=(proc, settings.PORT_BIND, entry["name"], entry["alias"], st.session_state.ready_queue, entry["ctx"]),
+            args=(proc, settings.PORT_BIND, entry["name"], entry["alias"], st.session_state.ready_queue),
+            kwargs={"ctx": entry["ctx"]},
             daemon=True,
         ).start()
 
