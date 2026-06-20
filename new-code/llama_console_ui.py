@@ -55,6 +55,29 @@ def _clear_persist() -> None:
         p.unlink()
 
 #___________________________________________________________________________________
+def _query_live_ctx(port: int) -> int | None:
+    """Best-effort: ask the running llama-server for its actual context size via /props.
+
+    Returns None if the server is unreachable or the field is absent. NOTE: the /props
+    structure varies across llama.cpp versions; default_generation_settings.n_ctx may be
+    the per-slot context (total --ctx-size / n_parallel) when launched with -np > 1.
+    """
+    try:
+        with urllib.request.urlopen(f"http://127.0.0.1:{port}/props", timeout=2) as resp:
+            if resp.status != 200:
+                return None
+            props = json.loads(resp.read().decode("utf-8", errors="replace"))
+    except Exception:
+        return None
+    v = props.get("n_ctx")
+    if isinstance(v, int) and v > 0:
+        return v
+    dgs = props.get("default_generation_settings")
+    if isinstance(dgs, dict) and isinstance(dgs.get("n_ctx"), int) and dgs["n_ctx"] > 0:
+        return dgs["n_ctx"]
+    return None
+
+#___________________________________________________________________________________
 class _RecoveredProcess:
     """Minimal Popen-compatible wrapper for a PID we didn't spawn ourselves."""
 
@@ -114,7 +137,16 @@ def _try_recover_from_persist() -> None:
 
     st.session_state.process = recovered
     st.session_state.running_model = model_name
-    st.session_state.running_ctx = data.get("ctx")
+
+    # Prefer the live server's actual n_ctx; fall back to persist; self-heal a stale persist.
+    live_ctx = _query_live_ctx(port)
+    persist_ctx = data.get("ctx") or 0
+    st.session_state.running_ctx = live_ctx or persist_ctx or None
+    if live_ctx and live_ctx != persist_ctx:
+        _save_persist(
+            model_name, alias, pid, port,
+            data.get("started_at", ""), data.get("ready_at", ""), live_ctx,
+        )
 
     if api_ready:
         st.session_state.server_ready = True
