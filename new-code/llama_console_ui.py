@@ -466,7 +466,7 @@ def main() -> None:
                 api_url = _get_llama_url(settings.PORT_BIND)
                 st.markdown(
                     f'<span style="color:#22c55e;font-size:14px;font-weight:600">'
-                    f'▶ ready — {st.session_state.running_model} | {ctx_label} | </span>'
+                    f'▶ ready — {st.session_state.running_model} |  ctx {ctx_label}  | </span>'
                     f'&nbsp;&nbsp;<a href="{api_url}" target="_blank" '
                     f'style="font-size:13px;color:#60a5fa;text-decoration:none">{api_url}</a>',
                     unsafe_allow_html=True,
