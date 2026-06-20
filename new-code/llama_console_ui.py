@@ -474,7 +474,7 @@ def main() -> None:
             else:
                 st.markdown(
                     '<span style="color:#f59e0b;font-size:14px;font-weight:600">'
-                    f'⏳ loading — {st.session_state.running_model}{ctx_label}</span>',
+                    f'⏳ loading — {st.session_state.running_model}  |  ctx {ctx_label}</span>',
                     unsafe_allow_html=True,
                 )
         elif st.session_state.process is not None:
