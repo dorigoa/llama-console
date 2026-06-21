@@ -80,7 +80,8 @@ def start_model(
     override_top_k: int | None = None,
     override_min_p: float | None = None,
     override_devices: str | None = None,
-    override_fitt: str | None = None
+    override_fitt: str | None = None,
+    override_ctx: int | None = None
 ) -> None:
     models = load_models(MODELS_JSON)
 
