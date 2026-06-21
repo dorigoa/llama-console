@@ -2,6 +2,31 @@
         "_comment1": "validate with: jq . models.json",
         "_comment2": "or validate with: python3 -c 'import json,sys; json.load(open(sys.argv[1])); print(\"OK\")' config.template.json",
         "models": {
+                "NVIDIA-Nemotron-3-Super-120B-A12B-UD-IQ4_NL": {
+                        "sizegb": 60,
+                        "ALIAS": "NVIDIA-Nemotron-3-Super-120B-A12B-UD-IQ4_NL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/Volumes/Home/llama",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "6144,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "kv_gb_256_fp16": 1,
+                        "native_ctx": 1048576
+                },
                 "NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Q8_0": {
                         "sizegb": 31,
                         "ALIAS": "NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Q8_0",
@@ -14,8 +39,8 @@
                                         "remuser": "dorigo_a"
                                 }
                         },
-                        "ctx": 131072,
-                        "FITT": "6144",
+                        "ctx": 262144,
+                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
