@@ -24,7 +24,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 1
+                        "kv_gb_256_fp16": 1,
+                        "native_ctx": 262144
                 },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 3.9,
@@ -40,7 +41,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 1
+                        "kv_gb_256_fp16": 1,
+                        "native_ctx": 131072
                 },
                 "gemma-4-12B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 6.3,
@@ -56,7 +58,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 8.6
+                        "kv_gb_256_fp16": 8.6,
+                        "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 13,
@@ -72,7 +75,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 2.7
+                        "kv_gb_256_fp16": 2.7,
+                        "native_ctx": 262144
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 16,
@@ -88,7 +92,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 10.8
+                        "kv_gb_256_fp16": 10.8,
+                        "native_ctx": 262144
                 },
                 "diffusiongemma-26B-A4B-it-Q4_K_M": {
                         "sizegb": 16,
@@ -104,7 +109,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 5
+                        "kv_gb_256_fp16": 5,
+                        "native_ctx": 262144
                 },
                 "diffusiongemma-26B-A4B-it-Q6_K": {
                         "sizegb": 21,
@@ -120,7 +126,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 5
+                        "kv_gb_256_fp16": 5,
+                        "native_ctx": 262144
                 },
                 "diffusiongemma-26B-A4B-it-Q8_0": {
                         "sizegb": 25,
@@ -144,7 +151,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 5
+                        "kv_gb_256_fp16": 5,
+                        "native_ctx": 262144
                 },
                 "gemma-4-31B-it-UD-Q6_K_XL": {
                         "sizegb": 26,
@@ -168,7 +176,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 10.8
+                        "kv_gb_256_fp16": 10.8,
+                        "native_ctx": 262144
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "sizegb": 33,
@@ -191,7 +200,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 10.8
+                        "kv_gb_256_fp16": 10.8,
+                        "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
                         "sizegb": 26,
@@ -215,7 +225,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 2.7
+                        "kv_gb_256_fp16": 2.7,
+                        "native_ctx": 262144
                 },
                 "gemma-4-12b-it-BF16": {
                         "sizegb": 22,
@@ -239,7 +250,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 8.6
+                        "kv_gb_256_fp16": 8.6,
+                        "native_ctx": 262144
                 },
                 "gemma-4-12b-it-UD-Q8_K_XL": {
                         "sizegb": 13,
@@ -255,7 +267,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 8.6
+                        "kv_gb_256_fp16": 8.6,
+                        "native_ctx": 262144
                 },
                 "GPT-OSS-120B-MXFP4": {
                         "sizegb": 59,
@@ -285,7 +298,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 9
+                        "kv_gb_256_fp16": 9,
+                        "native_ctx": 131072
                         
                 },
                 "Qwen3.6-27B-UD-Q4_K_XL": {
@@ -302,7 +316,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 16              
+                        "kv_gb_256_fp16": 16,
+                        "native_ctx": 262144           
                 },
                 "Qwen3.6-27B-UD-Q6_K_XL": {
                         "sizegb": 24,
@@ -318,7 +333,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 16                   
+                        "kv_gb_256_fp16": 16,
+                        "native_ctx": 262144               
                 },
                 "Qwen3.6-27B-UD-Q8_K_XL": {
                         "sizegb": 33,
@@ -342,7 +358,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 16
+                        "kv_gb_256_fp16": 16,
+                        "native_ctx": 262144
                 },
                 "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
                         "sizegb": 21,
@@ -358,7 +375,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 5
+                        "kv_gb_256_fp16": 5,
+                        "native_ctx": 262144
                 },
                 "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
                         "sizegb": 36,
@@ -382,7 +400,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 5
+                        "kv_gb_256_fp16": 5,
+                        "native_ctx": 262144
                         
                 },
                 "Qwen3-Coder-30B-A3B-Instruct-Q8_0": {
@@ -407,7 +426,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 24
+                        "kv_gb_256_fp16": 24,
+                        "native_ctx": 262144
                 },
                 "Llama-3.3-70B-Instruct-UD-Q4_K_XL": {
                         "sizegb": 40,
@@ -437,7 +457,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 80
+                        "kv_gb_256_fp16": 80,
+                        "native_ctx": 131072
                 },
                 "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
                         "sizegb": 76,
@@ -468,7 +489,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 80                   
+                        "kv_gb_256_fp16": 80,
+                        "native_ctx": 131072               
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
