@@ -26,8 +26,8 @@ def valid_csv_tokens(s) -> bool:
     return isinstance(s, str) and _CSV_TOKENS.fullmatch(s) is not None
 
 #___________________________________________________________________________________
-def _build_command(binary: str, model: Model, devices: str = "") -> list[str]:
-    cmd = [binary, "-m", str(model.model_path), "-c", str(model.ctxsize)]
+def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None) -> list[str]:
+    cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else model.ctxsize)]
 
     if model.fitt:
         cmd += ["-fitt", model.fitt]
