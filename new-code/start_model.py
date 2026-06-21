@@ -117,6 +117,8 @@ def start_model(
         model.top_k = override_top_k
     if override_min_p is not None:
         model.min_p = override_min_p
+    if override_ctx is not None:
+        model.ctxsize = override_ctx
 
     binary = settings.LLAMA_SERVER_BIN
     if not Path(binary).is_file():
@@ -170,7 +172,7 @@ def start_model(
         else:
             devices = override_devices
 
-    cmd = _build_command(binary, model, devices)
+    cmd = _build_command(binary, model, devices, override_ctx)
     print("Command:", " ".join(cmd), flush=True)
 
     if dry_run:
@@ -190,6 +192,7 @@ def main() -> None:
     parser.add_argument("--override-min-p", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
     parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
+    parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
 
     args = parser.parse_args()
     start_model(
@@ -201,7 +204,8 @@ def main() -> None:
         override_top_k=args.override_top_k,
         override_min_p=args.override_min_p,
         override_devices=args.override_devices,
-        override_fitt=args.override_fitt
+        override_fitt=args.override_fitt,
+        override_ctx=args.override_ctx
     )
 
 #___________________________________________________________________________________

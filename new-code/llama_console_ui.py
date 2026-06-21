@@ -441,7 +441,7 @@ def main() -> None:
 
     # ── parameter overrides ───────────────────────────────────────────────────
     with st.expander("Parameter overrides (leave blank to use model defaults)", expanded=True):
-        c1, c2, c3, c4 = st.columns(4)
+        c1, c2, c3, c4, c5 = st.columns(5)
         with c1:
             temp_str = st.text_input(
                 "temperature",
@@ -465,6 +465,12 @@ def main() -> None:
                 "min_p",
                 placeholder=f"default: {entry['min_p']}",
                 key="ov_minp",
+            )
+        with c5:
+            ctx_str = st.text_input(
+                "context size",
+                placeholder=f"default: {entry['ctx']}",
+                key="ov_ctx",
             )
 
     # ── start / stop ──────────────────────────────────────────────────────────
@@ -531,6 +537,8 @@ def main() -> None:
             cmd += ["--override-top-k", topk_str.strip()]
         if minp_str.strip():
             cmd += ["--override-min-p", minp_str.strip()]
+        if ctx_str.strip():
+            cmd += ["--override-ctx", ctx_str.strip()]
 
         # Reset in-memory logs and queues
         st.session_state.log_lines = []
@@ -557,12 +565,14 @@ def main() -> None:
         )
         os.close(slave_fd)  # parent does not need the slave end
 
+        # Calculate effective context size (use override if provided)
+        effective_ctx = int(ctx_str.strip()) if ctx_str.strip() else entry["ctx"]
         st.session_state.process = proc
         st.session_state.running_model = entry["name"]
-        st.session_state.running_ctx = entry["ctx"]
+        st.session_state.running_ctx = effective_ctx
         # Persist the launched model early so it survives page reloads even before the server is ready.
         started_at = datetime.now(timezone.utc).isoformat()
-        _save_persist(entry["name"], entry["alias"], proc.pid, settings.PORT_BIND, started_at, "", entry["ctx"])
+        _save_persist(entry["name"], entry["alias"], proc.pid, settings.PORT_BIND, started_at, "", effective_ctx)
 
         threading.Thread(
             target=_pty_reader,
