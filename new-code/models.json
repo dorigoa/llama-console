@@ -12,6 +12,13 @@
                                         "cachepath": "/Volumes/Home/llama",
                                         "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "dorigo_a"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachedisk": "/dev/disk6",
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
