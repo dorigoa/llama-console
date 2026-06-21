@@ -1,21 +1,22 @@
 #!/usr/bin/env python3
 """
-kv_per_token.py
-Stima la dimensione della KV-cache (per token e a contesto pieno) di un modello GGUF,
-leggendo i metadati col parser ufficiale `gguf` (nessun caricamento dei pesi).
+kv_per_token.py  (v2 — SWA-aware)
+Stima la dimensione della KV-cache (per token e a contesto N) di un modello GGUF,
+leggendo i soli metadati col parser ufficiale `gguf` (nessun caricamento dei pesi).
 
 Installazione:  pip install gguf
 Uso:
     python kv_per_token.py modello.gguf
-    python kv_per_token.py modello.gguf --ctx 262144
+    python kv_per_token.py modello.gguf --ctx 131072
     python kv_per_token.py modello.gguf --ctx 32768 --cache-type-k q8_0 --cache-type-v q8_0
 
-Formula:  byte/token = sum_layer [ n_kv * d_k * b_k  +  n_kv * d_v * b_v ]
-          (n_kv = teste KV del layer; d_k/d_v = key/value_length; b = byte/elemento)
+Formula per layer:  byte/token = n_kv * (d_k*b_k + d_v*b_v)
+Totale a contesto N: i layer global scalano con N; i layer sliding-window
+si fermano a min(N, finestra).  -> total = grow*N + fixed*min(N, window)
 
-NOTA: per sliding-window e attenzione ibrida (Gemma 4, Qwen3.x hybrid, Nemotron-H, ...)
-il risultato e' un LIMITE SUPERIORE / approssimato. Il valore reale e' quello stampato
-da llama-server all'avvio (riga "KV self size").
+Esatto per i modelli dense e (per i conteggi per-layer) per Gemma 4.
+La distinzione global/sliding usa un'euristica: verifica sempre con la riga
+"KV self size" di llama-server, che e' la verita' a runtime.
 """
 
 import argparse
@@ -27,22 +28,15 @@ except ImportError:
     sys.exit("Manca il pacchetto 'gguf'. Installa con:  pip install gguf")
 
 # byte per elemento per i tipi di cache K/V di llama.cpp
-# (i quantizzati usano blocchi da 32 valori: byte_per_blocco / 32)
+# (i quantizzati: byte_per_blocco_da_32 / 32)
 CACHE_BYTES = {
-    "f32":    4.0,
-    "f16":    2.0,
-    "bf16":   2.0,
-    "q8_0":   34 / 32,   # 1.0625
-    "q5_1":   24 / 32,   # 0.75
-    "q5_0":   22 / 32,   # 0.6875
-    "q4_1":   20 / 32,   # 0.625
-    "q4_0":   18 / 32,   # 0.5625
-    "iq4_nl": 18 / 32,   # 0.5625
+    "f32": 4.0, "f16": 2.0, "bf16": 2.0,
+    "q8_0": 34 / 32, "q5_1": 24 / 32, "q5_0": 22 / 32,
+    "q4_1": 20 / 32, "q4_0": 18 / 32, "iq4_nl": 18 / 32,
 }
 
 
 def _norm(v):
-    """Normalizza i tipi numpy/bytes in tipi Python nativi (ricorsivo per gli array)."""
     import numpy as np
     if isinstance(v, bytes):
         return v.decode("utf-8", "replace")
@@ -60,26 +54,20 @@ def _norm(v):
 
 
 def field_value(reader, key):
-    """Ritorna il valore di un campo di metadati (scalare/array/stringa) o None."""
+    """Valore di un campo di metadati (scalare/array/stringa) o None."""
     field = reader.fields.get(key)
     if field is None:
         return None
-    # 1) API moderna del pacchetto gguf
     if hasattr(field, "contents"):
         try:
             return _norm(field.contents())
         except Exception:
             pass
-    # 2) fallback manuale (copre scalare numerico, stringa, array numerico/stringa)
     t = field.types[0]
     if t == GGUFValueType.ARRAY:
         et = field.types[1]
-        out = []
-        for i in field.data:
-            p = field.parts[i]
-            out.append(bytes(p).decode("utf-8", "replace") if et == GGUFValueType.STRING
-                       else int(p[0]))
-        return out
+        return [bytes(field.parts[i]).decode("utf-8", "replace") if et == GGUFValueType.STRING
+                else int(field.parts[i][0]) for i in field.data]
     if t == GGUFValueType.STRING:
         return bytes(field.parts[field.data[-1]]).decode("utf-8", "replace")
     return int(field.parts[field.data[-1]][0])
@@ -94,13 +82,11 @@ def human(n):
 
 def main():
     ap = argparse.ArgumentParser(description="Dimensione KV-cache di un modello GGUF.")
-    ap.add_argument("gguf", help="percorso del file .gguf")
+    ap.add_argument("gguf")
     ap.add_argument("--ctx", type=int, default=None,
                     help="contesto N per il totale (default: context_length del modello)")
-    ap.add_argument("--cache-type-k", default="f16", choices=sorted(CACHE_BYTES),
-                    help="tipo cache K (default f16)")
-    ap.add_argument("--cache-type-v", default="f16", choices=sorted(CACHE_BYTES),
-                    help="tipo cache V (default f16)")
+    ap.add_argument("--cache-type-k", default="f16", choices=sorted(CACHE_BYTES))
+    ap.add_argument("--cache-type-v", default="f16", choices=sorted(CACHE_BYTES))
     ap.add_argument("--cache-type", default=None, choices=sorted(CACHE_BYTES),
                     help="imposta K e V insieme")
     args = ap.parse_args()
@@ -110,7 +96,7 @@ def main():
     reader = GGUFReader(args.gguf)
     arch = field_value(reader, "general.architecture")
     if not arch:
-        sys.exit("Impossibile leggere general.architecture (file GGUF valido?).")
+        sys.exit("Impossibile leggere general.architecture.")
 
     g = lambda suf: field_value(reader, f"{arch}.{suf}")
     L           = g("block_count")
@@ -120,70 +106,85 @@ def main():
     d_v         = g("attention.value_length")
     n_embd      = g("embedding_length")
     swa         = g("attention.sliding_window")
+    swa_pattern = g("attention.sliding_window_pattern")
     n_ctx_train = g("context_length")
 
     if L is None or n_head_kv is None:
         sys.exit(f"Metadati di attenzione mancanti per arch '{arch}'.")
 
-    # head_dim di default se key/value_length assenti: n_embd / n_head(query)
     nh_first = n_head[0] if isinstance(n_head, list) else n_head
     if d_k is None or d_v is None:
         if n_embd is None or not nh_first:
-            sys.exit("key/value_length assenti e impossibile derivare head_dim.")
+            sys.exit("key/value_length assenti e head_dim non derivabile.")
         hd = n_embd // nh_first
-        d_k = d_k or hd
-        d_v = d_v or hd
+        d_k, d_v = d_k or hd, d_v or hd
 
-    # n_head_kv -> lista per-layer (gli array sui modelli ibridi hanno 0 sui layer ricorrenti)
+    # n_head_kv -> lista per-layer (0 sui layer ricorrenti)
     if isinstance(n_head_kv, list):
-        kv = list(n_head_kv)
-        kv = (kv + [kv[-1]] * (L - len(kv)))[:L] if len(kv) < L else kv[:L]
+        kv = (n_head_kv + [n_head_kv[-1]] * (L - len(n_head_kv)))[:L] if len(n_head_kv) < L else n_head_kv[:L]
         hybrid = True
     else:
         kv = [n_head_kv] * L
         hybrid = False
 
-    sum_kv      = sum(kv)
+    b_k, b_v = CACHE_BYTES[args.cache_type_k], CACHE_BYTES[args.cache_type_v]
+    per_layer = [k * (d_k * b_k + d_v * b_v) for k in kv]   # byte/token per layer
+    naive_pt  = sum(per_layer)
     attn_layers = sum(1 for x in kv if x > 0)
-    recur       = L - attn_layers
-    b_k, b_v    = CACHE_BYTES[args.cache_type_k], CACHE_BYTES[args.cache_type_v]
-    per_token   = sum_kv * (d_k * b_k + d_v * b_v)
+    recur = L - attn_layers
 
+    # --- classificazione layer global vs sliding (per il tetto SWA) ---
+    is_global, method = None, None
+    if swa:
+        if hybrid and len(set(k for k in kv if k > 0)) >= 2:
+            gmin = min(k for k in kv if k > 0)
+            is_global = [k == gmin for k in kv]            # Gemma: global = meno teste KV
+            method = f"teste KV minime ({gmin}) = global"
+        else:
+            P = swa_pattern or (6 if str(arch).startswith("gemma") else None)
+            if P:
+                is_global = [(i % P) == (P - 1) for i in range(L)]
+                is_global[-1] = True                        # ultimo layer sempre global
+                method = f"pattern {P} (1 global ogni {P}, ultimo global)"
+
+    # --- report ---
     print(f"Modello       : {args.gguf}")
     print(f"Architettura  : {arch}")
     print(f"Layer totali  : {L}  (attenzione: {attn_layers}, ricorrenti/altro: {recur})")
-    if hybrid:
-        print(f"head_count_kv : per-layer {sorted(set(kv))}  somma={sum_kv}  -> IBRIDO")
-    else:
-        print(f"head_count_kv : {n_head_kv} (uniforme)")
-    print(f"key_length    : {d_k}    value_length: {d_v}")
+    print(f"head_count_kv : {'per-layer ' + str(sorted(set(kv))) if hybrid else n_head_kv}")
+    print(f"key_length    : {d_k}    value_length: {d_v}"
+          + (f"    sliding_window: {swa}" if swa else ""))
     print(f"cache K / V   : {args.cache_type_k} ({b_k:.4f} B/el)  /  {args.cache_type_v} ({b_v:.4f} B/el)")
     print("-" * 60)
-    print(f"KV per token  : {human(per_token)}   ({per_token:.0f} byte)")
 
     ctx = args.ctx or n_ctx_train
-    if ctx:
-        tag = "" if args.ctx else " (context_length del modello)"
-        print(f"KV @ {ctx} tok{tag}: {human(per_token * ctx)}")
 
-    notes = []
-    if swa:
-        notes.append(f"sliding_window={swa}: i layer locali si saturano alla finestra -> "
-                     f"il totale a contesto lungo e' SOVRASTIMATO.")
-    if hybrid and len(set(kv)) > 1:
-        notes.append("Attenzione ibrida: se anche key/value_length variano per layer "
-                     "(es. Gemma 4: 256 locali / 512 globali + trucco K=V), i metadati scalari "
-                     "NON lo catturano -> fidati del valore di llama-server.")
+    if swa and is_global is not None and ctx and ctx > swa:
+        n_glob   = sum(is_global)
+        grow_bt  = sum(per_layer[i] for i in range(L) if is_global[i])
+        loc_bt   = sum(per_layer[i] for i in range(L) if not is_global[i])
+        fixed    = loc_bt * min(ctx, swa)
+        total    = grow_bt * ctx + fixed
+        print(f"Layer global  : {n_glob}   sliding (@{swa}): {L - n_glob}   [{method}]")
+        print(f"Cresce con N  : {human(grow_bt)}/token")
+        print(f"Fisso (locali): {human(fixed)}  (saturi a {swa} token)")
+        print(f"KV @ {ctx} tok : {human(total)}   [stima SWA-aware]")
+        print(f"  upper bound (tutti pieni): {human(naive_pt * ctx)}")
+    else:
+        print(f"KV per token  : {human(naive_pt)}   ({naive_pt:.0f} byte)")
+        if ctx:
+            tag = "" if args.ctx else " (context_length del modello)"
+            extra = "   [!] SWA presente ma non classificabile -> LIMITE SUPERIORE" \
+                    if (swa and is_global is None) else ""
+            print(f"KV @ {ctx} tok{tag}: {human(naive_pt * ctx)}{extra}")
+
     if recur > 0:
         ssm = [k for k in reader.fields if k.startswith(f"{arch}.ssm.")]
-        notes.append(f"{recur} layer ricorrenti (Mamba/linear) non entrano nella KV "
-                     f"(stato fisso a parte). Chiavi SSM: {', '.join(ssm) or 'n/d'}.")
-    if notes:
         print("-" * 60)
-        for n in notes:
-            print("[!] " + n)
+        print(f"[!] {recur} layer ricorrenti (Mamba/linear): stato fisso a parte, non in KV. "
+              f"Chiavi SSM: {', '.join(ssm) or 'n/d'}.")
 
-    print("\nVerifica reale:  llama-server -m <gguf> -c <N>   e leggi la riga \"KV self size\".")
+    print('\nVerita\' a runtime:  llama-server -m <gguf> -c <N>   -> riga "KV self size".')
 
 
 if __name__ == "__main__":
