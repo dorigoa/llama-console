@@ -19,7 +19,7 @@
                                         "remuser": "alvise"
                                 }
                         },
-                        "ctx": 262144,
+                        "ctx": 512000,
                         "FITT": "6144,12288,2048,1024",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -29,7 +29,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 1,
+                        "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
                 "NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Q8_0": {
@@ -43,7 +43,7 @@
                                         "remuser": "dorigo_a"
                                 }
                         },
-                        "ctx": 262144,
+                        "ctx": 1048576,
                         "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -53,7 +53,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 1,
+                        "kv_gb_256_fp16": 1.5,
                         "native_ctx": 262144
                 },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
@@ -70,14 +70,14 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 1,
+                        "kv_gb_256_fp16": 4,
                         "native_ctx": 131072
                 },
-                "gemma-4-12B-it-qat-UD-Q4_K_XL": {
-                        "sizegb": 6.3,
-                        "ALIAS": "gemma-4-12B-it-qat-UD-Q4_K_XL",
+                "gemma-4-12b-it-UD-Q8_K_XL": {
+                        "sizegb": 13,
+                        "ALIAS": "gemma-4-12b-it-UD-Q8_K_XL",
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
+                        "ctx": 262144,
                         "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
@@ -104,6 +104,30 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "kv_gb_256_fp16": 5.2,
+                        "native_ctx": 262144
+                },
+                "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
+                        "sizegb": 26,
+                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "6144,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
                         "kv_gb_256_fp16": 2.7,
                         "native_ctx": 262144
                 },
@@ -113,6 +137,60 @@
                         "RPC_SERVERS": { },
                         "ctx": 131072,
                         "FITT": "6144",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "kv_gb_256_fp16": 5.2,
+                        "native_ctx": 262144
+                },
+                "gemma-4-31B-it-UD-Q6_K_XL": {
+                        "sizegb": 26,
+                        "ALIAS": "gemma-4-31B-it-UD-Q6_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "dorigo_a"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "6144,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "kv_gb_256_fp16": 10.8,
+                        "native_ctx": 262144
+                },
+                "gemma-4-31B-it-UD-Q8_K_XL": {
+                        "sizegb": 33,
+                        "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "dorigo_a"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "alvise"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -180,119 +258,6 @@
                         "EXTRAS": null,
                         "KVQUANT": null,
                         "kv_gb_256_fp16": 5,
-                        "native_ctx": 262144
-                },
-                "gemma-4-31B-it-UD-Q6_K_XL": {
-                        "sizegb": 26,
-                        "ALIAS": "gemma-4-31B-it-UD-Q6_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 196608,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 10.8,
-                        "native_ctx": 262144
-                },
-                "gemma-4-31B-it-UD-Q8_K_XL": {
-                        "sizegb": 33,
-                        "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 131072,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 10.8,
-                        "native_ctx": 262144
-                },
-                "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
-                        "sizegb": 26,
-                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 262144,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 2.7,
-                        "native_ctx": 262144
-                },
-                "gemma-4-12b-it-BF16": {
-                        "sizegb": 22,
-                        "ALIAS": "gemma-4-12b-it-BF16",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 196608,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 8.6,
-                        "native_ctx": 262144
-                },
-                "gemma-4-12b-it-UD-Q8_K_XL": {
-                        "sizegb": 13,
-                        "ALIAS": "gemma-4-12b-it-UD-Q8_K_XL",
-                        "RPC_SERVERS": { },
-                        "ctx": 262144,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 8.6,
                         "native_ctx": 262144
                 },
                 "GPT-OSS-120B-MXFP4": {
