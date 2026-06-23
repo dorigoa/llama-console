@@ -70,7 +70,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 4,
+                        "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
                 "gemma-4-12b-it-UD-Q8_K_XL": {
@@ -87,7 +87,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 8.6,
+                        "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL": {
@@ -104,7 +104,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 5.2,
+                        "kv_gb_256_fp16": 5.4,
                         "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
@@ -128,37 +128,14 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 2.7,
-                        "native_ctx": 262144
+                        "kv_gb_256_fp16": 5.6,
+                        "native_ctx": 262144,
+                        "_comment": ""
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 16,
                         "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
-                        "RPC_SERVERS": { },
-                        "ctx": 131072,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 5.2,
-                        "native_ctx": 262144
-                },
-                "gemma-4-31B-it-UD-Q6_K_XL": {
-                        "sizegb": 26,
-                        "ALIAS": "gemma-4-31B-it-UD-Q6_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
+                        "RPC_SERVERS": {},
                         "ctx": 262144,
                         "FITT": "6144,12288",
                         "TEMP": 1.0,
@@ -169,8 +146,9 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 10.8,
-                        "native_ctx": 262144
+                        "kv_gb_256_fp16": 11,
+                        "native_ctx": 262144,
+                        "_comment": "it allocated a huge KV; need to quantize it"
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "sizegb": 33,
@@ -190,7 +168,7 @@
                                 }
                         },
                         "ctx": 262144,
-                        "FITT": "6144,12288",
+                        "FITT": "6144,12288,3072,1024",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -199,65 +177,7 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
-                        "kv_gb_256_fp16": 10.8,
-                        "native_ctx": 262144
-                },
-                "diffusiongemma-26B-A4B-it-Q4_K_M": {
-                        "sizegb": 16,
-                        "ALIAS": "diffusiongemma-26B-A4B-it-Q4_K_M",
-                        "RPC_SERVERS": { },
-                        "ctx": 262144,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 5,
-                        "native_ctx": 262144
-                },
-                "diffusiongemma-26B-A4B-it-Q6_K": {
-                        "sizegb": 21,
-                        "ALIAS": "diffusiongemma-26B-A4B-it-Q6_K",
-                        "RPC_SERVERS": { },
-                        "ctx": 262144,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 5,
-                        "native_ctx": 262144
-                },
-                "diffusiongemma-26B-A4B-it-Q8_0": {
-                        "sizegb": 25,
-                        "ALIAS": "diffusiongemma-26B-A4B-it-Q8_0",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 196608,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 5,
+                        "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
                 "GPT-OSS-120B-MXFP4": {
@@ -289,7 +209,6 @@
                         "KVQUANT": "q8_0",
                         "kv_gb_256_fp16": 9,
                         "native_ctx": 131072
-                        
                 },
                 "Qwen3.6-27B-UD-Q4_K_XL": {
                         "sizegb": 16,
@@ -307,23 +226,6 @@
                         "KVQUANT": "q8_0",
                         "kv_gb_256_fp16": 16,
                         "native_ctx": 262144           
-                },
-                "Qwen3.6-27B-UD-Q6_K_XL": {
-                        "sizegb": 24,
-                        "ALIAS": "Qwen3.6-27B-UD-Q6_K_XL",
-                        "RPC_SERVERS": {},
-                        "ctx": 131072,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 1.0,
-                        "TOPK": 0,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 16,
-                        "native_ctx": 262144               
                 },
                 "Qwen3.6-27B-UD-Q8_K_XL": {
                         "sizegb": 33,
@@ -354,7 +256,7 @@
                         "ALIAS": "Qwen3.6-35B-A3B-UD-Q4_K_XL",
                         "RPC_SERVERS": {},
                         "ctx": 262144,
-                        "FITT": "6144,12288",
+                        "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
@@ -386,7 +288,7 @@
                         "REAS": "high",
                         "MMPROJ": null,
                         "EXTRAS": null,
-                        "KVQUANT": "q8_0",
+                        "KVQUANT": null,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                         
@@ -414,66 +316,6 @@
                         "KVQUANT": "q8_0",
                         "kv_gb_256_fp16": 24,
                         "native_ctx": 262144
-                },
-                "Llama-3.3-70B-Instruct-UD-Q4_K_XL": {
-                        "sizegb": 40,
-                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q4_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "alvise"
-                                }
-                        },
-                        "ctx": 131072,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 1.0,
-                        "TOPK": 0,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 80,
-                        "native_ctx": 131072
-                },
-                "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
-                        "sizegb": 76,
-                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q8_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "alvise"
-                                }
-                        },
-                        "ctx": 65536,
-                        "FITT": "6144,12288,1024,1024",
-                        "TEMP": 1.0,
-                        "TOPP": 1.0,
-                        "TOPK": 0,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 80,
-                        "native_ctx": 131072               
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
