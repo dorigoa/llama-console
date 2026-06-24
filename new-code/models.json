@@ -32,30 +32,6 @@
                         "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
-                "NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Q8_0": {
-                        "sizegb": 31,
-                        "ALIAS": "NVIDIA-Nemotron-3-Nano-Omni-30B-A3B-Reasoning-Q8_0",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
-                                }
-                        },
-                        "ctx": 1048576,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "kv_gb_256_fp16": 1.5,
-                        "native_ctx": 262144
-                },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 3.9,
                         "ALIAS": "gemma-4-E4B-it-qat-UD-Q4_K_XL",
