@@ -74,6 +74,8 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
 def start_model(
     model_name: str | None,
     dry_run: bool = False,
+    only_rpc: bool = False,
+    only_list_devs: bool = False,
     list_models: bool = False,
     override_temp: float | None = None,
     override_top_p: float | None = None,
@@ -140,6 +142,9 @@ def start_model(
                 sys.exit(1)
 
         print("All RPC servers reachable.", flush=True)
+        if only_rpc:
+            print("'--only-start-rpc' specified. Gracefully exiting.")
+            sys.exit(0)
 
     devices = ""
     if dry_run:
@@ -172,6 +177,10 @@ def start_model(
         else:
             devices = override_devices
 
+        if only_list_devs:
+            print("'--only-list-devices' specified. Gracefully exiting.")
+            sys.exit(0)
+
     cmd = _build_command(binary, model, devices, override_ctx)
     print("Command:", " ".join(cmd), flush=True)
 
@@ -185,6 +194,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Launch llama-server for a model defined in models.json")
     parser.add_argument("model_name", nargs="?", help="Model name as listed in models.json (without .gguf extension)")
     parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it")
+    parser.add_argument("--only-start-rpc", action="store_true", help="Just start the RPC remote servers and exit")
+    parser.add_argument("--only-check-rpc", action="store_true", help="Just check that RPC remote servers and reachable")
+    parser.add_argument("--only-list-devices", action="store_true", help="Just retrieve the list of GPU devices from local and remote RPC servers")
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
     parser.add_argument("--override-temp", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
@@ -194,10 +206,13 @@ def main() -> None:
     parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
 
+
     args = parser.parse_args()
     start_model(
         args.model_name,
         dry_run=args.dry_run,
+        only_rpc=args.only_start_rpc,
+        only_list_devs=args.only_list_devices,
         list_models=args.list_models,
         override_temp=args.override_temp,
         override_top_p=args.override_top_p,

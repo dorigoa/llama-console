@@ -14,11 +14,11 @@ import subprocess
 import time
 import signal
 import urllib.request
-#import urllib.error
 from datetime import datetime, timezone
 import streamlit as st
 from pathlib import Path
 from config_manager import get_settings
+from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers
 
 # Path to persistent log file (shared across page reloads)
 _LOG_FILE_PATH = Path(get_settings().PERSIST_FILE).with_name("llama-console-logs.txt")
@@ -602,7 +602,12 @@ def main() -> None:
     col_kill, col_kill_status = st.columns([1, 5], vertical_alignment="center")
     with col_kill:
         kill_rpc_clicked = st.button(
-            "☠  Kill RPC servers",
+            "Kill RPC servers",
+            disabled=(entry["rpc_count"] == 0),
+            use_container_width=True,
+        )
+        start_rpc_clicked = st.button(
+            "Start RPC servers",
             disabled=(entry["rpc_count"] == 0),
             use_container_width=True,
         )
@@ -620,9 +625,18 @@ def main() -> None:
                 unsafe_allow_html=True,
             )
 
+    if start_rpc_clicked:
+        #start_result: dict[str, tuple[bool, str]] = {}
+        #dead = unreachable_rpc_servers(entry)
+        #for rcpsrv in dead:
+        #    start_rpc_server(rcpsrv)
+        pass
+
+
     if kill_rpc_clicked:
         kill_results: dict[str, tuple[bool, str]] = {}
         for host, srv in entry["rpc_servers"].items():
+            
             user = srv.get("remuser", "root")
             binary = os.path.basename(srv.get("bin", "rpc-server"))
             ssh_cmd = [
