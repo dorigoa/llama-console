@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Streamlit GUI for managing llama-server models via start_model.py."""
 
-import html as _html
+
 import os
 import sys
 import json
@@ -13,11 +13,14 @@ import threading
 import subprocess
 import time
 import signal
+import html as _html
 import urllib.request
-from datetime import datetime, timezone
 import streamlit as st
 from pathlib import Path
+from datetime import datetime, timezone
+
 from config_manager import get_settings
+from rpc_check import unreachable_rpc_servers
 
 # Path to persistent log file (shared across page reloads)
 _LOG_FILE_PATH = Path(get_settings().PERSIST_FILE).with_name("llama-console-logs.txt")
@@ -333,6 +336,27 @@ def _pty_reader(master_fd: int, q: queue.Queue, log_path: Path | None = None) ->
     except OSError:
         pass
 
+# ─── auto-refreshing RPC status ─────────────────────────────────────────────────
+@st.fragment(run_every=5)
+def _check_rpc_servers() -> None:
+    
+    entries = _load_entries()
+
+    def _label(e: dict) -> str:
+        flag = "" if e["exists"] else "  ⚠️ file missing"
+        rpc = f"  # rpc servers: {e['rpc_count']}" if e["rpc_count"] else ""
+        return f"{e['name']}   [{e['size']}]{rpc}{flag}"
+    
+    idx = st.selectbox(
+        "Model",
+        range(len(entries)),
+        index=0,
+        format_func=lambda i: _label(entries[i]),
+        disabled=_is_running(),
+    )
+
+    entry = entries[idx]
+    dead_servers = unreachable_rpc_servers( entry )
 
 # ─── auto-refreshing log pane ─────────────────────────────────────────────────
 

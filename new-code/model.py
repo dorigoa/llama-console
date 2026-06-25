@@ -83,7 +83,6 @@ def load_models(config_path: str | Path) -> list[Model]:
                 reasoning=str(spec["REAS"]),
                 last_started=0,                         
                 fitt=str(spec["FITT"]),
-                #gpus=str(spec["GPUS"]),
                 rpcservers=rpcservers,
                 extras=spec["EXTRAS"],
                 kvquant=spec["KVQUANT"]
