@@ -129,7 +129,7 @@ def start_model(
 
     if not dry_run and model.rpcservers and not override_devices:
         print("Checking rpc servers...", flush=True)
-        dead = unreachable_rpc_servers(model)
+        dead = unreachable_rpc_servers(model.rpcservers)
         if dead:
             for addr in dead:
                 print(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...", flush=True)

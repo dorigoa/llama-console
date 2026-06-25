@@ -20,13 +20,12 @@ def _tcp_reachable(addr: rpc_server) -> bool:
         return False
 
 #___________________________________________________________________________________
-def unreachable_rpc_servers(model: Model) -> list[rpc_server]:
-    """Return the rpc_server entries in model that do not respond to a TCP ping.
+def unreachable_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
+    """Return the rpc_server entries that do not respond to a TCP ping.
 
-    Returns [] immediately if rpcservers is empty.
+    Returns [] immediately if servers is empty.
     Checks are run in parallel (one thread per server).
     """
-    servers = model.rpcservers
     if not servers:
         return []
 
@@ -92,7 +91,7 @@ if __name__ == "__main__":
         sys.exit(1)
 
     for m in load_models(sys.argv[1]):
-        down = unreachable_rpc_servers(m)
+        down = unreachable_rpc_servers(m.rpcservers)
         if not m.rpcservers:
             print(f"{m.model_name}: no rpc server configured")
         elif down:

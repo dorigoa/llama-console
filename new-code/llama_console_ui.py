@@ -21,6 +21,7 @@ from datetime import datetime, timezone
 
 from config_manager import get_settings
 from rpc_check import unreachable_rpc_servers
+from model import rpc_server
 
 # Path to persistent log file (shared across page reloads)
 _LOG_FILE_PATH = Path(get_settings().PERSIST_FILE).with_name("llama-console-logs.txt")
@@ -338,25 +339,49 @@ def _pty_reader(master_fd: int, q: queue.Queue, log_path: Path | None = None) ->
 
 # ─── auto-refreshing RPC status ─────────────────────────────────────────────────
 @st.fragment(run_every=5)
-def _check_rpc_servers() -> None:
-    
-    entries = _load_entries()
+def _check_rpc_servers(entry: dict) -> None:
+    servers = [
+        rpc_server(
+            IP=ip,
+            PORT=int(srv["port"]),
+            cachepath=str(srv["cachepath"]),
+            bin=str(srv["bin"]),
+            remuser=str(srv["remuser"]),
+            cachedisk=str(srv["cachedisk"]) if srv.get("cachedisk") is not None else None,
+        )
+        for ip, srv in entry.get("rpc_servers", {}).items()
+    ]
 
-    def _label(e: dict) -> str:
-        flag = "" if e["exists"] else "  ⚠️ file missing"
-        rpc = f"  # rpc servers: {e['rpc_count']}" if e["rpc_count"] else ""
-        return f"{e['name']}   [{e['size']}]{rpc}{flag}"
-    
-    idx = st.selectbox(
-        "Model",
-        range(len(entries)),
-        index=0,
-        format_func=lambda i: _label(entries[i]),
-        disabled=_is_running(),
-    )
+    if not len(servers):
+        st.session_state.rpc_status_text = "No RPC server defined for current model"
+        st.session_state.rpc_status_color = "#c9c434"
+        return
 
-    entry = entries[idx]
-    dead_servers = unreachable_rpc_servers( entry )
+    dead_servers = unreachable_rpc_servers(servers)
+    if not dead_servers:
+        new_text, new_color = "All RPC servers are active", "#c9c434"
+    else:
+        dead = ",".join(srv.IP for srv in dead_servers)
+        new_text, new_color = f"Not active servers: {dead}", "#cd2a2a"
+
+    if (st.session_state.get("rpc_status_text") != new_text or
+            st.session_state.get("rpc_status_color") != new_color):
+        st.session_state.rpc_status_text = new_text
+        st.session_state.rpc_status_color = new_color
+        st.rerun()
+
+# ────────────────────────────────────────────────────────────────────────────────
+def set_rpc_status(text: str, color: str = "#6b7280") -> None:
+    """Set the RPC status label displayed next to the RPC control buttons.
+
+    Parameters:
+        text: The status message to display.
+        color: CSS color for the text (default gray).
+    """
+    st.session_state.rpc_status_text = text
+    st.session_state.rpc_status_color = color
+    # Force UI update
+    st.rerun()
 
 # ─── auto-refreshing log pane ─────────────────────────────────────────────────
 
@@ -412,6 +437,8 @@ def main() -> None:
         "running_model": None,
         "running_ctx": None,
         "server_ready": None,  # None=idle, False=loading, True=ready
+        "rpc_status_text": "",  # Text for RPC status label
+        "rpc_status_color": "#6b7280",  # Default color (gray)
         "_recovery_done": False,
     }.items():
         if k not in st.session_state:
@@ -461,6 +488,7 @@ def main() -> None:
     )
 
     entry = entries[idx]
+    _check_rpc_servers(entry)
 
     # ── parameter overrides ───────────────────────────────────────────────────
     with st.expander("Parameter overrides (leave blank to use model defaults)", expanded=True):
@@ -635,6 +663,15 @@ def main() -> None:
             use_container_width=True,
         )
     with col_kill_status:
+        # Render RPC status label
+        status_text = st.session_state.get("rpc_status_text", "")
+        status_color = st.session_state.get("rpc_status_color", "#6b7280")
+        if status_text:
+            st.markdown(
+                f'<span style="color:{status_color};font-size:13px;">{status_text}</span>',
+                unsafe_allow_html=True,
+            )
+        # Existing RPC kill results
         results = st.session_state.get("rpc_kill_results", {})
         if results:
             parts = []
