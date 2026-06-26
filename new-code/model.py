@@ -31,7 +31,9 @@ class Model:
     last_started: int
     fitt: str
     rpcservers: list[rpc_server]
-    extras: list[str]
+    #extras: list[str]
+    ub: int
+    b: int
     kvquant: str
 
 #___________________________________________________________________________________
@@ -84,8 +86,10 @@ def load_models(config_path: str | Path) -> list[Model]:
                 last_started=0,                         
                 fitt=str(spec["FITT"]),
                 rpcservers=rpcservers,
-                extras=spec["EXTRAS"],
-                kvquant=spec["KVQUANT"]
+                #extras=spec["EXTRAS"],
+                kvquant=spec["KVQUANT"],
+                ub=spec["UB"],
+                b=spec["B"]
             )
         )
     return models

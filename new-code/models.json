@@ -29,6 +29,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
@@ -46,6 +48,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
@@ -63,6 +67,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                 },
@@ -80,6 +86,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 5.4,
                         "native_ctx": 262144
                 },
@@ -104,6 +112,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 5.6,
                         "native_ctx": 262144,
                         "_comment": ""
@@ -122,6 +132,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 11,
                         "native_ctx": 262144,
                         "_comment": "it allocated a huge KV; need to quantize it"
@@ -153,6 +165,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
@@ -181,7 +195,9 @@
                         "MINP": -1,
                         "REAS": "high",
                         "MMPROJ": null,
-                        "EXTRAS": "-ub 2048 -b 2048 -np 4",
+                        "EXTRAS": null,
+                        "UB": 1024,
+                        "B": 2048,
                         "KVQUANT": "q8_0",
                         "kv_gb_256_fp16": 9,
                         "native_ctx": 131072
@@ -200,6 +216,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 16,
                         "native_ctx": 262144           
                 },
@@ -224,6 +242,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },
@@ -241,6 +261,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                 },
@@ -265,6 +287,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                         
@@ -290,6 +314,8 @@
                         "MMPROJ": null,
                         "EXTRAS": null,
                         "KVQUANT": "q8_0",
+                        "UB": null,
+                        "B": null,
                         "kv_gb_256_fp16": 24,
                         "native_ctx": 262144
                 }

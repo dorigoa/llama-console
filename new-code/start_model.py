@@ -65,8 +65,12 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
     cmd += ["--alias", str(model.alias)]
     if model.min_p >= 0:
         cmd += ["--min-p", str(model.min_p)]
-    if model.extras:
-        cmd += model.extras
+    #if model.extras:
+    #    cmd += model.extras
+    if model.ub:
+        cmd += ["-ub", str(model.ub)]
+    if model.b:
+        cmd += ["-b", str(model.b)]
 
     return cmd
 
