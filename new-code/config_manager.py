@@ -23,6 +23,8 @@ class Settings:
     PERSIST_FILE: str = "/tmp/llama-console-persist.json"
     UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
     LLAMA_SERVER_BIN: str = "/usr/local/bin/llama-server"
+    LLAMA_SERVER_HOST: str = ""
+    LLAMA_SERVER_USER: str = ""
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:

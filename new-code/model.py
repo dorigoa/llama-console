@@ -3,6 +3,7 @@ from logzero import logger
 from typing import Tuple
 from pathlib import Path
 import json
+import subprocess
 import sys
 
 #___________________________________________________________________________________
@@ -37,12 +38,27 @@ class Model:
     kvquant: str
 
 #___________________________________________________________________________________
-def load_models(config_path: str | Path) -> list[Model]:
-    """Instantiate a list of Model objects from the 'models' section of the config JSON.
+def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
+    if remote_host:
+        dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
+        result = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+             dest, "test", "-f", str(path)],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode > 1:
+            # returncode 0 = exists, 1 = not found (normal test -f); >1 = SSH error
+            raise RuntimeError(
+                f"SSH to {dest} failed (rc={result.returncode}): "
+                f"{result.stderr.strip() or '(no stderr)'}"
+            )
+        return result.returncode == 0
+    return path.exists()
 
-    Raises KeyError if required fields are missing (intentional: fail explicitly
-    rather than silently inventing defaults).
-    """
+#___________________________________________________________________________________
+def load_models(config_path: str | Path, remote_host: str = "", remote_user: str = "") -> list[Model]:
+
     config_path = Path(config_path)
     with config_path.open(encoding="utf-8") as f:
         config = json.load(f)
@@ -55,7 +71,7 @@ def load_models(config_path: str | Path) -> list[Model]:
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
         model_path = base_dir / filename
 
-        if not model_path.exists():
+        if not _file_exists(model_path, remote_host, remote_user):
             print(f"[SKIP] Model '{name}': file not found: {model_path}", file=sys.stderr)
             continue
 
@@ -96,19 +112,40 @@ def load_models(config_path: str | Path) -> list[Model]:
 
 #___________________________________________________________________________________
 if __name__ == "__main__":
-    if len(sys.argv)<2:
-        print(f"Usage: python model.py <filename>")
+    import argparse
+    from config_manager import get_settings
+
+    _default_models = Path(__file__).parent / "models.json"
+
+    parser = argparse.ArgumentParser(description="List models from a models config file")
+    parser.add_argument(
+        "config", nargs="?", default=str(_default_models),
+        help=f"Path to models JSON config (default: {_default_models})",
+    )
+    parser.add_argument(
+        "--remote-host", default=None,
+        help="SSH host for file existence check (overrides config.json)",
+    )
+    parser.add_argument(
+        "--remote-user", default=None,
+        help="SSH user for file existence check (overrides config.json)",
+    )
+    args = parser.parse_args()
+
+    config_path = Path(args.config)
+    if not config_path.exists():
+        print(f"Error: config file '{config_path}' not found", file=sys.stderr)
         sys.exit(1)
-    if not sys.argv[1]:
-        sys.exit(0)
-    if not Path(sys.argv[1]).exists():
-        print(f"Error: file {sys.argv[1]} not found")
-        sys.exit(1)
-    ms = load_models(sys.argv[1])
-    print(f"{len(ms)} models loaded")
+
+    settings = get_settings()
+    remote_host = args.remote_host if args.remote_host is not None else settings.LLAMA_SERVER_HOST
+    remote_user = args.remote_user if args.remote_user is not None else settings.LLAMA_SERVER_USER
+
+    ms = load_models(config_path, remote_host=remote_host, remote_user=remote_user)
+    print(f"{len(ms)} models loaded (host: {remote_host or 'local'})")
     for m in ms:
         rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or "-"
-        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}] extras={m.extras}")
+        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}]")
         for s in m.rpcservers:
             disk = f"  disk={s.cachedisk}" if s.cachedisk else ""
             print(f"    {s.IP}:{s.PORT}  user={s.remuser}  bin={s.bin}  cache={s.cachepath}{disk}")

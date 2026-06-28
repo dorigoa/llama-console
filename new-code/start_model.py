@@ -21,8 +21,6 @@ settings = get_settings()
 
 #___________________________________________________________________________________
 def valid_csv_tokens(s) -> bool:
-    """True se s è una str fatta di token alfanumerici (no spazi,
-    no caratteri non alfanumerici) separati eventualmente da virgola."""
     return isinstance(s, str) and _CSV_TOKENS.fullmatch(s) is not None
 
 #___________________________________________________________________________________
@@ -89,7 +87,7 @@ def start_model(
     override_fitt: str | None = None,
     override_ctx: int | None = None
 ) -> None:
-    models = load_models(MODELS_JSON)
+    models = load_models(MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
 
     if list_models:
         print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
