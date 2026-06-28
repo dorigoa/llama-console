@@ -10,7 +10,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 },
                                 "192.168.30.2": {
                                         "port": 50000,
@@ -99,7 +99,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
@@ -146,7 +146,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 },
                                 "192.168.30.2": {
                                         "port": 50000,
@@ -178,7 +178,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 },
                                 "192.168.30.2": {
                                         "port": 50000,
@@ -229,7 +229,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
@@ -274,7 +274,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
@@ -301,7 +301,7 @@
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "dorigo_a"
+                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,

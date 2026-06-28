@@ -26,6 +26,59 @@ from model import rpc_server
 # Path to persistent log file (shared across page reloads)
 _LOG_FILE_PATH = Path(get_settings().PERSIST_FILE).with_name("llama-console-logs.txt")
 
+
+# ─── remote/SSH helpers ───────────────────────────────────────────────────────
+
+def _api_host() -> str:
+    return get_settings().LLAMA_SERVER_HOST or "127.0.0.1"
+
+def _ui_ssh_dest() -> str | None:
+    s = get_settings()
+    if not s.LLAMA_SERVER_HOST:
+        return None
+    return f"{s.LLAMA_SERVER_USER}@{s.LLAMA_SERVER_HOST}" if s.LLAMA_SERVER_USER else s.LLAMA_SERVER_HOST
+
+def _batch_remote_stat(paths: list[Path], dest: str) -> list[tuple[bool, int]] | None:
+    """Single SSH call: returns (exists, size_bytes) for each path, or None on SSH error."""
+    script = "\n".join(
+        f'if [ -f "{p}" ]; then ls -ln "{p}" | awk \'{{print $5}}\'; else echo -1; fi'
+        for p in paths
+    )
+    try:
+        r = subprocess.run(
+            ["ssh",
+             "-o", "ConnectTimeout=5",
+             "-o", "BatchMode=yes",
+             "-o", "StrictHostKeyChecking=no",
+             dest, "bash", "-s"],
+            input=script, capture_output=True, text=True, timeout=15,
+        )
+        if r.returncode != 0:
+            print(f"[batch-stat] SSH {dest} rc={r.returncode}: {r.stderr.strip()}", file=sys.stderr)
+            return None
+        lines = r.stdout.strip().splitlines()
+        if len(lines) != len(paths):
+            print(f"[batch-stat] expected {len(paths)} lines, got {len(lines)}", file=sys.stderr)
+            return None
+        result = []
+        for line in lines:
+            try:
+                sz = int(line.strip())
+                result.append((sz >= 0, max(sz, 0)))
+            except ValueError:
+                result.append((False, 0))
+        return result
+    except Exception as e:
+        print(f"[batch-stat] Exception: {e}", file=sys.stderr)
+        return None
+
+def _fmt_bytes(b: int) -> str:
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if b < 1024 or unit == "TB":
+            return f"{b:.1f} {unit}"
+        b /= 1024
+    return f"{b:.1f} TB"
+
 MODELS_JSON = Path(__file__).parent / "models.json"
 START_SCRIPT = Path(__file__).parent / "start_model.py"
 
@@ -43,7 +96,7 @@ def _save_persist(model_name: str, alias: str, pid: int, port: int, started_at: 
         "alias": alias,
         "pid": pid,
         "port": port,
-        "api_url": f"http://127.0.0.1:{port}/v1",
+        "api_url": f"http://{_api_host()}:{port}/v1",
         "started_at": started_at,
         "ready_at": ready_at,
         "ctx": ctx,
@@ -66,7 +119,7 @@ def _query_live_ctx(port: int) -> int | None:
     the per-slot context (total --ctx-size / n_parallel) when launched with -np > 1.
     """
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/props", timeout=2) as resp:
+        with urllib.request.urlopen(f"http://{_api_host()}:{port}/props", timeout=2) as resp:
             if resp.status != 200:
                 return None
             props = json.loads(resp.read().decode("utf-8", errors="replace"))
@@ -88,6 +141,8 @@ class _RecoveredProcess:
         self.pid = pid
 
     def poll(self) -> int | None:
+        if self.pid < 0:
+            return None  # remote sentinel: always "alive"
         try:
             os.kill(self.pid, 0)
             return None  # still alive
@@ -95,6 +150,8 @@ class _RecoveredProcess:
             return 1
 
     def terminate(self) -> None:
+        if self.pid < 0:
+            return  # remote sentinel: SSH kill handled separately
         try:
             os.kill(self.pid, signal.SIGTERM)
         except (ProcessLookupError, PermissionError):
@@ -127,13 +184,28 @@ def _try_recover_from_persist() -> None:
 
     recovered = _RecoveredProcess(pid)
     if recovered.poll() is not None:
-        _clear_persist()
-        return
+        # SSH/local process gone; for remote servers the server may still be up
+        if _ui_ssh_dest():
+            try:
+                with urllib.request.urlopen(
+                    f"http://{_api_host()}:{port}/v1/models", timeout=2
+                ) as resp:
+                    if resp.status == 200:
+                        recovered = _RecoveredProcess(-1)  # sentinel: API alive, no local SSH
+                    else:
+                        _clear_persist()
+                        return
+            except Exception:
+                _clear_persist()
+                return
+        else:
+            _clear_persist()
+            return
 
     # Fast API check (refused immediately if not up yet, so 2 s timeout is safe)
     api_ready = False
     try:
-        with urllib.request.urlopen(f"http://127.0.0.1:{port}/v1/models", timeout=2) as resp:
+        with urllib.request.urlopen(f"http://{_api_host()}:{port}/v1/models", timeout=2) as resp:
             api_ready = resp.status == 200
     except Exception:
         pass
@@ -176,7 +248,7 @@ def _probe_server(
     ctx: int = 0,
 ) -> None:
     """Poll /v1/models until the server is ready or timeout/crash."""
-    url = f"http://127.0.0.1:{port}/v1/models"
+    url = f"http://{_api_host()}:{port}/v1/models"
     started_at = datetime.now(timezone.utc).isoformat()
     deadline = time.monotonic() + timeout
 
@@ -201,12 +273,7 @@ def _probe_server(
 def _fmt_size(path: Path) -> str:
     if not path.exists():
         return "missing"
-    b = path.stat().st_size
-    for unit in ("B", "KB", "MB", "GB", "TB"):
-        if b < 1024 or unit == "TB":
-            return f"{b:.1f} {unit}"
-        b /= 1024
-    return f"{b:.1f} TB"
+    return _fmt_bytes(path.stat().st_size)
 
 #___________________________________________________________________________________
 def _fmt_ctx(size: int | None) -> str:
@@ -222,21 +289,25 @@ def _fmt_ctx(size: int | None) -> str:
     return str(size)
 
 #___________________________________________________________________________________
-def _load_entries() -> list[dict]:
-    """All models from models.json, including ones whose files are missing."""
-    raw = json.loads(MODELS_JSON.read_text(encoding="utf-8"))
-    base = Path(raw["MODEL_BASE_DIR"])
+_ENTRIES_TTL = 30  # seconds between remote SSH re-checks
+
+def _entries_build(items: list, remote_stats: list | None) -> list[dict]:
+    """Pure computation: build sorted entries list from items + optional SSH stats."""
     entries = []
-    for name, spec in raw.get("models", {}).items():
-        fname = name if name.endswith(".gguf") else f"{name}.gguf"
-        path = base / fname
+    for i, (name, spec, path) in enumerate(items):
         rpc_servers = spec.get("RPC_SERVERS", {})
+        if remote_stats is not None:
+            exists, size_bytes = remote_stats[i]
+            size = _fmt_bytes(size_bytes) if exists else "missing"
+        else:
+            exists = path.exists()
+            size = _fmt_size(path)
         entries.append({
             "name": name,
             "alias": str(spec.get("ALIAS", name)),
             "path": path,
-            "size": _fmt_size(path),
-            "exists": path.exists(),
+            "size": size,
+            "exists": exists,
             "ctx": int(spec.get("ctx", 0)),
             "temp":  float(spec["TEMP"]),
             "top_p": float(spec["TOPP"]),
@@ -246,6 +317,72 @@ def _load_entries() -> list[dict]:
             "rpc_count": len(rpc_servers),
         })
     entries.sort(key=lambda e: e["name"])
+    return entries
+
+def _entries_refresh_worker(dest: str | None, items: list, rq: queue.Queue) -> None:
+    """Background thread: SSH file check, puts result in per-session queue."""
+    remote_stats = _batch_remote_stat([p for _, _, p in items], dest) if dest else None
+    try:
+        rq.put_nowait(_entries_build(items, remote_stats))
+    except queue.Full:
+        pass  # previous result not yet consumed; drop
+
+def _load_entries() -> list[dict]:
+    """Load model entries with background SSH refresh (never blocks the render thread)."""
+    now = time.time()
+
+    # Per-session queue for background refresh results (thread-safe)
+    if "_entries_rq" not in st.session_state:
+        st.session_state["_entries_rq"] = queue.Queue(maxsize=1)
+    rq: queue.Queue = st.session_state["_entries_rq"]
+
+    # Collect any completed background refresh
+    try:
+        new_entries = rq.get_nowait()
+        st.session_state["_entries_cache"] = new_entries
+        st.session_state["_entries_ts"] = now
+        st.session_state["_entries_refreshing"] = False
+    except queue.Empty:
+        pass
+
+    cached = st.session_state.get("_entries_cache")
+    is_stale = now - st.session_state.get("_entries_ts", 0.0) >= _ENTRIES_TTL
+    refreshing = st.session_state.get("_entries_refreshing", False)
+
+    # Build items list (fast, no I/O besides reading models.json)
+    raw = json.loads(MODELS_JSON.read_text(encoding="utf-8"))
+    base = Path(raw["MODEL_BASE_DIR"])
+    items = [
+        (name, spec, base / (name if name.endswith(".gguf") else f"{name}.gguf"))
+        for name, spec in raw.get("models", {}).items()
+    ]
+    dest = _ui_ssh_dest()
+
+    if cached is not None and not is_stale:
+        return cached
+
+    if cached is not None and is_stale and not refreshing:
+        # Stale cache: start background refresh, return stale data immediately
+        st.session_state["_entries_refreshing"] = True
+        threading.Thread(
+            target=_entries_refresh_worker, args=(dest, items, rq), daemon=True
+        ).start()
+        return cached
+
+    if cached is not None:
+        return cached  # refresh already in-flight
+
+    # First load per session — unavoidable synchronous SSH call
+    remote_stats = _batch_remote_stat([p for _, _, p in items], dest) if dest else None
+    if dest and remote_stats is None:
+        st.warning(
+            f"SSH file check failed for {dest} — model list may be incomplete. "
+            "Check SSH connectivity and LLAMA_SERVER_USER/HOST in config.json.",
+            icon="⚠️",
+        )
+    entries = _entries_build(items, remote_stats)
+    st.session_state["_entries_cache"] = entries
+    st.session_state["_entries_ts"] = now
     return entries
 
 #___________________________________________________________________________________
@@ -338,6 +475,15 @@ def _pty_reader(master_fd: int, q: queue.Queue, log_path: Path | None = None) ->
         pass
 
 # ─── auto-refreshing RPC status ─────────────────────────────────────────────────
+
+def _rpc_check_worker(servers: list, rq: queue.Queue) -> None:
+    """Background thread: TCP-check RPC servers, puts dead list in queue."""
+    dead = unreachable_rpc_servers(servers)
+    try:
+        rq.put_nowait(dead)
+    except queue.Full:
+        pass
+
 @st.fragment(run_every=5)
 def _check_rpc_servers(entry: dict) -> None:
     servers = [
@@ -352,23 +498,35 @@ def _check_rpc_servers(entry: dict) -> None:
         for ip, srv in entry.get("rpc_servers", {}).items()
     ]
 
-    if not len(servers):
+    if not servers:
         st.session_state.rpc_status_text = "No RPC server defined for current model"
         st.session_state.rpc_status_color = "#c9c434"
         return
 
-    dead_servers = unreachable_rpc_servers(servers)
-    if not dead_servers:
-        new_text, new_color = "All RPC servers are active", "#c9c434"
-    else:
-        dead = ",".join(srv.IP for srv in dead_servers)
-        new_text, new_color = f"Not active servers: {dead}", "#cd2a2a"
+    # Per-session queue for background check results
+    if "_rpc_rq" not in st.session_state:
+        st.session_state["_rpc_rq"] = queue.Queue(maxsize=1)
+    rq: queue.Queue = st.session_state["_rpc_rq"]
 
-    if (st.session_state.get("rpc_status_text") != new_text or
-            st.session_state.get("rpc_status_color") != new_color):
-        st.session_state.rpc_status_text = new_text
-        st.session_state.rpc_status_color = new_color
-        st.rerun()
+    # Collect result if background check completed
+    try:
+        dead_servers = rq.get_nowait()
+        st.session_state["_rpc_checking"] = False
+        new_text = "All RPC servers are active" if not dead_servers else \
+            f"Not active servers: {','.join(s.IP for s in dead_servers)}"
+        new_color = "#c9c434" if not dead_servers else "#cd2a2a"
+        if (st.session_state.get("rpc_status_text") != new_text or
+                st.session_state.get("rpc_status_color") != new_color):
+            st.session_state.rpc_status_text = new_text
+            st.session_state.rpc_status_color = new_color
+            st.rerun()
+    except queue.Empty:
+        pass
+
+    # Start background check if idle
+    if not st.session_state.get("_rpc_checking", False):
+        st.session_state["_rpc_checking"] = True
+        threading.Thread(target=_rpc_check_worker, args=(servers, rq), daemon=True).start()
 
 # ────────────────────────────────────────────────────────────────────────────────
 def set_rpc_status(text: str, color: str = "#6b7280") -> None:
@@ -545,13 +703,6 @@ def main() -> None:
     with col_info:
         if _is_running():
             ctx_label = f"{_fmt_ctx(st.session_state.running_ctx)}" if st.session_state.running_ctx else ""
-            # Inline probe: if still marking as "loading", check if server just became ready
-            if not st.session_state.server_ready:
-                is_ready = _check_server_ready(f"http://127.0.0.1:{settings.PORT_BIND}/v1/models")
-                if is_ready:
-                    st.session_state.server_ready = True
-                    st.session_state.ready_queue = queue.Queue()  # discard old queue
-                    st.rerun()  # rerun to show "ready" immediately
             if st.session_state.server_ready:
                 api_url = _get_llama_url(settings.PORT_BIND)
                 st.markdown(
@@ -642,6 +793,14 @@ def main() -> None:
 
     if stop_clicked and st.session_state.process is not None:
         st.session_state.process.terminate()
+        dest = _ui_ssh_dest()
+        if dest:
+            sbin = os.path.basename(get_settings().LLAMA_SERVER_BIN)
+            subprocess.run(
+                ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+                 dest, f"pkill -x {sbin}"],
+                capture_output=True,
+            )
         st.session_state.process = None
         st.session_state.running_model = None
         st.session_state.running_ctx = None
@@ -657,11 +816,11 @@ def main() -> None:
             disabled=(entry["rpc_count"] == 0),
             use_container_width=True,
         )
-        start_rpc_clicked = st.button(
-            "Start RPC servers",
-            disabled=(entry["rpc_count"] == 0),
-            use_container_width=True,
-        )
+        # start_rpc_clicked = st.button(
+        #     "Start RPC servers",
+        #     disabled=(entry["rpc_count"] == 0),
+        #     use_container_width=True,
+        # )
     with col_kill_status:
         # Render RPC status label
         status_text = st.session_state.get("rpc_status_text", "")

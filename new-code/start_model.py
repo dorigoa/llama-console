@@ -55,7 +55,7 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
     cmd += ["--temp", str(model.temperature)]
     cmd += ["--top-p", str(model.top_p)]
     cmd += ["--top-k", str(model.top_k)]
-    cmd += ["--chat-template-kwargs", json.dumps(data)]
+    cmd += ["--chat-template-kwargs", f"'{json.dumps(data)}'"]
     cmd += ["--seed", "123456789"]
     if model.kvquant:
         cmd += ["-ctk", model.kvquant]
@@ -71,6 +71,14 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
         cmd += ["-b", str(model.b)]
 
     return cmd
+
+#___________________________________________________________________________________
+def _ssh_dest() -> str | None:
+    if not settings.LLAMA_SERVER_HOST:
+        return None
+    if settings.LLAMA_SERVER_USER:
+        return f"{settings.LLAMA_SERVER_USER}@{settings.LLAMA_SERVER_HOST}"
+    return settings.LLAMA_SERVER_HOST
 
 #___________________________________________________________________________________
 def start_model(
@@ -125,9 +133,19 @@ def start_model(
         model.ctxsize = override_ctx
 
     binary = settings.LLAMA_SERVER_BIN
-    if not Path(binary).is_file():
-        print(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
-        sys.exit(1)
+    ssh_dest = _ssh_dest()
+    if ssh_dest:
+        r = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary],
+            capture_output=True, text=True,
+        )
+        if r.returncode != 0:
+            print(f"Error: llama-server binary not found at '{binary}' on {ssh_dest}", file=sys.stderr)
+            sys.exit(1)
+    else:
+        if not Path(binary).is_file():
+            print(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
+            sys.exit(1)
 
     if not dry_run and model.rpcservers and not override_devices:
         print("Checking rpc servers...", flush=True)
@@ -156,12 +174,19 @@ def start_model(
             if model.rpcservers:
                 rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
                 print("Running list-devices...", flush=True)
-                result = subprocess.run(
-                    f"{binary} --rpc {rpc_list} --list-devices",
-                    shell=True,
-                    capture_output=True,
-                    text=True,
-                )
+                if ssh_dest:
+                    result = subprocess.run(
+                        ["ssh", ssh_dest, binary, "--rpc", rpc_list, "--list-devices"],
+                        capture_output=True,
+                        text=True,
+                    )
+                else:
+                    result = subprocess.run(
+                        f"{binary} --rpc {rpc_list} --list-devices",
+                        shell=True,
+                        capture_output=True,
+                        text=True,
+                    )
                 if result.stdout:
                     print(result.stdout, end="", flush=True)
                 if result.stderr:
@@ -184,12 +209,16 @@ def start_model(
             sys.exit(0)
 
     cmd = _build_command(binary, model, devices, override_ctx)
-    print("Command:", " ".join(cmd), flush=True)
+    if ssh_dest:
+        exec_cmd = ["ssh", ssh_dest] + cmd
+    else:
+        exec_cmd = cmd
+    print("Command:", " ".join(exec_cmd), flush=True)
 
     if dry_run:
         return
 
-    os.execvp(cmd[0], cmd)
+    os.execvp(exec_cmd[0], exec_cmd)
 
 #___________________________________________________________________________________
 def main() -> None:
