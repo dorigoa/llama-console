@@ -1,9 +1,0 @@
-{
-	"ADDRESS_BIND": "0.0.0.0",
-        "PORT_BIND": 8088,
-        "PERSIST_FILE": "/tmp/llama-console-persist.json",
-        "UI_TITLE": "LLama Console by Alvise Dorigo (alvise72@gmail.com)",
-        "LLAMA_SERVER_BIN": "/opt/llama.cpp/llama-server",
-        "LLAMA_SERVER_HOST": "192.168.1.191",
-        "LLAMA_SERVER_USER": "dorigo_a"
-}

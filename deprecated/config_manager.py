@@ -9,22 +9,15 @@ import sys
 import os
 import re
 
-_LOCAL_CONFIG = Path(__file__).parent / "config.json"
-CONFIG_FILE = Path(
-    os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or
-    (_LOCAL_CONFIG if _LOCAL_CONFIG.exists() else Path.home() / "llama-console-config.json")
-)
+CONFIG_FILE = Path(os.getenv('LLAMA_CONSOLE_CONFIG_FILE') or str(Path.home() / "llama-console-config.json"))
 
 #_________________________________________________________________________________________
 @dataclass
 class Settings:
-    ADDRESS_BIND: str = "0.0.0.0"
-    PORT_BIND: int = 8088
-    PERSIST_FILE: str = "/tmp/llama-console-persist.json"
+    ADDRESS_BIND: str =  "0.0.0.0"
+    PORT_BIND: int =  8088
+    PERSIST_FILE: str = "/tmp/llama-console-persist.json",
     UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
-    LLAMA_SERVER_BIN: str = "/usr/local/bin/llama-server"
-    LLAMA_SERVER_HOST: str = ""
-    LLAMA_SERVER_USER: str = ""
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
@@ -59,8 +52,8 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
         return value
     except (TypeError, ValueError) as e:
         raise ValueError(
-            f"Invalid value for '{key}': expected {getattr(target_type, '__name__', target_type)}, "
-            f"got {value!r} ({e})."
+            f"Ivalid value for '{key}': expected {getattr(target_type, '__name__', target_type)}, "
+            f"received {value!r} ({e})."
         ) from e
 
 #_________________________________________________________________________________________

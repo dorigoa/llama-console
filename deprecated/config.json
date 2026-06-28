@@ -1,0 +1,6 @@
+{
+	"ADDRESS_BIND": "0.0.0.0",
+        "PORT_BIND": 8088,
+        "PERSIST_FILE": "/tmp/llama-console-persist.json",
+        "UI_TITLE": "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
+}
