@@ -1,4 +1,5 @@
 import socket
+import shlex
 import subprocess
 import sys
 import time
@@ -8,11 +9,29 @@ from model import Model, rpc_server
 
 _TIMEOUT = 2.0
 
+_SSH_OPTS = ["-o", "BatchMode=yes", "-o", "ConnectTimeout=5"]
+
 _RPC_START_POLL_INTERVAL = 2
 _RPC_START_TIMEOUT      = 20
 
 #___________________________________________________________________________________
-def _tcp_reachable(addr: rpc_server) -> bool:
+def _tcp_reachable(addr: rpc_server, exec_host: str | None = None) -> bool:
+    """True if addr.IP:addr.PORT accepts a TCP connection.
+
+    If exec_host is given, the probe is performed FROM that host over SSH
+    (using bash's /dev/tcp), because only that host can reach the RPC network.
+    Otherwise the probe is a local socket connection.
+    """
+    if exec_host:
+        probe = f"timeout {int(_TIMEOUT)} bash -c 'exec 3<>/dev/tcp/{addr.IP}/{addr.PORT}'"
+        try:
+            r = subprocess.run(
+                ["ssh", *_SSH_OPTS, exec_host, probe],
+                capture_output=True, text=True, timeout=_TIMEOUT + 8,
+            )
+        except subprocess.TimeoutExpired:
+            return False
+        return r.returncode == 0
     try:
         with socket.create_connection((addr.IP, addr.PORT), timeout=_TIMEOUT):
             return True
@@ -20,18 +39,19 @@ def _tcp_reachable(addr: rpc_server) -> bool:
         return False
 
 #___________________________________________________________________________________
-def unreachable_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
+def unreachable_rpc_servers(servers: list[rpc_server], exec_host: str | None = None) -> list[rpc_server]:
     """Return the rpc_server entries that do not respond to a TCP ping.
 
     Returns [] immediately if servers is empty.
     Checks are run in parallel (one thread per server).
+    If exec_host is given, probes originate from that host (see _tcp_reachable).
     """
     if not servers:
         return []
 
     dead: list[rpc_server] = []
     with ThreadPoolExecutor(max_workers=len(servers)) as pool:
-        future_to_addr = {pool.submit(_tcp_reachable, s): s for s in servers}
+        future_to_addr = {pool.submit(_tcp_reachable, s, exec_host): s for s in servers}
         for future in as_completed(future_to_addr):
             addr = future_to_addr[future]
             try:
@@ -44,10 +64,14 @@ def unreachable_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
     return dead
 
 #___________________________________________________________________________________
-def start_rpc_server(addr: rpc_server) -> bool:
-    """Start rpc-server on the remote host via SSH in the background.
+def start_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
+    """Start rpc-server on the RPC node via SSH in the background.
 
     </dev/null detaches stdin so nohup does not stay bound to the SSH session.
+
+    If exec_host is given, the SSH to the RPC node is issued FROM that host
+    (nested SSH: laptop -> exec_host -> remuser@addr.IP), because only exec_host
+    has network reachability to the RPC servers. Otherwise the SSH is direct.
     Returns True if SSH exited with code 0.
     """
     remote_cmd = (
@@ -55,28 +79,38 @@ def start_rpc_server(addr: rpc_server) -> bool:
         f"nohup {addr.bin} --host 0.0.0.0 --port {addr.PORT} -c  "
         f">/tmp/rpc-server.out 2>&1 </dev/null &"
     )
-    print(f"  SSH: {addr.remuser}@{addr.IP}  \"{remote_cmd}\"", file=sys.stderr)
+    if exec_host:
+        # Run the rpc-node SSH on exec_host; quote remote_cmd so the exec_host
+        # shell forwards it verbatim to the inner ssh as a single argument.
+        inner = f"ssh {' '.join(_SSH_OPTS)} {addr.remuser}@{addr.IP} {shlex.quote(remote_cmd)}"
+        argv = ["ssh", *_SSH_OPTS, exec_host, inner]
+        shown = f"{exec_host} -> {addr.remuser}@{addr.IP}"
+    else:
+        argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
+        shown = f"{addr.remuser}@{addr.IP}"
+    print(f"  SSH: {shown}  \"{remote_cmd}\"", file=sys.stderr)
     result = subprocess.run(
-        ["ssh", "-o", "BatchMode=yes", f"{addr.remuser}@{addr.IP}", remote_cmd],
+        argv,
         capture_output=True,
         text=True,
-        timeout=15,
+        timeout=20,
     )
     if result.returncode != 0:
         print(f"  SSH stderr: {result.stderr.strip()}", file=sys.stderr)
     return result.returncode == 0
 
 #___________________________________________________________________________________
-def wait_for_rpc_servers(servers: list[rpc_server]) -> list[rpc_server]:
+def wait_for_rpc_servers(servers: list[rpc_server], exec_host: str | None = None) -> list[rpc_server]:
     """Poll until all servers become reachable or the timeout expires.
 
     Returns the list of servers still unreachable when the deadline is reached.
+    If exec_host is given, probes originate from that host (see _tcp_reachable).
     """
     deadline = time.monotonic() + _RPC_START_TIMEOUT
     remaining = list(servers)
     while remaining and time.monotonic() < deadline:
         time.sleep(_RPC_START_POLL_INTERVAL)
-        remaining = [a for a in remaining if not _tcp_reachable(a)]
+        remaining = [a for a in remaining if not _tcp_reachable(a, exec_host)]
         if remaining:
             addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in remaining)
             print(f"  Still unreachable: {addrs}", file=sys.stderr)

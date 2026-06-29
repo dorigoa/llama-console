@@ -11,6 +11,7 @@ import sys
 @dataclass
 class rpc_server:
     IP: str
+    #PUB_IP: str
     PORT: int
     cachepath: str
     bin: str
@@ -121,6 +122,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         rpcservers = [
             rpc_server(
                 IP=ip,
+                #PUB_IP=str(["public_ip"]),
                 PORT=int(srv["port"]),
                 cachepath=str(srv["cachepath"]),
                 bin=str(srv["bin"]),

@@ -263,14 +263,18 @@ def start_model(
             sys.exit(1)
 
     if not dry_run and model.rpcservers and not override_devices:
-        logger.debug("Checking rpc servers...")
-        dead = unreachable_rpc_servers(model.rpcservers)
+        # RPC probing/starting must originate from LLAMA_SERVER_HOST: only it can
+        # reach the RPC network. When ssh_dest is None (local llama-server), the
+        # operations run locally as before.
+        logger.debug(f"Checking rpc servers (via {ssh_dest or 'localhost'})...")
+        dead = unreachable_rpc_servers(model.rpcservers, exec_host=ssh_dest)
         if dead:
             for addr in dead:
-                logger.error(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...")
-                start_rpc_server(addr)
+                via = f"{ssh_dest} -> " if ssh_dest else ""
+                logger.error(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {via}{addr.remuser}...")
+                start_rpc_server(addr, exec_host=ssh_dest)
 
-            still_dead = wait_for_rpc_servers(dead)
+            still_dead = wait_for_rpc_servers(dead, exec_host=ssh_dest)
             if still_dead:
                 addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
                 logger.error(f"Error: RPC server(s) still unreachable after start attempt: {addrs}")
