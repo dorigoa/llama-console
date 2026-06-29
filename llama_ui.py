@@ -34,16 +34,16 @@ st.markdown("""
 <style>
 /* Select model – label */
 [data-testid="stSelectbox"] label {
-    font-size: 1.15rem !important;
+    font-size: 1.5rem !important;
 }
 /* Select model – selected value shown in the box */
 [data-testid="stSelectbox"] [data-baseweb="select"] div[class*="ValueContainer"] {
-    font-size: 1.15rem !important;
+    font-size: 1.5rem !important;
 }
 /* Select model – dropdown list items */
 [data-baseweb="popover"] li,
 [data-baseweb="menu"] li {
-    font-size: 1.15rem !important;
+    font-size: 1.5rem !important;
 }
 </style>
 """, unsafe_allow_html=True)
