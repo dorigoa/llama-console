@@ -3,6 +3,7 @@ from logzero import logger
 from typing import Tuple
 from pathlib import Path
 import json
+import shlex
 import subprocess
 import sys
 
@@ -22,6 +23,7 @@ class Model:
     alias: str
     model_name: str
     model_path: Path
+    size_gib: float | None
     mmproj_path: Path | None
     ctxsize: int
     temperature: float
@@ -57,6 +59,45 @@ def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bo
     return path.exists()
 
 #___________________________________________________________________________________
+def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> float | None:
+    """Return the size of `path` in GiB, or None if it does not exist.
+
+    Obtained from the remote host over SSH, analogously to _file_exists().
+    Portable across Linux and macOS: tries GNU `stat -c %s`, then falls back to
+    BSD `stat -f %z`. The local branch uses pathlib. Raises RuntimeError on SSH
+    failure (rc > 1), as _file_exists does."""
+    if remote_host:
+        dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
+        q = shlex.quote(str(path))
+        # GNU coreutils: `stat -c %s`; BSD/macOS: `stat -f %z`. Try GNU, fall
+        # back to BSD. Return codes stay 0 = ok / 1 = not found / 255 = SSH error,
+        # so the (rc > 1) SSH-failure test below still holds for both variants.
+        remote_cmd = f"stat -c %s {q} 2>/dev/null || stat -f %z {q}"
+        result = subprocess.run(
+            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", dest, remote_cmd],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode > 1:
+            # returncode 0 = ok, 1 = not found (both variants); >1 = SSH error
+            raise RuntimeError(
+                f"SSH to {dest} failed (rc={result.returncode}): "
+                f"{result.stderr.strip() or '(no stderr)'}"
+            )
+        if result.returncode == 1:
+            return None
+        out = result.stdout.strip()
+        if not out.isdigit():
+            return None
+        size_bytes = int(out)
+    else:
+        try:
+            size_bytes = path.stat().st_size
+        except OSError:
+            return None
+    return size_bytes / (1024 ** 3)
+
+#___________________________________________________________________________________
 def load_models(config_path: str | Path, remote_host: str = "", remote_user: str = "") -> list[Model]:
 
     config_path = Path(config_path)
@@ -75,6 +116,8 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
             print(f"[SKIP] Model '{name}': file not found: {model_path}", file=sys.stderr)
             continue
 
+        size_gib = _file_size_gib(model_path, remote_host, remote_user)
+
         rpcservers = [
             rpc_server(
                 IP=ip,
@@ -92,7 +135,8 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 alias=str(spec["ALIAS"]),
                 model_name=name,
                 model_path=model_path,
-                mmproj_path=str(spec["MMPROJ"]),                       
+                size_gib=size_gib,
+                mmproj_path=str(spec["MMPROJ"]),
                 ctxsize=int(spec["ctx"]),
                 temperature=float(spec["TEMP"]),
                 top_p=float(spec["TOPP"]),
@@ -145,7 +189,8 @@ if __name__ == "__main__":
     print(f"{len(ms)} models loaded (host: {remote_host or 'local'})")
     for m in ms:
         rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or "-"
-        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} rpc=[{rpc}]")
+        size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"
+        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc=[{rpc}]")
         for s in m.rpcservers:
             disk = f"  disk={s.cachedisk}" if s.cachedisk else ""
             print(f"    {s.IP}:{s.PORT}  user={s.remuser}  bin={s.bin}  cache={s.cachepath}{disk}")
