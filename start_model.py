@@ -210,7 +210,7 @@ def start_model(
     if list_models:
         models_info = []
         for m in models:
-            m_info = f"{m.model_name} ({int(m.size_gib)} GiB - {len(m.rpcservers)} RPC)"
+            m_info = f"{m.model_name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB - {len(m.rpcservers)} RPC)"
             models_info.append(m_info)
         #print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
         print(f"Available models:\n  {"\n  ".join(m_info for m_info in models_info)}")

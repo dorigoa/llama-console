@@ -103,7 +103,7 @@ def _get_server_status() -> tuple[bool | None, list[str]]:
 def _drain_proc() -> None:
     """Non-blocking read of available output from the server subprocess."""
     proc: subprocess.Popen | None = st.session_state.server_proc
-    if proc is None:
+    if proc is None or proc.stdout is None:
         return
     try:
         while True:

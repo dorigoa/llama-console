@@ -30,7 +30,7 @@ class Model:
     temperature: float
     top_p: float
     top_k: int
-    min_p: int
+    min_p: float
     reasoning: str
     last_started: int
     fitt: str
@@ -138,12 +138,12 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 model_name=name,
                 model_path=model_path,
                 size_gib=size_gib,
-                mmproj_path=str(spec["MMPROJ"]),
+                mmproj_path=Path(spec["MMPROJ"]) if spec["MMPROJ"] is not None else None,
                 ctxsize=int(spec["ctx"]),
                 temperature=float(spec["TEMP"]),
                 top_p=float(spec["TOPP"]),
                 top_k=int(spec["TOPK"]),
-                min_p=int(spec["MINP"]),
+                min_p=float(spec["MINP"]),
                 reasoning=str(spec["REAS"]),
                 last_started=0,                         
                 fitt=str(spec["FITT"]),
