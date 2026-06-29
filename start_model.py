@@ -10,6 +10,7 @@ import time
 import argparse
 import subprocess
 from pathlib import Path
+from logzero import logger
 from model import Model, load_models
 from config_manager import get_settings
 from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers
@@ -111,6 +112,7 @@ def _run_on_server(shell_cmd: str, timeout: int = 15) -> subprocess.CompletedPro
     else:
         argv = ["bash", "-c", shell_cmd]
     try:
+        logger.debug(f"Running command {argv}")
         r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
     except subprocess.TimeoutExpired as e:
         if ssh_dest:
@@ -135,9 +137,9 @@ def report_server_status() -> bool:
     where = _server_location()
     pids = _server_pids()
     if pids:
-        print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
+        logger.info(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
         return True
-    print(f"llama-server is NOT running on {where}")
+    logger.warning(f"llama-server is NOT running on {where}")
     return False
 
 #___________________________________________________________________________________
@@ -146,23 +148,23 @@ def stop_server() -> bool:
     where = _server_location()
     pids = _server_pids()
     if not pids:
-        print(f"No llama-server process found on {where}.")
+        logger.warning(f"No llama-server process found on {where}.")
         return True
 
     pattern = _pgrep_pattern()
-    print(f"Sending SIGTERM to llama-server on {where} (pid(s): {', '.join(pids)})...")
+    logger.debug(f"Sending SIGTERM to llama-server on {where} (pid(s): {', '.join(pids)})...")
     _run_on_server(f"pkill -TERM -f -- '{pattern}'")
 
     time.sleep(2)
     pids = _server_pids()
     if pids:
-        print(f"Still running (pid(s): {', '.join(pids)}); sending SIGKILL...")
+        logger.debug(f"Still running (pid(s): {', '.join(pids)}); sending SIGKILL...")
         _run_on_server(f"pkill -KILL -f -- '{pattern}'")
         time.sleep(1)
         pids = _server_pids()
 
     if pids:
-        print(f"Error: could not stop llama-server on {where} (pid(s): {', '.join(pids)}).", file=sys.stderr)
+        logger.error(f"Error: could not stop llama-server on {where} (pid(s): {', '.join(pids)}).", file=sys.stderr)
         return False
     print(f"llama-server stopped on {where}.")
     return True
@@ -174,7 +176,7 @@ def _run_server_action(action) -> "None":
     try:
         ok = action()
     except ServerHostUnreachable as e:
-        print(f"Error: host unreachable — {e}", file=sys.stderr)
+        logger.error(f"Error: host unreachable — {e}", file=sys.stderr)
         sys.exit(2)
     sys.exit(0 if ok else 1)
 
@@ -206,7 +208,7 @@ def start_model(
     if list_models:
         models_info = []
         for m in models:
-            m_info = f"{m.model_name} ({m.size_gib} GiB - {len(m.rpcservers)} RPC)"
+            m_info = f"{m.model_name} ({int(m.size_gib)} GiB - {len(m.rpcservers)} RPC)"
             models_info.append(m_info)
         #print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
         print(f"Available models:\n  {"\n  ".join(m_info for m_info in models_info)}")
@@ -219,16 +221,16 @@ def start_model(
     model = next((m for m in models if m.model_name == model_name), None)
     if model is None:
         available = "\n  ".join(m.model_name for m in models)
-        print(f"Error: model '{model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
+        logger.error(f"Error: model '{model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
         sys.exit(1)
 
     if (override_fitt is None) != (override_devices is None):
-        print(f"If override-devices is specified than also override-fitt must be specified, and vice versa")
+        logger.error(f"If override-devices is specified than also override-fitt must be specified, and vice versa")
         sys.exit(1)
 
     if (override_fitt):
         if not (valid_csv_tokens(override_fitt) and valid_csv_tokens(override_devices)):
-            print(f"Invalid format of {override_devices} or {override_fitt}")
+            logger.error(f"Invalid format of {override_devices} or {override_fitt}")
             sys.exit(1)
         model.fitt = override_fitt
 
@@ -246,35 +248,37 @@ def start_model(
     binary = settings.LLAMA_SERVER_BIN
     ssh_dest = _ssh_dest()
     if ssh_dest:
+        cmd = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary]
+        logger.debug(f"Executing {cmd}")
         r = subprocess.run(
-            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary],
+            cmd,
             capture_output=True, text=True,
         )
         if r.returncode != 0:
-            print(f"Error: llama-server binary not found at '{binary}' on {ssh_dest}", file=sys.stderr)
+            logger.error(f"Error: llama-server binary not found at '{binary}' on {ssh_dest}", file=sys.stderr)
             sys.exit(1)
     else:
         if not Path(binary).is_file():
-            print(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
+            logger.error(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
             sys.exit(1)
 
     if not dry_run and model.rpcservers and not override_devices:
-        print("Checking rpc servers...", flush=True)
+        logger.debug("Checking rpc servers...", flush=True)
         dead = unreachable_rpc_servers(model.rpcservers)
         if dead:
             for addr in dead:
-                print(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...", flush=True)
+                logger.error(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...", flush=True)
                 start_rpc_server(addr)
 
             still_dead = wait_for_rpc_servers(dead)
             if still_dead:
                 addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
-                print(f"Error: RPC server(s) still unreachable after start attempt: {addrs}", flush=True)
+                logger.error(f"Error: RPC server(s) still unreachable after start attempt: {addrs}", flush=True)
                 sys.exit(1)
 
-        print("All RPC servers reachable.", flush=True)
+        logger.info("All RPC servers reachable.", flush=True)
         if only_rpc:
-            print("'--only-start-rpc' specified. Gracefully exiting.")
+            logger.warning("'--only-start-rpc' specified. Gracefully exiting.")
             sys.exit(0)
 
     devices = ""
@@ -284,7 +288,7 @@ def start_model(
         if not override_devices:
             if model.rpcservers:
                 rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
-                print("Running list-devices...", flush=True)
+                logger.debug("Running list-devices...", flush=True)
                 if ssh_dest:
                     result = subprocess.run(
                         ["ssh", ssh_dest, binary, "--rpc", rpc_list, "--list-devices"],
@@ -299,9 +303,9 @@ def start_model(
                         text=True,
                     )
                 if result.stdout:
-                    print(result.stdout, end="", flush=True)
+                    logger.debug(result.stdout, end="", flush=True)
                 if result.stderr:
-                    print(result.stderr, end="", flush=True)
+                    logger.debug(result.stderr, end="", flush=True)
                 # filter and join device names
                 raw_devices = [
                     line.replace(":", "").split()[0]
@@ -311,12 +315,12 @@ def start_model(
                     and " 0 MiB free" not in line
                 ]
                 devices = ",".join(raw_devices)
-                print(f"Using devices: {devices or '(none)'}", flush=True)
+                logger.info(f"Using devices: {devices or '(none)'}", flush=True)
         else:
             devices = override_devices
 
         if only_list_devs:
-            print("'--only-list-devices' specified. Gracefully exiting.")
+            logger.warning("'--only-list-devices' specified. Gracefully exiting.")
             sys.exit(0)
 
     cmd = _build_command(binary, model, devices, override_ctx)
@@ -324,7 +328,7 @@ def start_model(
         exec_cmd = ["ssh", ssh_dest] + cmd
     else:
         exec_cmd = cmd
-    print("Command:", " ".join(exec_cmd), flush=True)
+    logger.debug("Command:", " ".join(exec_cmd), flush=True)
 
     if dry_run:
         return
