@@ -13,7 +13,7 @@ from pathlib import Path
 from logzero import logger
 from model import Model, load_models
 from config_manager import get_settings
-from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers
+from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server
 
 MODELS_JSON = Path(__file__).parent / "models.json"
 
@@ -190,6 +190,7 @@ def start_model(
     list_models: bool = False,
     kill_server: bool = False,
     server_status: bool = False,
+    kill_rpc: bool = False,
     override_temp: float | None = None,
     override_top_p: float | None = None,
     override_top_k: int | None = None,
@@ -264,6 +265,24 @@ def start_model(
         logger.info("All RPC servers reachable.")
         sys.exit(0)
 
+    if kill_rpc:
+        # Kill rpc-server on every RPC node of the model (killall rpc-server),
+        # originating from LLAMA_SERVER_HOST. Never starts anything.
+        if not model.rpcservers:
+            logger.info(f"Model '{model.model_name}' has no RPC servers configured.")
+            sys.exit(0)
+        failed = []
+        for addr in model.rpcservers:
+            via = f"{ssh_dest} -> " if ssh_dest else ""
+            logger.info(f"Killing rpc-server on {via}{addr.remuser}@{addr.IP} ...")
+            if not kill_rpc_server(addr, exec_host=ssh_dest):
+                failed.append(f"{addr.IP}:{addr.PORT}")
+        if failed:
+            logger.error(f"Could not kill rpc-server on: {', '.join(failed)}")
+            sys.exit(1)
+        logger.info("rpc-server killed on all RPC nodes (or already stopped).")
+        sys.exit(0)
+
     if ssh_dest:
         cmd = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary]
         logger.debug(f"Executing {cmd}")
@@ -279,10 +298,11 @@ def start_model(
             logger.error(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
             sys.exit(1)
 
-    if not dry_run and model.rpcservers and not override_devices:
+    if not dry_run and not only_list_devs and model.rpcservers and not override_devices:
         # RPC probing/starting must originate from LLAMA_SERVER_HOST: only it can
         # reach the RPC network. When ssh_dest is None (local llama-server), the
         # operations run locally as before.
+        # Skipped for --only-list-devices: that option must NOT start anything.
         logger.debug(f"Checking rpc servers (via {ssh_dest or 'localhost'})...")
         dead = unreachable_rpc_servers(model.rpcservers, exec_host=ssh_dest)
         if dead:
@@ -363,7 +383,8 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it")
     parser.add_argument("--only-start-rpc", action="store_true", help="Just start the RPC remote servers and exit")
     parser.add_argument("--only-check-rpc", action="store_true", help="Just check that RPC remote servers and reachable")
-    parser.add_argument("--only-list-devices", action="store_true", help="Just retrieve the list of GPU devices from local and remote RPC servers")
+    parser.add_argument("--only-list-devices", action="store_true", help="Just retrieve the list of GPU devices from local and remote RPC servers (does NOT start RPC servers)")
+    parser.add_argument("--kill-rpc-server", action="store_true", help="Run 'killall rpc-server' on every RPC node of the model (via LLAMA_SERVER_HOST) and exit")
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
     parser.add_argument("--kill-server", action="store_true", help="Kill the llama-server process on LLAMA_SERVER_HOST and exit")
     parser.add_argument("--server-status", action="store_true", help="Check whether llama-server is running on LLAMA_SERVER_HOST and exit")
@@ -386,6 +407,7 @@ def main() -> None:
         list_models=args.list_models,
         kill_server=args.kill_server,
         server_status=args.server_status,
+        kill_rpc=args.kill_rpc_server,
         override_temp=args.override_temp,
         override_top_p=args.override_top_p,
         override_top_k=args.override_top_k,

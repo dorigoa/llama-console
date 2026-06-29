@@ -100,6 +100,39 @@ def start_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
     return result.returncode == 0
 
 #___________________________________________________________________________________
+def kill_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
+    """Kill rpc-server on the RPC node with `killall rpc-server`.
+
+    `killall` is available on both Linux (psmisc) and macOS/BSD, so the same
+    command works regardless of the node OS. If exec_host is given, the SSH to
+    the RPC node is issued FROM that host (nested SSH: laptop -> exec_host ->
+    remuser@addr.IP), because only exec_host can reach the RPC network.
+    Otherwise the SSH is direct.
+
+    Returns True if the node was reached and killall ran (rc 0 = killed,
+    rc 1 = no matching process / already stopped). Returns False on SSH/contact
+    failure (rc 255 or other).
+    """
+    remote_cmd = "killall rpc-server"
+    if exec_host:
+        inner = f"ssh {' '.join(_SSH_OPTS)} {addr.remuser}@{addr.IP} {shlex.quote(remote_cmd)}"
+        argv = ["ssh", *_SSH_OPTS, exec_host, inner]
+        shown = f"{exec_host} -> {addr.remuser}@{addr.IP}"
+    else:
+        argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
+        shown = f"{addr.remuser}@{addr.IP}"
+    print(f"  SSH: {shown}  \"{remote_cmd}\"", file=sys.stderr)
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+    except subprocess.TimeoutExpired:
+        print(f"  SSH timeout contacting {shown}", file=sys.stderr)
+        return False
+    if result.returncode not in (0, 1):
+        print(f"  SSH stderr: {result.stderr.strip()}", file=sys.stderr)
+        return False
+    return True
+
+#___________________________________________________________________________________
 def wait_for_rpc_servers(servers: list[rpc_server], exec_host: str | None = None) -> list[rpc_server]:
     """Poll until all servers become reachable or the timeout expires.
 
