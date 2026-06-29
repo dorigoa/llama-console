@@ -185,6 +185,7 @@ def start_model(
     model_name: str | None,
     dry_run: bool = False,
     only_rpc: bool = False,
+    only_check_rpc: bool = False,
     only_list_devs: bool = False,
     list_models: bool = False,
     kill_server: bool = False,
@@ -247,6 +248,22 @@ def start_model(
 
     binary = settings.LLAMA_SERVER_BIN
     ssh_dest = _ssh_dest()
+
+    if only_check_rpc:
+        # Check only: report which RPC servers are not running and exit.
+        # Never start them (that's what --only-start-rpc is for).
+        if not model.rpcservers:
+            logger.info(f"Model '{model.model_name}' has no RPC servers configured.")
+            sys.exit(0)
+        logger.debug(f"Checking rpc servers (via {ssh_dest or 'localhost'})...")
+        dead = unreachable_rpc_servers(model.rpcservers, exec_host=ssh_dest)
+        if dead:
+            for addr in dead:
+                logger.info(f"RPC server {addr.IP}:{addr.PORT} is NOT running")
+            sys.exit(1)
+        logger.info("All RPC servers reachable.")
+        sys.exit(0)
+
     if ssh_dest:
         cmd = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary]
         logger.debug(f"Executing {cmd}")
@@ -332,7 +349,7 @@ def start_model(
         exec_cmd = ["ssh", ssh_dest] + cmd
     else:
         exec_cmd = cmd
-    logger.debug("Command:", " ".join(exec_cmd))
+    logger.debug(f"Command: {exec_cmd}")
 
     if dry_run:
         return
@@ -364,6 +381,7 @@ def main() -> None:
         args.model_name,
         dry_run=args.dry_run,
         only_rpc=args.only_start_rpc,
+        only_check_rpc=args.only_check_rpc,
         only_list_devs=args.only_list_devices,
         list_models=args.list_models,
         kill_server=args.kill_server,
