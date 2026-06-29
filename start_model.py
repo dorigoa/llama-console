@@ -263,7 +263,7 @@ def start_model(
             sys.exit(1)
 
     if not dry_run and model.rpcservers and not override_devices:
-        logger.debug("Checking rpc servers...", flush=True)
+        logger.debug("Checking rpc servers...")
         dead = unreachable_rpc_servers(model.rpcservers)
         if dead:
             for addr in dead:
