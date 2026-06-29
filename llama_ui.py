@@ -38,6 +38,13 @@ st.markdown("""
 [data-baseweb="popover"] * {
     font-size: 1.5rem !important;
 }
+/* Make the select control tall enough for the larger font */
+[data-testid="stSelectbox"] [data-baseweb="select"] > div:first-child {
+    min-height: 3rem !important;
+    height: auto !important;
+    padding-top: 0.4rem !important;
+    padding-bottom: 0.4rem !important;
+}
 </style>
 """, unsafe_allow_html=True)
 
