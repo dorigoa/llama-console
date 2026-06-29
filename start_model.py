@@ -6,6 +6,7 @@ import os
 import re
 import sys
 import json
+import time
 import argparse
 import subprocess
 from pathlib import Path
@@ -81,12 +82,111 @@ def _ssh_dest() -> str | None:
     return settings.LLAMA_SERVER_HOST
 
 #___________________________________________________________________________________
+class ServerHostUnreachable(Exception):
+    """Raised when LLAMA_SERVER_HOST cannot be contacted over SSH (vs. the
+    server process simply not running)."""
+
+#___________________________________________________________________________________
+def _server_location() -> str:
+    return _ssh_dest() or "localhost"
+
+#___________________________________________________________________________________
+def _pgrep_pattern() -> str:
+    """Regex for pgrep/pkill -f that matches the llama-server command line but
+    NOT the wrapping shell/ssh that carries this very pattern (classic [x] trick)."""
+    b = settings.LLAMA_SERVER_BIN
+    return f"[{b[0]}]{b[1:]}" if b else b
+
+#___________________________________________________________________________________
+def _run_on_server(shell_cmd: str, timeout: int = 15) -> subprocess.CompletedProcess:
+    """Run shell_cmd on LLAMA_SERVER_HOST via SSH if configured, else locally.
+
+    Raises ServerHostUnreachable if SSH itself fails (connection refused,
+    timeout, auth/host error). SSH reserves exit code 255 for its own failures,
+    while pgrep/pkill only ever return 0/1/2/3, so 255 unambiguously means the
+    host was not reached rather than 'no process found'."""
+    ssh_dest = _ssh_dest()
+    if ssh_dest:
+        argv = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, shell_cmd]
+    else:
+        argv = ["bash", "-c", shell_cmd]
+    try:
+        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
+    except subprocess.TimeoutExpired as e:
+        if ssh_dest:
+            raise ServerHostUnreachable(f"timeout after {timeout}s contacting {ssh_dest}") from e
+        raise
+    if ssh_dest and r.returncode == 255:
+        detail = r.stderr.strip() or "connection failed"
+        raise ServerHostUnreachable(f"SSH error contacting {ssh_dest}: {detail}")
+    return r
+
+#___________________________________________________________________________________
+def _server_pids() -> list[str]:
+    """PIDs of the running llama-server process(es), or [] if none.
+
+    May raise ServerHostUnreachable (propagated from _run_on_server)."""
+    r = _run_on_server(f"pgrep -f -- '{_pgrep_pattern()}'")
+    return [p for p in r.stdout.split() if p.strip().isdigit()]
+
+#___________________________________________________________________________________
+def report_server_status() -> bool:
+    """Print whether llama-server is running. Return True if running."""
+    where = _server_location()
+    pids = _server_pids()
+    if pids:
+        print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
+        return True
+    print(f"llama-server is NOT running on {where}")
+    return False
+
+#___________________________________________________________________________________
+def stop_server() -> bool:
+    """Kill the llama-server process on the server. Return True if stopped."""
+    where = _server_location()
+    pids = _server_pids()
+    if not pids:
+        print(f"No llama-server process found on {where}.")
+        return True
+
+    pattern = _pgrep_pattern()
+    print(f"Sending SIGTERM to llama-server on {where} (pid(s): {', '.join(pids)})...")
+    _run_on_server(f"pkill -TERM -f -- '{pattern}'")
+
+    time.sleep(2)
+    pids = _server_pids()
+    if pids:
+        print(f"Still running (pid(s): {', '.join(pids)}); sending SIGKILL...")
+        _run_on_server(f"pkill -KILL -f -- '{pattern}'")
+        time.sleep(1)
+        pids = _server_pids()
+
+    if pids:
+        print(f"Error: could not stop llama-server on {where} (pid(s): {', '.join(pids)}).", file=sys.stderr)
+        return False
+    print(f"llama-server stopped on {where}.")
+    return True
+
+#___________________________________________________________________________________
+def _run_server_action(action) -> "None":
+    """Run a server-management action and exit: 0 = ok, 1 = not ok,
+    2 = LLAMA_SERVER_HOST unreachable."""
+    try:
+        ok = action()
+    except ServerHostUnreachable as e:
+        print(f"Error: host unreachable — {e}", file=sys.stderr)
+        sys.exit(2)
+    sys.exit(0 if ok else 1)
+
+#___________________________________________________________________________________
 def start_model(
     model_name: str | None,
     dry_run: bool = False,
     only_rpc: bool = False,
     only_list_devs: bool = False,
     list_models: bool = False,
+    kill_server: bool = False,
+    server_status: bool = False,
     override_temp: float | None = None,
     override_top_p: float | None = None,
     override_top_k: int | None = None,
@@ -95,6 +195,12 @@ def start_model(
     override_fitt: str | None = None,
     override_ctx: int | None = None
 ) -> None:
+    if server_status:
+        _run_server_action(report_server_status)
+
+    if kill_server:
+        _run_server_action(stop_server)
+
     models = load_models(MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
 
     if list_models:
@@ -229,6 +335,8 @@ def main() -> None:
     parser.add_argument("--only-check-rpc", action="store_true", help="Just check that RPC remote servers and reachable")
     parser.add_argument("--only-list-devices", action="store_true", help="Just retrieve the list of GPU devices from local and remote RPC servers")
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
+    parser.add_argument("--kill-server", action="store_true", help="Kill the llama-server process on LLAMA_SERVER_HOST and exit")
+    parser.add_argument("--server-status", action="store_true", help="Check whether llama-server is running on LLAMA_SERVER_HOST and exit")
     parser.add_argument("--override-temp", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-k", type=int, default=None, metavar="INT")
@@ -245,6 +353,8 @@ def main() -> None:
         only_rpc=args.only_start_rpc,
         only_list_devs=args.only_list_devices,
         list_models=args.list_models,
+        kill_server=args.kill_server,
+        server_status=args.server_status,
         override_temp=args.override_temp,
         override_top_p=args.override_top_p,
         override_top_k=args.override_top_k,
