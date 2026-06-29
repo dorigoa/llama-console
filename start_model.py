@@ -204,7 +204,7 @@ def start_model(
     models = load_models(MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
 
     if list_models:
-        models_info: list[str]
+        models_info: list[str] = []
         for m in models:
             m_info = f"{m} ({m.size_gib} GiB - {len(m.rpcservers)} RPC)"
             models_info.append(m_info)
