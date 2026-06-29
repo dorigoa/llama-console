@@ -204,10 +204,12 @@ def start_model(
     models = load_models(MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
 
     if list_models:
-        # models_info: list[str]
-        # for m in models:
-        #     m_info = f"{m} ({m.})"
-        print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
+        models_info: list[str]
+        for m in models:
+            m_info = f"{m} ({m.size_gib} GiB - {len(m.rpcservers)} RPC)"
+            models_info.append(m_info)
+        #print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
+        print(f"Available models:\n  {"\n  ".join(m_info for m_info in models_info)}")
         sys.exit(0)
 
     if not model_name:
