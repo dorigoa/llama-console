@@ -307,9 +307,9 @@ def start_model(
                         text=True,
                     )
                 if result.stdout:
-                    logger.debug(result.stdout, end="")
+                    logger.debug(result.stdout)
                 if result.stderr:
-                    logger.debug(result.stderr, end="")
+                    logger.debug(result.stderr)
                 # filter and join device names
                 raw_devices = [
                     line.replace(":", "").split()[0]
