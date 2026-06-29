@@ -267,16 +267,16 @@ def start_model(
         dead = unreachable_rpc_servers(model.rpcservers)
         if dead:
             for addr in dead:
-                logger.error(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...", flush=True)
+                logger.error(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {addr.remuser}...")
                 start_rpc_server(addr)
 
             still_dead = wait_for_rpc_servers(dead)
             if still_dead:
                 addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
-                logger.error(f"Error: RPC server(s) still unreachable after start attempt: {addrs}", flush=True)
+                logger.error(f"Error: RPC server(s) still unreachable after start attempt: {addrs}")
                 sys.exit(1)
 
-        logger.info("All RPC servers reachable.", flush=True)
+        logger.info("All RPC servers reachable.")
         if only_rpc:
             logger.warning("'--only-start-rpc' specified. Gracefully exiting.")
             sys.exit(0)
@@ -288,7 +288,7 @@ def start_model(
         if not override_devices:
             if model.rpcservers:
                 rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
-                logger.debug("Running list-devices...", flush=True)
+                logger.debug("Running list-devices...")
                 if ssh_dest:
                     result = subprocess.run(
                         ["ssh", ssh_dest, binary, "--rpc", rpc_list, "--list-devices"],
@@ -303,9 +303,9 @@ def start_model(
                         text=True,
                     )
                 if result.stdout:
-                    logger.debug(result.stdout, end="", flush=True)
+                    logger.debug(result.stdout, end="")
                 if result.stderr:
-                    logger.debug(result.stderr, end="", flush=True)
+                    logger.debug(result.stderr, end="")
                 # filter and join device names
                 raw_devices = [
                     line.replace(":", "").split()[0]
@@ -315,7 +315,7 @@ def start_model(
                     and " 0 MiB free" not in line
                 ]
                 devices = ",".join(raw_devices)
-                logger.info(f"Using devices: {devices or '(none)'}", flush=True)
+                logger.info(f"Using devices: {devices or '(none)'}")
         else:
             devices = override_devices
 
@@ -328,7 +328,7 @@ def start_model(
         exec_cmd = ["ssh", ssh_dest] + cmd
     else:
         exec_cmd = cmd
-    logger.debug("Command:", " ".join(exec_cmd), flush=True)
+    logger.debug("Command:", " ".join(exec_cmd))
 
     if dry_run:
         return
