@@ -202,6 +202,51 @@
                         "kv_gb_256_fp16": 9,
                         "native_ctx": 131072
                 },
+                "ornith-1.0-35b-Q8_0": {
+                       "sizegb": 34,
+                        "ALIAS": "ornith-1.0-35b-Q8_0",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "alvise"
+                                }
+                        },
+                        "ctx": 262144,
+                        "FITT": "6144,12288",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "UB": null,
+                        "B": null,
+                        "kv_gb_256_fp16": 16,
+                        "native_ctx": 262144
+                },
+                "ornith-1.0-9b-bf16": {
+                       "sizegb": 17,
+                        "ALIAS": "ornith-1.0-9b-bf16",
+                        "RPC_SERVERS": {},
+                        "ctx": 262144,
+                        "FITT": "6144",
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": "q8_0",
+                        "UB": null,
+                        "B": null,
+                        "kv_gb_256_fp16": 16,
+                        "native_ctx": 262144
+                },
                 "Qwen3.6-27B-UD-Q4_K_XL": {
                         "sizegb": 16,
                         "ALIAS": "Qwen3.6-27B-UD-Q4_K_XL",
