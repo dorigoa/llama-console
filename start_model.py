@@ -44,6 +44,7 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
 
     data = {"reasoning_effort": model.reasoning}
 
+    cmd += ["--chat-template", "chatml"]
     cmd += ["--host", settings.ADDRESS_BIND]
     cmd += ["--port", str(settings.PORT_BIND)]
     cmd += ["--split-mode", "layer"]
