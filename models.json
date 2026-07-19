@@ -208,6 +208,38 @@
                         "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
+                "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
+                        "sizegb": 76,
+                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q8_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "alvise"
+                                },
+                                "192.168.30.2": {
+                                        "port": 50000,
+                                        "cachepath": "/nvme/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/rpc-server",
+                                        "remuser": "alvise"
+                                }
+                        },
+                        "ctx": 131072,
+                        "FITT": "6144,12288,3072,1024",
+                        "TEMP": 1.0,
+                        "TOPP": 0.95,
+                        "TOPK": 64,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "kv_gb_256_fp16": 15,
+                        "native_ctx": 262144
+                },
                 "GPT-OSS-120B-MXFP4": {
                         "sizegb": 59,
                         "ALIAS": "GPT-OSS-120B-MXFP4",
