@@ -15,7 +15,7 @@ from model import Model, load_models
 from config_manager import get_settings
 from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server
 
-MODELS_JSON = Path(__file__).parent / "models.json"
+#MODELS_JSON = Path(__file__).parent / "models.json"
 
 _CSV_TOKENS = re.compile(r"[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*")
 
@@ -206,15 +206,14 @@ def start_model(
     if kill_server:
         _run_server_action(stop_server)
 
-    models = load_models(MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
+    models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
 
     if list_models:
         models_info = []
         for m in models:
             m_info = f"{m.model_name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB - {len(m.rpcservers)} RPC)"
             models_info.append(m_info)
-        #print(f"Available models:\n  {"\n  ".join(m.model_name for m in models)}")
-        print(f"Available models:\n  {"\n  ".join(m_info for m_info in models_info)}")
+        print("Available models:\n  " + "\n  ".join(m_info for m_info in models_info))
         sys.exit(0)
 
     if not model_name:
@@ -224,7 +223,7 @@ def start_model(
     model = next((m for m in models if m.model_name == model_name), None)
     if model is None:
         available = "\n  ".join(m.model_name for m in models)
-        logger.error(f"Error: model '{model_name}' not found in {MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
+        logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
         sys.exit(1)
 
     if (override_fitt is None) != (override_devices is None):
