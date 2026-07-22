@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
-"""Launch llama-server for a given model defined in models.json."""
+"""Launch llama-server for a given model defined in models.json.
+
+When LLAMA_SERVER_HOST is set the server is **detached** (nohup + background) so
+this script exits immediately.  Log output goes to a well-known log file that the
+UI can poll via SSH.
+"""
 
 
 import os
 import re
+import shlex
 import sys
 import json
 import time
 import argparse
+import requests
 import subprocess
 from pathlib import Path
 from logzero import logger
@@ -15,7 +22,8 @@ from model import Model, load_models
 from config_manager import get_settings
 from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server
 
-#MODELS_JSON = Path(__file__).parent / "models.json"
+LLAMA_LOG_FILE = "/tmp/llama-server.log"  # shared path for polling the output
+LLAMA_BOOT_LOG = "/tmp/llama-server.boot.log"  # startup stdout/stderr (crash diagnostics)
 
 _CSV_TOKENS = re.compile(r"[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*")
 
@@ -24,6 +32,29 @@ settings = get_settings()
 #___________________________________________________________________________________
 def valid_csv_tokens(s) -> bool:
     return isinstance(s, str) and _CSV_TOKENS.fullmatch(s) is not None
+
+#___________________________________________________________________________________
+def _get_first_model_name(endpoint: str) -> tuple[str,int] | None:
+
+    url = f"http://{endpoint}/models"
+    try:
+        response = requests.get(url)
+        response.raise_for_status()  # raise an exception for HTTP codes 4xx, 5xx
+        data = response.json()
+        # Let's make sure the structure is as expected
+        if isinstance(data, dict) and 'models' in data and isinstance(data['models'], list) and len(data['models']) > 0 and 'data' in data and len(data['data']) > 0:
+            first_model = data['models'][0]
+            first_data  = data['data'][0]#['meta']#['n_ctx']
+            if isinstance(first_model, dict) and 'name' in first_model and isinstance(first_data, dict) and 'meta' in first_data:
+                return (first_model['name'], first_data['meta']['n_ctx'])
+            else:
+                return None
+        else:
+            raise ValueError("JSON response has a bad structure: missing or empty 'models' and/or 'data or they are not lists")
+    except requests.exceptions.RequestException as e:
+        raise RuntimeError(f"HTTP request error: {e}") from e
+    except json.JSONDecodeError as e:
+        raise RuntimeError(f"JSON parsing error: {e}") from e
 
 #___________________________________________________________________________________
 def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None) -> list[str]:
@@ -44,7 +75,7 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
 
     data = {"reasoning_effort": model.reasoning}
 
-    cmd += ["--chat-template", "chatml"]
+    #cmd += ["--chat-template", "chatml"]
     cmd += ["--host", settings.ADDRESS_BIND]
     cmd += ["--port", str(settings.PORT_BIND)]
     cmd += ["--split-mode", "layer"]
@@ -58,7 +89,7 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
     cmd += ["--temp", str(model.temperature)]
     cmd += ["--top-p", str(model.top_p)]
     cmd += ["--top-k", str(model.top_k)]
-    cmd += ["--chat-template-kwargs", f"'{json.dumps(data)}'"]
+    cmd += ["--chat-template-kwargs", json.dumps(data)]
     cmd += ["--seed", "123456789"]
     if model.kvquant:
         cmd += ["-ctk", model.kvquant]
@@ -72,6 +103,8 @@ def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None
         cmd += ["-ub", str(model.ub)]
     if model.b:
         cmd += ["-b", str(model.b)]
+    # Log file for detached execution (UI polls it)
+    cmd += ["--log-file", LLAMA_LOG_FILE]
 
     return cmd
 
@@ -138,9 +171,16 @@ def report_server_status() -> bool:
     where = _server_location()
     pids = _server_pids()
     if pids:
-        logger.info(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
+        print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
+        try:
+            model, ctxsize = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.LLAMA_SERVER_PORT}")
+        except RuntimeError as e:
+            print(f"llama-server is RUNNING but not ready yet: {e}")
+        else:
+            if model:
+                print(f"Running model: {model} - CTX Size: {ctxsize}")
         return True
-    logger.warning(f"llama-server is NOT running on {where}")
+    print(f"llama-server is NOT RUNNING on {where}")
     return False
 
 #___________________________________________________________________________________
@@ -171,6 +211,40 @@ def stop_server() -> bool:
     return True
 
 #___________________________________________________________________________________
+def tail_log(lines: int = 50, follow: bool = True) -> int:
+    """Stream llama-server's log file from the server to this terminal.
+
+    Uses `tail` over SSH (or locally) on LLAMA_LOG_FILE. With follow=True it uses
+    `tail -F` (follow by name + retry), so it survives the file being rotated or
+    recreated on a server restart, and keeps streaming until the user hits Ctrl-C.
+
+    Returns the tail/ssh exit code (0 on a clean Ctrl-C)."""
+    where = _server_location()
+    ssh_dest = _ssh_dest()
+
+    flag = "-F" if follow else ""
+    tail_cmd = f"tail -n {int(lines)} {flag} {shlex.quote(LLAMA_LOG_FILE)}".replace("  ", " ")
+
+    if follow:
+        logger.info(f"Following {LLAMA_LOG_FILE} on {where} (Ctrl-C to stop)...")
+    else:
+        logger.info(f"Last {int(lines)} lines of {LLAMA_LOG_FILE} on {where}:")
+
+    if ssh_dest:
+        # -t allocates a remote pty so Ctrl-C is forwarded and the remote `tail`
+        # is torn down cleanly instead of lingering.
+        argv = ["ssh", "-t", "-o", "ConnectTimeout=5", ssh_dest, tail_cmd]
+    else:
+        argv = ["bash", "-c", tail_cmd]
+
+    logger.debug(f"Running command {argv}")
+    try:
+        r = subprocess.run(argv)
+    except KeyboardInterrupt:
+        return 0
+    return r.returncode
+
+#___________________________________________________________________________________
 def _run_server_action(action) -> "None":
     """Run a server-management action and exit: 0 = ok, 1 = not ok,
     2 = LLAMA_SERVER_HOST unreachable."""
@@ -182,6 +256,70 @@ def _run_server_action(action) -> "None":
     sys.exit(0 if ok else 1)
 
 #___________________________________________________________________________________
+def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
+    """Start llama-server in the background, detached from this session, then
+    VERIFY it actually stayed up before exiting.
+
+    Detach mechanics: redirect ALL of stdin/stdout/stderr away from the SSH
+    channel. Redirecting only stdin (an older behaviour) left stdout/stderr
+    wired to the SSH pipe, so ssh kept the channel open (this script would hang
+    waiting for EOF) and, once the connection was torn down, llama-server could
+    be killed by SIGHUP/SIGPIPE. `nohup` ignores SIGHUP; </dev/null frees the
+    ssh channel so ssh returns immediately. Since ssh is invoked without a PTY
+    there is no controlling terminal, so nohup alone is enough to survive the
+    parent shell exiting.
+
+    `setsid` additionally starts a brand-new session (extra isolation), but it
+    is util-linux only and does NOT exist on macOS. We therefore detect it at
+    runtime in the remote shell and use `setsid nohup` when present, falling
+    back to plain `nohup` otherwise — portable across Linux and macOS.
+
+    stdout/stderr go to LLAMA_BOOT_LOG (not /dev/null): an early crash (bad
+    argument, missing shared library, OOM) happens before llama-server opens
+    --log-file, so without a boot log it would leave no trace at all. The
+    server's own runtime output still lands in LLAMA_LOG_FILE via --log-file,
+    which --tail-log can follow.
+    """
+    server_args = " ".join(shlex.quote(a) for a in cmd)
+    boot_log = shlex.quote(LLAMA_BOOT_LOG)
+    # D = 'setsid nohup' where setsid exists (Linux), else 'nohup' (macOS).
+    # $D is intentionally unquoted so it word-splits into 1 or 2 words.
+    detach = "D=nohup; command -v setsid >/dev/null 2>&1 && D='setsid nohup';"
+    remote_cmd = f"{detach} $D {server_args} >{boot_log} 2>&1 </dev/null &"
+
+    where = ssh_dest or "localhost"
+    logger.info(f"Starting detached llama-server on {where} ...")
+    logger.info(f"Log file: {LLAMA_LOG_FILE}  (boot log: {LLAMA_BOOT_LOG})")
+
+    if ssh_dest:
+        argv = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, remote_cmd]
+    else:
+        argv = ["bash", "-c", remote_cmd]
+    r = subprocess.run(argv, capture_output=True, text=True)
+    if r.returncode != 0:
+        logger.error(f"Failed to launch llama-server on {where}: {r.stderr.strip()}")
+        sys.exit(1)
+
+    # ssh/bash returns as soon as the background shell forks; that says nothing
+    # about whether llama-server survived. Poll pgrep to confirm it is alive.
+    for _ in range(10):
+        time.sleep(1)
+        try:
+            pids = _server_pids()
+        except ServerHostUnreachable as e:
+            logger.warning(f"Cannot verify server yet: {e}")
+            continue
+        if pids:
+            logger.info(f"llama-server RUNNING on {where} (pid(s): {', '.join(pids)}).")
+            sys.exit(0)
+
+    # Not alive: it crashed at startup. Show the boot log so the user knows why.
+    logger.error(f"llama-server did NOT stay up on {where}. Boot log ({LLAMA_BOOT_LOG}):")
+    boot = _run_on_server(f"tail -n 40 {shlex.quote(LLAMA_BOOT_LOG)} 2>/dev/null || true")
+    logger.error("\n" + (boot.stdout.rstrip() if boot.stdout.strip() else "(boot log empty)"))
+    sys.exit(1)
+
+#___________________________________________________________________________________
 def start_model(
     model_name: str | None,
     dry_run: bool = False,
@@ -191,6 +329,8 @@ def start_model(
     list_models: bool = False,
     kill_server: bool = False,
     server_status: bool = False,
+    follow_log: bool = False,
+    tail_lines: int = 50,
     kill_rpc: bool = False,
     override_temp: float | None = None,
     override_top_p: float | None = None,
@@ -206,6 +346,14 @@ def start_model(
     if kill_server:
         _run_server_action(stop_server)
 
+    if follow_log:
+        try:
+            rc = tail_log(lines=tail_lines, follow=True)
+        except ServerHostUnreachable as e:
+            logger.error(f"Error: host unreachable — {e}")
+            sys.exit(2)
+        sys.exit(rc)
+
     models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
 
     if list_models:
@@ -213,7 +361,11 @@ def start_model(
         for m in models:
             m_info = f"{m.model_name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB - {len(m.rpcservers)} RPC)"
             models_info.append(m_info)
-        print("Available models:\n  " + "\n  ".join(m_info for m_info in models_info))
+        # print("Available models:\n  " + "\n  ".join(m.model_name for m in models))
+        print(
+            "Available models:\n  "
+            + "\n  ".join(m_info for m_info in models_info)
+        )
         sys.exit(0)
 
     if not model_name:
@@ -338,7 +490,8 @@ def start_model(
                     )
                 else:
                     result = subprocess.run(
-                        f"{binary} --rpc {rpc_list} --list-devices",
+                        #f"{binary} --rpc {rpc_list} --list-devices",
+                        [binary, "--rpc", rpc_list, "--list-devices"],
                         shell=True,
                         capture_output=True,
                         text=True,
@@ -365,16 +518,16 @@ def start_model(
             sys.exit(0)
 
     cmd = _build_command(binary, model, devices, override_ctx)
-    if ssh_dest:
-        exec_cmd = ["ssh", ssh_dest] + cmd
-    else:
-        exec_cmd = cmd
-    logger.debug(f"Command: {exec_cmd}")
+    logger.debug(f"Command: {cmd}")
 
     if dry_run:
+        # Still show the command with --log-file for reference
+        print("Dry-run command:")
+        print("  " + " ".join(shlex.quote(a) for a in cmd))
         return
 
-    os.execvp(exec_cmd[0], exec_cmd)
+    # DETACH: start the server in the background, verify it stayed up, then exit.
+    _launch_detached(cmd, ssh_dest)
 
 #___________________________________________________________________________________
 def main() -> None:
@@ -388,6 +541,8 @@ def main() -> None:
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
     parser.add_argument("--kill-server", action="store_true", help="Kill the llama-server process on LLAMA_SERVER_HOST and exit")
     parser.add_argument("--server-status", action="store_true", help="Check whether llama-server is running on LLAMA_SERVER_HOST and exit")
+    parser.add_argument("--tail-log", action="store_true", help=f"Follow (tail -F) llama-server's log file ({LLAMA_LOG_FILE}) on LLAMA_SERVER_HOST until Ctrl-C, then exit")
+    parser.add_argument("--tail-lines", "-n", type=int, default=50, metavar="INT", help="Number of trailing log lines to show before following (default: 50)")
     parser.add_argument("--override-temp", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-k", type=int, default=None, metavar="INT")
@@ -407,6 +562,8 @@ def main() -> None:
         list_models=args.list_models,
         kill_server=args.kill_server,
         server_status=args.server_status,
+        follow_log=args.tail_log,
+        tail_lines=args.tail_lines,
         kill_rpc=args.kill_rpc_server,
         override_temp=args.override_temp,
         override_top_p=args.override_top_p,

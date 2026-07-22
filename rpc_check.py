@@ -5,7 +5,7 @@ import sys
 import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 
-from model import Model, rpc_server
+from model import Model, RpcServer
 
 _TIMEOUT = 2.0
 
@@ -15,7 +15,7 @@ _RPC_START_POLL_INTERVAL = 2
 _RPC_START_TIMEOUT      = 20
 
 #___________________________________________________________________________________
-def _tcp_reachable(addr: rpc_server, exec_host: str | None = None) -> bool:
+def _tcp_reachable(addr: RpcServer, exec_host: str | None = None) -> bool:
     """True if addr.IP:addr.PORT accepts a TCP connection.
 
     If exec_host is given, the probe is performed FROM that host over SSH
@@ -39,8 +39,8 @@ def _tcp_reachable(addr: rpc_server, exec_host: str | None = None) -> bool:
         return False
 
 #___________________________________________________________________________________
-def unreachable_rpc_servers(servers: list[rpc_server], exec_host: str | None = None) -> list[rpc_server]:
-    """Return the rpc_server entries that do not respond to a TCP ping.
+def unreachable_rpc_servers(servers: list[RpcServer], exec_host: str | None = None) -> list[RpcServer]:
+    """Return the RpcServer entries that do not respond to a TCP ping.
 
     Returns [] immediately if servers is empty.
     Checks are run in parallel (one thread per server).
@@ -49,7 +49,7 @@ def unreachable_rpc_servers(servers: list[rpc_server], exec_host: str | None = N
     if not servers:
         return []
 
-    dead: list[rpc_server] = []
+    dead: list[RpcServer] = []
     with ThreadPoolExecutor(max_workers=len(servers)) as pool:
         future_to_addr = {pool.submit(_tcp_reachable, s, exec_host): s for s in servers}
         for future in as_completed(future_to_addr):
@@ -64,7 +64,7 @@ def unreachable_rpc_servers(servers: list[rpc_server], exec_host: str | None = N
     return dead
 
 #___________________________________________________________________________________
-def start_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
+def start_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
     """Start rpc-server on the RPC node via SSH in the background.
 
     </dev/null detaches stdin so nohup does not stay bound to the SSH session.
@@ -100,7 +100,7 @@ def start_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
     return result.returncode == 0
 
 #___________________________________________________________________________________
-def kill_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
+def kill_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
     """Kill rpc-server on the RPC node with `killall rpc-server`.
 
     `killall` is available on both Linux (psmisc) and macOS/BSD, so the same
@@ -133,7 +133,7 @@ def kill_rpc_server(addr: rpc_server, exec_host: str | None = None) -> bool:
     return True
 
 #___________________________________________________________________________________
-def wait_for_rpc_servers(servers: list[rpc_server], exec_host: str | None = None) -> list[rpc_server]:
+def wait_for_rpc_servers(servers: list[RpcServer], exec_host: str | None = None) -> list[RpcServer]:
     """Poll until all servers become reachable or the timeout expires.
 
     Returns the list of servers still unreachable when the deadline is reached.

@@ -1,6 +1,6 @@
 from dataclasses import dataclass
-from logzero import logger
-from typing import Tuple
+#from logzero import logger
+#from typing import Tuple
 from pathlib import Path
 import json
 import shlex
@@ -9,7 +9,7 @@ import sys
 
 #___________________________________________________________________________________
 @dataclass
-class rpc_server:
+class RpcServer:
     IP: str
     #PUB_IP: str
     PORT: int
@@ -34,7 +34,7 @@ class Model:
     reasoning: str
     last_started: int
     fitt: str
-    rpcservers: list[rpc_server]
+    rpcservers: list[RpcServer]
     #extras: list[str]
     ub: int
     b: int
@@ -120,7 +120,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         size_gib = _file_size_gib(model_path, remote_host, remote_user)
 
         rpcservers = [
-            rpc_server(
+            RpcServer(
                 IP=ip,
                 #PUB_IP=str(["public_ip"]),
                 PORT=int(srv["port"]),

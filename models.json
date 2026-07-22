@@ -159,42 +159,16 @@
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 16,
                         "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
-                        "RPC_SERVERS": {},
-                        "ctx": 262144,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": "q8_0",
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 11,
-                        "native_ctx": 262144,
-                        "_comment": "it allocated a huge KV; need to quantize it"
-                },
-                "gemma-4-31B-it-UD-Q8_K_XL": {
-                        "sizegb": 33,
-                        "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "alvise"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 262144,
-                        "FITT": "6144,12288,3072,1024",
+                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -205,28 +179,23 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "kv_gb_256_fp16": 15,
-                        "native_ctx": 262144
+                        "kv_gb_256_fp16": 11,
+                        "native_ctx": 262144,
+                        "_comment": "for maximum ctx size, 1 server is border line and I saw a hung. Better to use two servers"
                 },
-                "Llama-3.3-70B-Instruct-UD-Q8_K_XL": {
-                        "sizegb": 76,
-                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q8_K_XL",
+                "gemma-4-31B-it-UD-Q8_K_XL": {
+                        "sizegb": 33,
+                        "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "192.168.20.1": {
                                         "port": 50000,
                                         "cachepath": "/Volumes/Home/llama-rpc-cache",
                                         "bin": "/opt/llama.cpp/rpc-server",
                                         "remuser": "alvise"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/rpc-server",
-                                        "remuser": "alvise"
                                 }
                         },
                         "ctx": 131072,
-                        "FITT": "6144,12288,3072,1024",
+                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -334,7 +303,7 @@
                         "UB": null,
                         "B": null,
                         "kv_gb_256_fp16": 16,
-                        "native_ctx": 262144           
+                        "native_ctx": 262144
                 },
                 "Qwen3.6-27B-UD-Q8_K_XL": {
                         "sizegb": 33,

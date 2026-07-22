@@ -2,4 +2,5 @@
 nicegui
 logzero
 streamlit
+requests
 
