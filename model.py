@@ -152,7 +152,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 #extras=spec["EXTRAS"],
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
-                b=spec["B"]
+                b=spec["B"],
                 mtp=spec["MTP"] if spec["MTP"] is not None else False
             )
         )
