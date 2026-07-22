@@ -31,6 +31,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": false,
                         "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
@@ -50,6 +51,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": true,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
@@ -69,6 +71,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": true,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
@@ -88,6 +91,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": true,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
@@ -114,6 +118,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": true,
                         "kv_gb_256_fp16": 11,
                         "native_ctx": 262144,
                         "_comment": "for maximum ctx size, 1 server is border line and I saw a hung. Better to use two servers"
@@ -141,6 +146,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": true,
                         "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
@@ -172,6 +178,7 @@
                         "EXTRAS": null,
                         "UB": 1024,
                         "B": 2048,
+                        "MTP": false,
                         "KVQUANT": "q8_0",
                         "kv_gb_256_fp16": 9,
                         "native_ctx": 131072
@@ -219,6 +226,7 @@
                         "KVQUANT": "q8_0",
                         "UB": null,
                         "B": null,
+                        "MTP": false,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                 },
@@ -245,6 +253,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
+                        "MTP": false,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                         
