@@ -39,6 +39,7 @@ class Model:
     ub: int
     b: int
     kvquant: str
+    mtp: bool
 
 #___________________________________________________________________________________
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
@@ -152,6 +153,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"]
+                mtp=spec["MTP"] if spec["MTP"] is not None else False
             )
         )
     return models
