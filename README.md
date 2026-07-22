@@ -86,6 +86,7 @@ Models are defined in [`models.json`](models.json). Structure:
       "KVQUANT": null,
       "UB": null,
       "B": null,
+      "MTP": false,
       "RPC_SERVERS": {
         "192.168.20.1": {
           "bin": "/opt/llama.cpp/rpc-server",
