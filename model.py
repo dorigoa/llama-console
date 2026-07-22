@@ -133,6 +133,10 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
             for ip, srv in spec.get("RPC_SERVERS", {}).items()
         ]
 
+        mtp = False
+        if 'MTP' in spec and spec['MTP'] == True:
+            mtp = True
+        
         models.append(
             Model(
                 alias=str(spec["ALIAS"]),
@@ -153,7 +157,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"],
-                mtp=spec["MTP"] if spec["MTP"] is not None else False
+                mtp=mtp
             )
         )
     return models
