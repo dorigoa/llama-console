@@ -309,7 +309,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP" true,
+                        "MTP": true,
                         "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },
