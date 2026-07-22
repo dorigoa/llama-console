@@ -91,71 +91,6 @@
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
-                "gemma-4-12b-it-UD-Q8_K_XL": {
-                        "sizegb": 13,
-                        "ALIAS": "gemma-4-12b-it-UD-Q8_K_XL",
-                        "RPC_SERVERS": { },
-                        "ctx": 262144,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 5,
-                        "native_ctx": 262144
-                },
-                "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL": {
-                        "sizegb": 13,
-                        "ALIAS": "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL",
-                        "RPC_SERVERS": { },
-                        "ctx": 262144,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 5.4,
-                        "native_ctx": 262144
-                },
-                "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
-                        "sizegb": 26,
-                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
-                        },
-                        "ctx": 262144,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 5.6,
-                        "native_ctx": 262144,
-                        "_comment": ""
-                },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 16,
                         "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
@@ -241,51 +176,6 @@
                         "kv_gb_256_fp16": 9,
                         "native_ctx": 131072
                 },
-                "Qwen3.6-27B-UD-Q4_K_XL": {
-                        "sizegb": 16,
-                        "ALIAS": "Qwen3.6-27B-UD-Q4_K_XL",
-                        "RPC_SERVERS": {},
-                        "ctx": 262144,
-                        "FITT": "6144",
-                        "TEMP": 1.0,
-                        "TOPP": 1.0,
-                        "TOPK": 0,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": "q8_0",
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 16,
-                        "native_ctx": 262144
-                },
-                "Qwen3.6-27B-UD-Q8_K_XL": {
-                        "sizegb": 33,
-                        "ALIAS": "Qwen3.6-27B-UD-Q8_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
-                        },
-                        "ctx": 262144,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 1.0,
-                        "TOPK": 0,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 16,
-                        "native_ctx": 262144
-                },
                 "Qwen3.6-27B-MTP-UD-Q8_K_XL": {
                         "sizegb": 33,
                         "ALIAS": "Qwen3.6-27B-MTP-UD-Q8_K_XL",
@@ -358,32 +248,6 @@
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                         
-                },
-                "Qwen3-Coder-30B-A3B-Instruct-Q8_0": {
-                        "sizegb": 30,
-                        "ALIAS": "Qwen3-Coder-30B-A3B-Instruct-Q8_0",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
-                        },
-                        "ctx": 262144,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 1.0,
-                        "TOPK": 0,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": "q8_0",
-                        "UB": null,
-                        "B": null,
-                        "kv_gb_256_fp16": 24,
-                        "native_ctx": 262144
                 }
         },
         "MODEL_BASE_DIR": "/Volumes/Home/gguf_models"
