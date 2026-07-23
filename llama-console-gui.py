@@ -110,7 +110,9 @@ class LlamaConsoleGUI:
         # Clamp default to [min, native_ctx]
         min_val = 8192
         clamped_default = max(min_val, min(default_ctx, native_ctx))
-        self.ctx_slider.set_props(min=min_val, max=native_ctx, value=clamped_default)
+        self.ctx_slider.props(remove='min max')
+        self.ctx_slider.props(add=f'min={min_val} max={native_ctx} step=1')
+        self.ctx_slider.set_value(clamped_default)
         self.ctx_label.set_text(f"Context: {clamped_default:,}  (max: {native_ctx:,})")
         self.ctx_slider.update()
 
