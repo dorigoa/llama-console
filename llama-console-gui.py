@@ -110,7 +110,8 @@ class LlamaConsoleGUI:
         # Clamp default to [min, native_ctx]
         min_val = 8192
         clamped_default = max(min_val, min(default_ctx, native_ctx))
-        self.ctx_slider.props(add=f'min={min_val} max={native_ctx} step=1')
+        self.ctx_slider._props['min'] = min_val
+        self.ctx_slider._props['max'] = native_ctx
         self.ctx_slider.set_value(clamped_default)
         self.ctx_label.set_text(f"Context: {clamped_default:,}  (max: {native_ctx:,})")
         self.ctx_slider.update()
@@ -248,9 +249,10 @@ class LlamaConsoleGUI:
                 # Context size slider
                 with ui.row().classes('w-full items-center'):
                     self.ctx_label = ui.label("Context: —").classes('text-caption')
-                    self.ctx_slider = ui.slider(min=1024, max=262144).props(
-                        'value=8192 step=1'
-                    ).classes('flex-grow').on('update:model:value', lambda e: self.ctx_label.set_text(f"Context: {e.args:,}"))
+                    self.ctx_slider = ui.slider(
+                        min=1024, max=262144, value=8192, step=1,
+                        on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
+                    ).classes('flex-grow')
 
             ui.label("Server Logs").classes('text-h6 q-mt-lg')
             with ui.row().classes('w-full items-center q-mb-sm'):
