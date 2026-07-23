@@ -250,7 +250,7 @@ class LlamaConsoleGUI:
                 with ui.row().classes('w-full items-center'):
                     self.ctx_label = ui.label("Context: —").classes('text-caption')
                     self.ctx_slider = ui.slider(
-                        min=1024, max=262144, value=8192, step=512,
+                        min=1024, max=262144, value=8192, step=1024,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
                     ).classes('flex-grow')
 
