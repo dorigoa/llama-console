@@ -543,7 +543,7 @@ def main() -> None:
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
     parser.add_argument("--kill-server", action="store_true", help="Kill the llama-server process on LLAMA_SERVER_HOST and exit")
     parser.add_argument("--server-status", action="store_true", help="Check whether llama-server is running on LLAMA_SERVER_HOST and exit")
-    parser.add_argument("--tail-log", action="store_true", help=f"Follow (tail -F) llama-server's log file ({LLAMA_LOG_FILE}) on LLAMA_SERVER_HOST until Ctrl-C, then exit")
+    parser.add_argument("--tail-log", action="store_true", help=f"Follow (tail -F) llama-server's log file ({settings.LLAMA_LOG_FILE}) on LLAMA_SERVER_HOST until Ctrl-C, then exit")
     parser.add_argument("--tail-lines", "-n", type=int, default=50, metavar="INT", help="Number of trailing log lines to show before following (default: 50)")
     parser.add_argument("--override-temp", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
