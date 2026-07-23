@@ -40,6 +40,7 @@ class Model:
     b: int
     kvquant: str
     mtp: bool
+    native_ctx: int
 
 #___________________________________________________________________________________
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
@@ -150,14 +151,15 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 top_k=int(spec["TOPK"]),
                 min_p=float(spec["MINP"]),
                 reasoning=str(spec["REAS"]),
-                last_started=0,                         
+                last_started=0,
                 fitt=str(spec["FITT"]),
                 rpcservers=rpcservers,
                 #extras=spec["EXTRAS"],
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"],
-                mtp=mtp
+                mtp=mtp,
+                native_ctx=int(spec.get("native_ctx", spec["ctx"]))
             )
         )
     return models

@@ -3,10 +3,34 @@ import threading
 import logzero
 from logzero import logger
 import re
+import json
+from pathlib import Path
 from nicegui import ui
 from config_manager import get_settings
 
 settings = get_settings()
+MODELS_JSON = Path(__file__).parent / "models.json"
+
+
+def _load_models_json():
+    """Return the raw models dict from models.json (name -> spec)."""
+    try:
+        with open(MODELS_JSON, encoding="utf-8") as f:
+            data = json.load(f)
+        return data.get("models", {})
+    except Exception:
+        return {}
+
+
+def get_model_spec(model_name: str) -> dict | None:
+    """Look up a model's spec in models.json. Returns None if not found."""
+    models = _load_models_json()
+    # Try exact match first, then strip size/RPC suffix from dropdown label
+    if model_name in models:
+        return models[model_name]
+    # Dropdown may show "ModelName (60 GiB - 2 RPC)" — strip everything after ' ('
+    base = model_name.split(" (")[0].strip()
+    return models.get(base)
 
 
 def run_command(args):
@@ -70,9 +94,33 @@ class LlamaConsoleGUI:
     def __init__(self):
         self.status_label = None
         self.model_dropdown = None
+        self.ctx_slider = None
+        self.ctx_label = None
         self.log_window = None
         self.log_thread = None
         self.stop_log_event = threading.Event()
+
+    def _update_ctx_slider(self, model_name: str):
+        """Update slider min/max/value when model changes."""
+        spec = get_model_spec(model_name)
+        if spec is None:
+            return
+        native_ctx = int(spec.get("native_ctx", spec.get("ctx", 8192)))
+        default_ctx = int(spec.get("ctx", 8192))
+        # Clamp default to [min, native_ctx]
+        min_val = 8192
+        clamped_default = max(min_val, min(default_ctx, native_ctx))
+        self.ctx_slider.set_value(clamped_default)
+        self.ctx_slider.props(f'min={min_val} max={native_ctx} step=1')
+        self.ctx_label.set_text(f"Context: {clamped_default:,}  (max: {native_ctx:,})")
+        self.ctx_slider.update()
+
+    def _on_model_change(self, e):
+        """Called when the user picks a different model."""
+        model_name = e.value
+        if not model_name:
+            return
+        self._update_ctx_slider(model_name)
 
     def _spawn_loader(self):
         """Called on event loop thread: spawn background thread for blocking I/O."""
@@ -93,6 +141,9 @@ class LlamaConsoleGUI:
             except:
                 pass
             self.model_dropdown.update()
+            # Initialize slider to first available model
+            if models:
+                self._update_ctx_slider(models[0])
 
         if self.status_label is not None:
             self.status_label.set_text(f"Server Status: {text}")
@@ -114,9 +165,13 @@ class LlamaConsoleGUI:
             ui.notify("Please select a model first", type="warning")
             return
 
-        ui.notify(f"Starting model {model.split(' ')[0]}...")
+        ctx_value = int(self.ctx_slider.value) if self.ctx_slider and self.ctx_slider.value is not None else None
+        ui.notify(f"Starting model {model.split(' ')[0]} (ctx={ctx_value})...")
         def task():
-            output, rc = run_command([model.split(' ')[0]])
+            args = [model.split(' ')[0]]
+            if ctx_value:
+                args += ["--override-ctx", str(ctx_value)]
+            output, rc = run_command(args)
             if rc == 0:
                 ui.notify(f"Model {model} started successfully", type="positive")
             else:
@@ -184,11 +239,18 @@ class LlamaConsoleGUI:
                     self.model_dropdown = ui.select(
                         options=["Loading models..."],
                         label="Select Model",
-                        on_change=lambda e: ui.notify(f"Selected: {e.value}")
+                        on_change=self._on_model_change
                     ).props('disable').classes('flex-grow')
 
                     ui.button("START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
+
+                # Context size slider
+                with ui.row().classes('w-full items-center'):
+                    self.ctx_label = ui.label("Context: —").classes('text-caption')
+                    self.ctx_slider = ui.slider(
+                        min=8192, max=8192, value=8192, step=1
+                    ).classes('flex-grow').on('update:model:value', lambda e: self.ctx_label.set_text(f"Context: {e.args:,}"))
 
             ui.label("Server Logs").classes('text-h6 q-mt-lg')
             with ui.row().classes('w-full items-center q-mb-sm'):
