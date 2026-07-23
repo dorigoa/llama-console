@@ -141,6 +141,9 @@ class LlamaConsoleGUI:
                 self.model_dropdown.props(remove='disable')
             except:
                 pass
+            # Select the first model if any are available
+            if models:
+                self.model_dropdown.set_value(models[0])
             self.model_dropdown.update()
             # Initialize slider to first available model
             if models:
