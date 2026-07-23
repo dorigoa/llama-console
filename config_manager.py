@@ -27,6 +27,8 @@ class Settings:
     LLAMA_SERVER_USER: str = ""
     LLAMA_SERVER_PORT: int = 0
     MODELS_JSON = Path(__file__).parent / "models.json"
+    LLAMA_LOG_FILE = "/tmp/llama-server.log"  # shared path for polling the output
+    LLAMA_BOOT_LOG = "/tmp/llama-server.boot.log"  # startup stdout/stderr (crash diagnostics)
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:

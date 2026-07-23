@@ -20,10 +20,10 @@ from pathlib import Path
 from logzero import logger
 from model import Model, load_models
 from config_manager import get_settings
+from command_builder import build_command
 from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server
 
-LLAMA_LOG_FILE = "/tmp/llama-server.log"  # shared path for polling the output
-LLAMA_BOOT_LOG = "/tmp/llama-server.boot.log"  # startup stdout/stderr (crash diagnostics)
+
 
 _CSV_TOKENS = re.compile(r"[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*")
 
@@ -56,59 +56,59 @@ def _get_first_model_name(endpoint: str) -> tuple[str,int] | None:
     except json.JSONDecodeError as e:
         raise RuntimeError(f"JSON parsing error: {e}") from e
 
-#___________________________________________________________________________________
-def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None) -> list[str]:
-    cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else model.ctxsize)]
+# #___________________________________________________________________________________
+# def _build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None) -> list[str]:
+#     cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else model.ctxsize)]
 
-    if model.fitt:
-        cmd += ["-fitt", model.fitt]
+#     if model.fitt:
+#         cmd += ["-fitt", model.fitt]
 
-    if model.rpcservers:
-        rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
-        cmd += ["--rpc", rpc_list]
+#     if model.rpcservers:
+#         rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
+#         cmd += ["--rpc", rpc_list]
 
-    if devices:
-        cmd += ["--device", devices]
+#     if devices:
+#         cmd += ["--device", devices]
 
-    if model.mmproj_path and str(model.mmproj_path).lower() not in ("none", "null", ""):
-        cmd += ["--mmproj", str(model.mmproj_path)]
+#     if model.mmproj_path and str(model.mmproj_path).lower() not in ("none", "null", ""):
+#         cmd += ["--mmproj", str(model.mmproj_path)]
 
-    data = {"reasoning_effort": model.reasoning}
+#     data = {"reasoning_effort": model.reasoning}
 
-    #cmd += ["--chat-template", "chatml"]
-    cmd += ["--host", settings.ADDRESS_BIND]
-    cmd += ["--port", str(settings.PORT_BIND)]
-    cmd += ["--split-mode", "layer"]
-    cmd += ["--metrics"]
-    cmd += ["--jinja"]
-    cmd += ["-fa", "on"]
-    cmd += ["-fit", "on"] # Using "on" makes the rpc/Vulkan on PC with 2 NVidia cards crash
-    cmd += ["-fitc", "8192"]
-    cmd += ["-np", "1"]
-    cmd += ["--no-warmup"]
-    cmd += ["--temp", str(model.temperature)]
-    cmd += ["--top-p", str(model.top_p)]
-    cmd += ["--top-k", str(model.top_k)]
-    cmd += ["--chat-template-kwargs", json.dumps(data)]
-    cmd += ["--seed", "123456789"]
-    if model.kvquant:
-        cmd += ["-ctk", model.kvquant]
-        cmd += ["-ctv", model.kvquant]
-    cmd += ["--alias", str(model.alias)]
-    if model.min_p >= 0:
-        cmd += ["--min-p", str(model.min_p)]
-    #if model.extras:
-    #    cmd += model.extras
-    if model.ub:
-        cmd += ["-ub", str(model.ub)]
-    if model.b:
-        cmd += ["-b", str(model.b)]
-    if model.mtp:
-        cmd += ["--spec-type", "draft-mtp"]
-    # Log file for detached execution (UI polls it)
-    cmd += ["--log-file", LLAMA_LOG_FILE]
+#     #cmd += ["--chat-template", "chatml"]
+#     cmd += ["--host", settings.ADDRESS_BIND]
+#     cmd += ["--port", str(settings.PORT_BIND)]
+#     cmd += ["--split-mode", "layer"]
+#     cmd += ["--metrics"]
+#     cmd += ["--jinja"]
+#     cmd += ["-fa", "on"]
+#     cmd += ["-fit", "on"] # Using "on" makes the rpc/Vulkan on PC with 2 NVidia cards crash
+#     cmd += ["-fitc", "8192"]
+#     cmd += ["-np", "1"] # Required by MTP processing
+#     cmd += ["--no-warmup"]
+#     cmd += ["--temp", str(model.temperature)]
+#     cmd += ["--top-p", str(model.top_p)]
+#     cmd += ["--top-k", str(model.top_k)]
+#     cmd += ["--chat-template-kwargs", json.dumps(data)]
+#     cmd += ["--seed", "123456789"]
+#     if model.kvquant:
+#         cmd += ["-ctk", model.kvquant]
+#         cmd += ["-ctv", model.kvquant]
+#     cmd += ["--alias", str(model.alias)]
+#     if model.min_p >= 0:
+#         cmd += ["--min-p", str(model.min_p)]
+#     #if model.extras:
+#     #    cmd += model.extras
+#     if model.ub:
+#         cmd += ["-ub", str(model.ub)]
+#     if model.b:
+#         cmd += ["-b", str(model.b)]
+#     if model.mtp:
+#         cmd += ["--spec-type", "draft-mtp"]
+#     # Log file for detached execution (UI polls it)
+#     cmd += ["--log-file", LLAMA_LOG_FILE]
 
-    return cmd
+#     return cmd
 
 #___________________________________________________________________________________
 def _ssh_dest() -> str | None:
@@ -225,12 +225,12 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
     ssh_dest = _ssh_dest()
 
     flag = "-F" if follow else ""
-    tail_cmd = f"tail -n {int(lines)} {flag} {shlex.quote(LLAMA_LOG_FILE)}".replace("  ", " ")
+    tail_cmd = f"tail -n {int(lines)} {flag} {shlex.quote(settings.LLAMA_LOG_FILE)}".replace("  ", " ")
 
     if follow:
-        logger.info(f"Following {LLAMA_LOG_FILE} on {where} (Ctrl-C to stop)...")
+        logger.info(f"Following {settings.LLAMA_LOG_FILE} on {where} (Ctrl-C to stop)...")
     else:
-        logger.info(f"Last {int(lines)} lines of {LLAMA_LOG_FILE} on {where}:")
+        logger.info(f"Last {int(lines)} lines of {settings.LLAMA_LOG_FILE} on {where}:")
 
     if ssh_dest:
         # -t allocates a remote pty so Ctrl-C is forwarded and the remote `tail`
@@ -283,7 +283,7 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
     which --tail-log can follow.
     """
     server_args = " ".join(shlex.quote(a) for a in cmd)
-    boot_log = shlex.quote(LLAMA_BOOT_LOG)
+    boot_log = shlex.quote(settings.LLAMA_BOOT_LOG)
     # D = 'setsid nohup' where setsid exists (Linux), else 'nohup' (macOS).
     # $D is intentionally unquoted so it word-splits into 1 or 2 words.
     detach = "D=nohup; command -v setsid >/dev/null 2>&1 && D='setsid nohup';"
@@ -291,7 +291,7 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
 
     where = ssh_dest or "localhost"
     logger.info(f"Starting detached llama-server on {where} ...")
-    logger.info(f"Log file: {LLAMA_LOG_FILE}  (boot log: {LLAMA_BOOT_LOG})")
+    logger.info(f"Log file: {settings.LLAMA_LOG_FILE}  (boot log: {settings.LLAMA_BOOT_LOG})")
 
     if ssh_dest:
         argv = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, remote_cmd]
@@ -316,8 +316,8 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
             sys.exit(0)
 
     # Not alive: it crashed at startup. Show the boot log so the user knows why.
-    logger.error(f"llama-server did NOT stay up on {where}. Boot log ({LLAMA_BOOT_LOG}):")
-    boot = _run_on_server(f"tail -n 40 {shlex.quote(LLAMA_BOOT_LOG)} 2>/dev/null || true")
+    logger.error(f"llama-server did NOT stay up on {where}. Boot log ({settings.LLAMA_BOOT_LOG}):")
+    boot = _run_on_server(f"tail -n 40 {shlex.quote(settings.LLAMA_BOOT_LOG)} 2>/dev/null || true")
     logger.error("\n" + (boot.stdout.rstrip() if boot.stdout.strip() else "(boot log empty)"))
     sys.exit(1)
 
@@ -519,7 +519,7 @@ def start_model(
             logger.warning("'--only-list-devices' specified. Gracefully exiting.")
             sys.exit(0)
 
-    cmd = _build_command(binary, model, devices, override_ctx)
+    cmd = build_command(binary, model, devices, override_ctx)
     logger.debug(f"Command: {cmd}")
 
     if dry_run:
