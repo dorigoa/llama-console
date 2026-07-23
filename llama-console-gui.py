@@ -86,7 +86,7 @@ class LlamaConsoleGUI:
 
     def _apply_data(self, models, text, color):
         """Called on the main event loop thread to update UI widgets."""
-        if self.model_dropdown is not None:
+        if self.model_dropdown is not None and models is not None:
             self.model_dropdown.options = models if models else ["No models found"]
             try:
                 self.model_dropdown.props(remove='disable')
