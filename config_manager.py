@@ -24,9 +24,9 @@ class Settings:
     LLAMA_SERVER_BIN: str = ""
     LLAMA_SERVER_HOST: str = ""
     LLAMA_SERVER_USER: str = ""
-    MODELS_JSON = Path(__file__).parent / "models.json"
-    LLAMA_LOG_FILE = ""  # shared path for polling the output
-    LLAMA_BOOT_LOG = ""  # startup stdout/stderr (crash diagnostics)
+    MODELS_JSON: Path = None
+    LLAMA_LOG_FILE: str = ""  # shared path for polling the output
+    LLAMA_BOOT_LOG: str = ""  # startup stdout/stderr (crash diagnostics)
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
@@ -72,8 +72,12 @@ def _build_settings() -> Settings:
     if not overrides:
         return s
 
+    unknown = False
     type_by_name = {f.name: f.type for f in fields(Settings)}
+    # for f in fields(Settings):
+    #     logger.debug(f"f.name={f.name} - f.type={f.type}")
     unknown = set(overrides) - set(type_by_name)
+
     if unknown:
         raise ValueError(
             f"Unknown keys in config: {sorted(unknown)}. "
@@ -81,7 +85,7 @@ def _build_settings() -> Settings:
         )
 
     for k, v in overrides.items():
-        setattr(s, k, _coerce(v, type_by_name[k], k))
+       setattr(s, k, _coerce(v, type_by_name[k], k))
         
     return s
 
@@ -95,3 +99,6 @@ def get_settings() -> Settings:
         if _settings_instance is None:
             _settings_instance = _build_settings()#Settings()
     return _settings_instance
+
+if __name__ == "__main__":
+    _build_settings()

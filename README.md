@@ -217,6 +217,7 @@ python start_model.py MODEL-NAME \
 | `--override-ctx INT` | Override the context size. |
 | `--override-devices STR` | GPU device list (csv). Also requires `--override-fitt`. |
 | `--override-fitt STR` | FITT split (csv). Also requires `--override-devices`. |
+| `--debug` | Print debug messages. |
 
 ---
 

@@ -7,17 +7,26 @@ UI can poll via SSH.
 """
 
 
+#import logging
 import os
 import re
 import shlex
 import sys
 import json
 import time
+import logzero
 import argparse
 import requests
 import subprocess
 from pathlib import Path
 from logzero import logger
+
+# The loglevel must be set HERE, before the project imports below: command_builder
+# calls get_settings() at import time, and config_manager logs at info/debug level
+# while building the Settings — long before argparse gets a chance to see --debug.
+# So we pre-scan sys.argv to know the flag early.
+logzero.loglevel(logzero.DEBUG if "--debug" in sys.argv else logzero.INFO)
+
 from model import Model, load_models
 from config_manager import get_settings
 from command_builder import build_command
@@ -309,7 +318,7 @@ def start_model(
         for m in models:
             m_info = f"{m.model_name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB - {len(m.rpcservers)} RPC)"
             models_info.append(m_info)
-        # print("Available models:\n  " + "\n  ".join(m.model_name for m in models))
+        
         print(
             "Available models:\n  "
             + "\n  ".join(m_info for m_info in models_info)
@@ -317,7 +326,7 @@ def start_model(
         sys.exit(0)
 
     if not model_name:
-        print("Error: model_name is required", file=sys.stderr)
+        logger.error("Error: model_name is required")
         sys.exit(1)
 
     model = next((m for m in models if m.model_name == model_name), None)
@@ -356,11 +365,11 @@ def start_model(
         if not model.rpcservers:
             logger.info(f"Model '{model.model_name}' has no RPC servers configured.")
             sys.exit(0)
-        logger.debug(f"Checking rpc servers (via {ssh_dest or 'localhost'})...")
+        logger.info(f"Checking rpc servers (via {ssh_dest or 'localhost'})...")
         dead = unreachable_rpc_servers(model.rpcservers, exec_host=ssh_dest)
         if dead:
             for addr in dead:
-                logger.info(f"RPC server {addr.IP}:{addr.PORT} is NOT running")
+                logger.error(f"RPC server {addr.IP}:{addr.PORT} is NOT running")
             sys.exit(1)
         logger.info("All RPC servers reachable.")
         sys.exit(0)
@@ -470,8 +479,8 @@ def start_model(
 
     if dry_run:
         # Still show the command with --log-file for reference
-        print("Dry-run command:")
-        print("  " + " ".join(shlex.quote(a) for a in cmd))
+        logger.info(f"Dry-run command: {' '.join(shlex.quote(a) for a in cmd)}")
+        #logger.info ("  " + )
         return
 
     # DETACH: start the server in the background, verify it stayed up, then exit.
@@ -498,9 +507,15 @@ def main() -> None:
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
     parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
+    parser.add_argument("--debug", action="store_true", help="Print debug messages")
 
 
     args = parser.parse_args()
+    
+    # The level was already set at import time (see top of the file); realign it
+    # here with the authoritative value coming from argparse.
+    logzero.loglevel(logzero.DEBUG if args.debug else logzero.WARNING)
+
     start_model(
         args.model_name,
         dry_run=args.dry_run,
