@@ -245,7 +245,7 @@ class LlamaConsoleGUI:
                 with ui.row().classes('w-full items-center q-mb-md'):
                     self.model_dropdown = ui.select(
                         options=["Loading models..."],
-                        label="Select Model",
+                        label="Loading models...",
                         on_change=self._on_model_change
                     ).props('disable').classes('flex-grow')
 
