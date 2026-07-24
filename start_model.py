@@ -83,11 +83,11 @@ def _server_location() -> str:
     return _ssh_dest() or "localhost"
 
 #___________________________________________________________________________________
-def _pgrep_pattern() -> str:
-    """Regex for pgrep/pkill -f that matches the llama-server command line but
-    NOT the wrapping shell/ssh that carries this very pattern (classic [x] trick)."""
-    b = settings.LLAMA_SERVER_BIN
-    return f"[{b[0]}]{b[1:]}" if b else b
+# def _pgrep_pattern() -> str:
+#     """Regex for pgrep/pkill -f that matches the llama-server command line but
+#     NOT the wrapping shell/ssh that carries this very pattern (classic [x] trick)."""
+#     b = settings.LLAMA_SERVER_BIN
+#     return f"[{b[0]}]{b[1:]}" if b else b
 
 #___________________________________________________________________________________
 def _run_on_server(shell_cmd: str, timeout: int = 15) -> subprocess.CompletedProcess:
@@ -119,7 +119,8 @@ def _server_pids() -> list[str]:
     """PIDs of the running llama-server process(es), or [] if none.
 
     May raise ServerHostUnreachable (propagated from _run_on_server)."""
-    r = _run_on_server(f"pgrep -f -- '{_pgrep_pattern()}'")
+    #r = _run_on_server(f"pgrep -f -- '{_pgrep_pattern()}'")
+    r = _run_on_server(f"pgrep -f -- '{settings.LLAMA_SERVER_BIN}'")
     return [p for p in r.stdout.split() if p.strip().isdigit()]
 
 #___________________________________________________________________________________
@@ -130,7 +131,7 @@ def report_server_status() -> bool:
     if pids:
         print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
         try:
-            model, ctxsize = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.ADDRESS_BIND}")
+            model, ctxsize = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
         except RuntimeError as e:
             print(f"llama-server is RUNNING but not ready yet: {e}")
         else:
@@ -149,7 +150,7 @@ def stop_server() -> bool:
         logger.warning(f"No llama-server process found on {where}.")
         return True
 
-    pattern = _pgrep_pattern()
+    pattern = settings.LLAMA_SERVER_BIN#_pgrep_pattern()
     logger.debug(f"Sending SIGTERM to llama-server on {where} (pid(s): {', '.join(pids)})...")
     _run_on_server(f"pkill -TERM -f -- '{pattern}'")
 
