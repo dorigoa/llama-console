@@ -121,7 +121,7 @@ def report_server_status() -> bool:
     if pids:
         print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
         try:
-            model, ctxsize = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.LLAMA_SERVER_PORT}")
+            model, ctxsize = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.ADDRESS_BIND}")
         except RuntimeError as e:
             print(f"llama-server is RUNNING but not ready yet: {e}")
         else:

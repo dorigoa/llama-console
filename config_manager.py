@@ -18,17 +18,15 @@ CONFIG_FILE = Path(
 #_________________________________________________________________________________________
 @dataclass
 class Settings:
-    ADDRESS_BIND: str = "0.0.0.0"
-    PORT_BIND: int = 8088
-    PERSIST_FILE: str = "/tmp/llama-console-persist.json"
-    UI_TITLE: str = "LLama Console by Alvise Dorigo (alvise72@gmail.com)"
-    LLAMA_SERVER_BIN: str = "/usr/local/bin/llama-server"
+    ADDRESS_BIND: str = ""
+    PORT_BIND: int = 0
+    UI_TITLE: str = "Custom UI Title"
+    LLAMA_SERVER_BIN: str = ""
     LLAMA_SERVER_HOST: str = ""
     LLAMA_SERVER_USER: str = ""
-    LLAMA_SERVER_PORT: int = 0
     MODELS_JSON = Path(__file__).parent / "models.json"
-    LLAMA_LOG_FILE = "/tmp/llama-server.log"  # shared path for polling the output
-    LLAMA_BOOT_LOG = "/tmp/llama-server.boot.log"  # startup stdout/stderr (crash diagnostics)
+    LLAMA_LOG_FILE = ""  # shared path for polling the output
+    LLAMA_BOOT_LOG = ""  # startup stdout/stderr (crash diagnostics)
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:

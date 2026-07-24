@@ -9,13 +9,13 @@ from nicegui import ui
 from config_manager import get_settings
 
 settings = get_settings()
-MODELS_JSON = Path(__file__).parent / "models.json"
+#MODELS_JSON = Path(__file__).parent / "models.json"
 
 
 def _load_models_json():
     """Return the raw models dict from models.json (name -> spec)."""
     try:
-        with open(MODELS_JSON, encoding="utf-8") as f:
+        with open(settings.MODELS_JSON, encoding="utf-8") as f:
             data = json.load(f)
         return data.get("models", {})
     except Exception:
@@ -64,7 +64,7 @@ def get_server_status():
             model = pieces[l-5]
             ctx = pieces[l-1]
             status_text += f" | {model} | ctx {ctx}"
-    color = "green" if is_running else "red"
+    color = "#00ff88" if is_running else "red"
     return status_text, color#, output
 
 
@@ -232,9 +232,12 @@ class LlamaConsoleGUI:
         with ui.column().classes('w-full items-center p-8'):
             ui.label(settings.UI_TITLE).classes('text-h4 q-mb-md')
 
+            # Server status – larger label
             with ui.row().classes('items-center q-mb-md'):
                 self.status_label = ui.label("Checking llama-server status...")
-                ui.button("Refresh", on_click=self.update_status).props('small outline')
+                self.status_label.classes('text-h5')
+                self.status_label.style('font-weight: bold')
+                ui.button("Refresh", on_click=self.update_status).props('outline')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
                 ui.label("Model Control").classes('text-h6')
@@ -249,20 +252,46 @@ class LlamaConsoleGUI:
                     ui.button("START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
 
-                # Context size slider
-                with ui.row().classes('w-full items-center'):
-                    self.ctx_label = ui.label("Context: —").classes('text-caption')
+                # Context size – larger label, modern slider
+                with ui.column().classes('w-full q-mt-sm'):
+                    self.ctx_label = ui.label("Context: —").classes('text-subtitle1')
                     self.ctx_slider = ui.slider(
                         min=1024, max=262144, value=8192, step=1024,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
-                    ).classes('flex-grow')
+                    ).classes('flex-grow').props('color=green')
 
             ui.label("Server Logs").classes('text-h6 q-mt-lg')
             with ui.row().classes('w-full items-center q-mb-sm'):
                 ui.button("Connect to Logs", on_click=self.start_log_streaming).props('small')
                 ui.button("Clear Logs", on_click=lambda: self.log_window.clear()).props('small outline')
 
-            self.log_window = ui.log().classes('w-full h-96 bg-black text-green-400 font-mono text-xs')
+            self.log_window = ui.log().classes('w-full h-[600px] bg-black text-green-400 font-mono text-xs custom-log')
+
+            # Custom scrollbar styles for the log window
+            ui.add_head_html('''
+<style>
+.custom-log {
+    scrollbar-width: thin !important;
+    scrollbar-color: #4caf50 #1a1a1a !important;
+}
+.custom-log::-webkit-scrollbar {
+    width: 14px !important;
+    height: 14px !important;
+}
+.custom-log::-webkit-scrollbar-track {
+    background: #1a1a1a !important;
+    border-radius: 7px !important;
+}
+.custom-log::-webkit-scrollbar-thumb {
+    background: #4caf50 !important;
+    border-radius: 7px !important;
+    border: 3px solid #1a1a1a !important;
+}
+.custom-log::-webkit-scrollbar-thumb:hover {
+    background: #66bb6a !important;
+}
+</style>
+''')
 
         # Use ui.timer to defer data loading until the event loop is running.
         # This ensures the page renders immediately without blocking.

@@ -37,33 +37,19 @@ Settings are loaded by [`config_manager.py`](config_manager.py), which looks, in
 2. `config.json` in the script's directory (if it exists);
 3. `~/llama-console-config.json`.
 
-If no file is found the defaults are used. **Unknown keys cause an error.**
-
+If no file is found start_model.py will not start. **Unknown keys cause an error.**
+Defaults are already defined in the `config.json` file located in the same directory as `start_model.py`.
 | Key | Default | Description |
 |---|---|---|
 | `ADDRESS_BIND` | `0.0.0.0` | Address `llama-server` binds to (`--host`). |
-| `PORT_BIND` | `8088` | Port `llama-server` binds to (`--port`). |
-| `LLAMA_SERVER_BIN` | `/usr/local/bin/llama-server` | Path to the `llama-server` binary (local or on the remote host). |
-| `LLAMA_SERVER_HOST` | `""` | SSH host on which to start/manage the server. **Empty = run locally.** |
-| `LLAMA_SERVER_USER` | `""` | SSH user for `LLAMA_SERVER_HOST`. |
-| `LLAMA_SERVER_PORT` | `0` | Port queried by `--server-status` to read back the active model. |
-| `PERSIST_FILE` | `/tmp/llama-console-persist.json` | State file used by the GUI. |
+| `PORT_BIND` | `8088` | Port `llama-server` binds to (`--port`). This port is also queried by `--server-status` to read back the active model. |
+| `LLAMA_SERVER_BIN` | `/opt/llama.cpp/llama-server` | Path to the `llama-server` binary (local or on the remote host). |
+| `LLAMA_SERVER_HOST` | `"192.168.1.191"` | SSH host on which to start/manage the server. **Empty = run locally.** |
+| `LLAMA_SERVER_USER` | `"alvise"` | SSH user for `LLAMA_SERVER_HOST`. |
+| `LLAMA_LOG_FILE` | `"/tmp/llama-server.log"` | Log file where llama-server process will write its output. |
+| `LLAMA_BOOT_LOG` | `"/tmp/llama-server.boot.log"` | Log file of the boot process (including log before llama-server is started). |
+| `MODELS_JSON` | `"./models.json"` | A json file with the description of all available models and their specs. |
 | `UI_TITLE` | *(see default)* | Title shown by the GUI. |
-
-> The path to `models.json` is **fixed** to the `models.json` file in the script's directory; it is not configurable via `config.json`.
-
-Example (`config.json`):
-
-```json
-{
-    "ADDRESS_BIND": "0.0.0.0",
-    "PORT_BIND": 8088,
-    "LLAMA_SERVER_BIN": "/opt/llama.cpp/llama-server",
-    "LLAMA_SERVER_HOST": "192.168.1.191",
-    "LLAMA_SERVER_USER": "alvise",
-    "LLAMA_SERVER_PORT": 8088
-}
-```
 
 ### `models.json` — model catalog
 
