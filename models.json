@@ -95,34 +95,6 @@
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
-                "gemma-4-31B-it-qat-UD-Q4_K_XL": {
-                        "sizegb": 16,
-                        "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
-                        "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
-                        },
-                        "ctx": 262144,
-                        "FITT": "6144,12288",
-                        "TEMP": 1.0,
-                        "TOPP": 0.95,
-                        "TOPK": 64,
-                        "MINP": -1,
-                        "REAS": "high",
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "MTP": true,
-                        "kv_gb_256_fp16": 11,
-                        "native_ctx": 262144,
-                        "_comment": "for maximum ctx size, 1 server is border line and I saw a hung. Better to use two servers"
-                },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "sizegb": 33,
                         "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
@@ -146,7 +118,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": true,
+                        "MTP": false,
                         "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
