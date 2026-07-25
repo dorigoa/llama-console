@@ -101,7 +101,7 @@ def start_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
 
 #___________________________________________________________________________________
 def kill_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
-    """Kill rpc-server on the RPC node with `killall rpc-server`.
+    """Kill rpc-server on the RPC node with `killall ggml-rpc-server`.
 
     `killall` is available on both Linux (psmisc) and macOS/BSD, so the same
     command works regardless of the node OS. If exec_host is given, the SSH to
@@ -113,7 +113,7 @@ def kill_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
     rc 1 = no matching process / already stopped). Returns False on SSH/contact
     failure (rc 255 or other).
     """
-    remote_cmd = "killall rpc-server"
+    remote_cmd = "killall ggml-rpc-server"
     if exec_host:
         inner = f"ssh {' '.join(_SSH_OPTS)} {addr.remuser}@{addr.IP} {shlex.quote(remote_cmd)}"
         argv = ["ssh", *_SSH_OPTS, exec_host, inner]
