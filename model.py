@@ -33,7 +33,7 @@ class Model:
     min_p: float
     reasoning: str
     last_started: int
-    fitt: str
+    #fitt: str
     rpcservers: list[RpcServer]
     #extras: list[str]
     ub: int
@@ -152,7 +152,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 min_p=float(spec["MINP"]),
                 reasoning=str(spec["REAS"]),
                 last_started=0,
-                fitt=str(spec["FITT"]),
+                #fitt=str(spec["FITT"]),
                 rpcservers=rpcservers,
                 #extras=spec["EXTRAS"],
                 kvquant=spec["KVQUANT"],
