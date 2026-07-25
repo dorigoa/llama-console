@@ -20,7 +20,6 @@
                                 }
                         },
                         "ctx": 512000,
-                        "FITT": "6144,12288,2048,1024",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -40,7 +39,6 @@
                         "ALIAS": "gemma-4-E4B-it-qat-UD-Q4_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
-                        "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -60,7 +58,6 @@
                         "ALIAS": "gemma-4-E4B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
-                        "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -80,7 +77,6 @@
                         "ALIAS": "gemma-4-E4B-it-BF16",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
-                        "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -107,7 +103,6 @@
                                 }
                         },
                         "ctx": 131072,
-                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 0.95,
                         "TOPK": 64,
@@ -121,6 +116,32 @@
                         "MTP": false,
                         "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
+                },                
+                "Llama-3.3-70B-Instruct-UD-Q4_K_XL": {
+                        "sizegb": 40,
+                        "ALIAS": "Llama-3.3-70B-Instruct-UD-Q4_K_XL",
+                        "RPC_SERVERS": {
+                                "192.168.20.1": {
+                                        "port": 50000,
+                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
+                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
+                                        "remuser": "alvise"
+                                }
+                        },
+                        "ctx": 131072,
+                        "TEMP": 1.0,
+                        "TOPP": 1.0,
+                        "TOPK": 0,
+                        "MINP": -1,
+                        "REAS": "high",
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "UB": 1024,
+                        "B": 2048,
+                        "MTP": false,
+                        "KVQUANT": null,
+                        "kv_gb_256_fp16": 9,
+                        "native_ctx": 131072
                 },
                 "GPT-OSS-120B-MXFP4": {
                         "sizegb": 59,
@@ -140,7 +161,6 @@
                                 }
                         },
                         "ctx": 131072,
-                        "FITT": "6144,12288,4096,1024",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
@@ -167,7 +187,6 @@
                                 }
                         },
                         "ctx": 262144,
-                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
@@ -187,7 +206,6 @@
                         "ALIAS": "Qwen3.6-35B-A3B-UD-Q4_K_XL",
                         "RPC_SERVERS": {},
                         "ctx": 262144,
-                        "FITT": "6144",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
@@ -214,7 +232,6 @@
                                 }
                         },
                         "ctx": 262144,
-                        "FITT": "6144,12288",
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
