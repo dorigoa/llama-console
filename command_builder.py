@@ -8,8 +8,8 @@ settings = get_settings()
 def build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None) -> list[str]:
     cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else model.ctxsize)]
 
-    if model.fitt:
-        cmd += ["-fitt", model.fitt]
+    #if model.fitt:
+    #    cmd += ["-fitt", model.fitt]
 
     if model.rpcservers:
         rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
