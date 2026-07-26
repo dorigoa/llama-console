@@ -103,7 +103,7 @@ def _run_on_server(shell_cmd: str, timeout: int = 15) -> subprocess.CompletedPro
     host was not reached rather than 'no process found'."""
     ssh_dest = _ssh_dest()
     if ssh_dest:
-        argv = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, shell_cmd]
+        argv = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", ssh_dest, shell_cmd]
     else:
         argv = ["bash", "-c", shell_cmd]
     try:
@@ -371,7 +371,7 @@ def start_model(
     override_top_k: int | None = None,
     override_min_p: float | None = None,
     override_devices: str | None = None,
-    override_fitt: str | None = None,
+    #override_fitt: str | None = None,
     override_ctx: int | None = None
 ) -> None:
     if server_status:
@@ -412,15 +412,15 @@ def start_model(
         logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}")
         sys.exit(1)
 
-    if (override_fitt is None) != (override_devices is None):
-        logger.error(f"If override-devices is specified than also override-fitt must be specified, and vice versa")
-        sys.exit(1)
+    # if (override_fitt is None) != (override_devices is None):
+    #     logger.error(f"If override-devices is specified than also override-fitt must be specified, and vice versa")
+    #     sys.exit(1)
 
-    if (override_fitt):
-        if not (valid_csv_tokens(override_fitt) and valid_csv_tokens(override_devices)):
-            logger.error(f"Invalid format of {override_devices} or {override_fitt}")
-            sys.exit(1)
-        model.fitt = override_fitt
+    # if (override_fitt):
+    #     if not (valid_csv_tokens(override_fitt) and valid_csv_tokens(override_devices)):
+    #         logger.error(f"Invalid format of {override_devices} or {override_fitt}")
+    #         sys.exit(1)
+    #     model.fitt = override_fitt
 
     if override_temp is not None:
         model.temperature = override_temp
@@ -460,7 +460,7 @@ def start_model(
         failed = []
         for addr in model.rpcservers:
             via = f"{ssh_dest} -> " if ssh_dest else ""
-            logger.info(f"Killing rpc-server on {via}{addr.remuser}@{addr.IP} ...")
+            logger.info(f"Killing ggml-rpc-server on {via}{addr.remuser}@{addr.IP} ...")
             if not kill_rpc_server(addr, exec_host=ssh_dest):
                 failed.append(f"{addr.IP}:{addr.PORT}")
         if failed:
@@ -470,7 +470,7 @@ def start_model(
         sys.exit(0)
 
     if ssh_dest:
-        cmd = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary]
+        cmd = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary]
         logger.debug(f"Executing {cmd}")
         r = subprocess.run(
             cmd,
@@ -583,7 +583,7 @@ def main() -> None:
     parser.add_argument("--override-top-k", type=int, default=None, metavar="INT")
     parser.add_argument("--override-min-p", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
-    parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
+    #parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
 
@@ -611,7 +611,7 @@ def main() -> None:
         override_top_k=args.override_top_k,
         override_min_p=args.override_min_p,
         override_devices=args.override_devices,
-        override_fitt=args.override_fitt,
+        #override_fitt=args.override_fitt,
         override_ctx=args.override_ctx
     )
 
