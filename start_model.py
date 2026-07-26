@@ -527,7 +527,7 @@ def start_model(
                 via = f"{ssh_dest} -> " if ssh_dest else ""
                 logger.warning(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {via}{addr.remuser}...")
                 start_rpc_server(addr, exec_host=ssh_dest)
-
+                time.sleep(5)
             still_dead = wait_for_rpc_servers(dead, exec_host=ssh_dest)
             if still_dead:
                 addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
