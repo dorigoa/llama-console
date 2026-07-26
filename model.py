@@ -46,9 +46,11 @@ class Model:
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
     if remote_host:
         dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
+        args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",  "-o", "StrictHostKeyChecking=no", 
+                     dest, "test", "-f", str(path)]
+        logger.debug(f"Executing command {args}")
         result = subprocess.run(
-            ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",  "-o", "StrictHostKeyChecking=no", 
-             dest, "test", "-f", str(path)],
+            args,
             capture_output=True,
             text=True,
         )
