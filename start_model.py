@@ -30,11 +30,15 @@ logzero.loglevel(logzero.DEBUG if "--debug" in sys.argv else logzero.INFO)
 from model import Model, load_models
 from config_manager import get_settings
 from command_builder import build_command
-from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server
+from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server, rpc_peers
 
 
 
 _CSV_TOKENS = re.compile(r"[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*")
+
+# Backend init (Metal/CUDA enumeration) alone can take ~10s, so this is deliberately
+# generous: it is a deadlock guard, not a latency budget.
+_LIST_DEVICES_TIMEOUT = 60
 
 settings = get_settings()
 
@@ -278,6 +282,78 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
     sys.exit(1)
 
 #___________________________________________________________________________________
+def _list_devices(binary: str, rpc_list: str, ssh_dest: str | None) -> list[str]:
+    """Device names reported by `llama-server --rpc <rpc_list> --list-devices`.
+
+    Devices with no free memory are dropped: they cannot host any layer.
+    Runs on LLAMA_SERVER_HOST when configured, since only that host reaches the
+    RPC network."""
+    if ssh_dest:
+        argv = ["ssh", ssh_dest, binary, "--rpc", rpc_list, "--list-devices"]
+    else:
+        argv = [binary, "--rpc", rpc_list, "--list-devices"]
+
+    logger.debug(f"Running list-devices: {argv}")
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=_LIST_DEVICES_TIMEOUT)
+    except subprocess.TimeoutExpired:
+        # Not a hypothetical: against a busy ggml-rpc-server the request is sent,
+        # buffered by the kernel (netstat shows it sitting in Recv-Q) and never read,
+        # so llama-server waits forever and so would we. Report no device and let the
+        # caller diagnose; the RPC guard below turns this into an actionable message.
+        logger.error(
+            f"list-devices timed out after {_LIST_DEVICES_TIMEOUT}s — the RPC server "
+            f"accepted the connection but never answered."
+        )
+        return []
+    if result.stdout:
+        logger.debug(result.stdout)
+    if result.stderr:
+        logger.debug(result.stderr)
+
+    return [
+        line.replace(":", "").split()[0]
+        for line in result.stdout.splitlines()
+        if line.strip()
+        and "Available" not in line
+        and " 0 MiB free" not in line
+    ]
+
+#___________________________________________________________________________________
+def _report_missing_rpc_devices(model: Model, devices: list[str], ssh_dest: str | None) -> None:
+    """Explain why no RPC device came back although RPC servers are configured.
+
+    Without this check the run would continue and build `--device RPC0,...` from a
+    list that has no RPC entry, and llama-server would die remotely on the cryptic
+    pair 'Failed to connect to <ip>:<port>' + 'invalid device: RPC0'.
+
+    The usual cause is not the network: ggml-rpc-server serves ONE client at a
+    time, so while another llama-server holds the session every further client
+    waits unanswered in the listen backlog. That is why nc/telnet on the very same
+    address and port succeed while llama-server cannot connect — the kernel
+    completes the handshake regardless of whether the process ever accepts it."""
+    logger.error(
+        f"Model '{model.model_name}' needs RPC devices but --list-devices returned none.\n"
+        f"  Devices seen: {', '.join(devices) or '(none)'}\n"
+        f"  The RPC port answers at TCP level (nc/telnet would succeed), but the "
+        f"server did not serve the request."
+    )
+    for addr in model.rpcservers:
+        peers = rpc_peers(addr, exec_host=ssh_dest)
+        if peers:
+            logger.error(
+                f"  {addr.IP}:{addr.PORT} is BUSY — already serving:\n    "
+                + "\n    ".join(peers)
+                + "\n  Stop that client (llama-server --kill-server, or --kill-rpc-server "
+                  "to restart the RPC node) and retry."
+            )
+        else:
+            logger.error(
+                f"  {addr.IP}:{addr.PORT} has no client connected — the rpc-server is "
+                f"likely wedged or was just restarted. Check its log on the RPC node."
+            )
+
+#___________________________________________________________________________________
 def start_model(
     model_name: str | None,
     dry_run: bool = False,
@@ -408,6 +484,25 @@ def start_model(
             logger.error(f"Error: llama-server binary not found at '{binary}'")
             sys.exit(1)
 
+    if not dry_run and not only_rpc and not only_list_devs:
+        # A second llama-server cannot bind PORT_BIND anyway, and while the running
+        # one holds the ggml-rpc-server session (one client at a time) the new one
+        # cannot get an RPC device either. Both failures would only surface remotely,
+        # in the boot log; refuse here instead.
+        try:
+            running = _server_pids()
+        except ServerHostUnreachable as e:
+            logger.error(f"Error: host unreachable — {e}")
+            sys.exit(2)
+        if running:
+            logger.error(
+                f"llama-server is already RUNNING on {_server_location()} "
+                f"(pid(s): {', '.join(running)}); it holds port {settings.PORT_BIND} and, "
+                f"if it uses RPC, the rpc-server session too.\n"
+                f"  Stop it first:  {Path(sys.argv[0]).name} --kill-server"
+            )
+            sys.exit(1)
+
     if not dry_run and not only_list_devs and model.rpcservers and not override_devices:
         # RPC probing/starting must originate from LLAMA_SERVER_HOST: only it can
         # reach the RPC network. When ssh_dest is None (local llama-server), the
@@ -439,32 +534,15 @@ def start_model(
         if not override_devices:
             if model.rpcservers:
                 rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
-                logger.debug("Running list-devices...")
-                if ssh_dest:
-                    result = subprocess.run(
-                        ["ssh", ssh_dest, binary, "--rpc", rpc_list, "--list-devices"],
-                        capture_output=True,
-                        text=True,
-                    )
-                else:
-                    result = subprocess.run(
-                        [binary, "--rpc", rpc_list, "--list-devices"],
-                        #shell=True,
-                        capture_output=True,
-                        text=True,
-                    )
-                if result.stdout:
-                    logger.debug(result.stdout)
-                if result.stderr:
-                    logger.debug(result.stderr)
-                # filter and join device names
-                raw_devices = [
-                    line.replace(":", "").split()[0]
-                    for line in result.stdout.splitlines()
-                    if line.strip()
-                    and "Available" not in line
-                    and " 0 MiB free" not in line
-                ]
+                raw_devices = _list_devices(binary, rpc_list, ssh_dest)
+                # An RPC-backed model whose device list has no RPC entry means the
+                # RPC server accepted the TCP connection but never served it. Stop
+                # here: launching would only reproduce the failure remotely, where
+                # the only trace is 'invalid device: RPC0' in the boot log.
+                if not any(d.startswith("RPC") for d in raw_devices):
+                    _report_missing_rpc_devices(model, raw_devices, ssh_dest)
+                    if not only_list_devs:
+                        sys.exit(1)
                 devices = ",".join(raw_devices)
                 logger.info(f"Using devices: {devices or '(none)'}")
         else:

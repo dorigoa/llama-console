@@ -21,6 +21,13 @@ def _tcp_reachable(addr: RpcServer, exec_host: str | None = None) -> bool:
     If exec_host is given, the probe is performed FROM that host over SSH
     (using bash's /dev/tcp), because only that host can reach the RPC network.
     Otherwise the probe is a local socket connection.
+
+    CAVEAT: this answers "is something listening?", NOT "can it serve me?".
+    ggml-rpc-server handles ONE client at a time (accept -> serve -> close ->
+    accept), so while another client holds the session a new connection is
+    completed by the kernel and parked in the listen backlog, never answered.
+    The probe still succeeds — exactly like nc/telnet do — while llama-server
+    reports "Failed to connect". Use rpc_peers() to tell ready from busy.
     """
     if exec_host:
         probe = f"timeout {int(_TIMEOUT)} bash -c 'exec 3<>/dev/tcp/{addr.IP}/{addr.PORT}'"
@@ -62,6 +69,32 @@ def unreachable_rpc_servers(servers: list[RpcServer], exec_host: str | None = No
                 dead.append(addr)
 
     return dead
+
+#___________________________________________________________________________________
+def rpc_peers(addr: RpcServer, exec_host: str | None = None) -> list[str]:
+    """netstat lines of the clients currently connected to rpc-server's port.
+
+    Asked TO the RPC node itself: since a busy ggml-rpc-server is indistinguishable
+    from a ready one on the client side (see _tcp_reachable), the only reliable way
+    to tell them apart is to look at who already holds an ESTABLISHED connection.
+    The netstat address syntax differs between macOS (IP.PORT) and Linux (IP:PORT),
+    hence the [.:] in the pattern.
+
+    Best-effort diagnostic: returns [] if the node cannot be contacted.
+    """
+    remote_cmd = (
+        f"netstat -an 2>/dev/null | grep ESTABLISHED | grep -E '[.:]{addr.PORT}[[:space:]]'"
+    )
+    if exec_host:
+        inner = f"ssh {' '.join(_SSH_OPTS)} {addr.remuser}@{addr.IP} {shlex.quote(remote_cmd)}"
+        argv = ["ssh", *_SSH_OPTS, exec_host, inner]
+    else:
+        argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
+    try:
+        result = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+    except subprocess.TimeoutExpired:
+        return []
+    return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 #___________________________________________________________________________________
 def start_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
