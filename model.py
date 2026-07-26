@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-#from logzero import logger
+from logzero import logger
 #from typing import Tuple
 from pathlib import Path
 import json
@@ -47,7 +47,7 @@ def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bo
     if remote_host:
         dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
         result = subprocess.run(
-            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes",
+            ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",  "-o", "StrictHostKeyChecking=no", 
              dest, "test", "-f", str(path)],
             capture_output=True,
             text=True,
@@ -77,7 +77,7 @@ def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> 
         # so the (rc > 1) SSH-failure test below still holds for both variants.
         remote_cmd = f"stat -c %s {q} 2>/dev/null || stat -f %z {q}"
         result = subprocess.run(
-            ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", dest, remote_cmd],
+            ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd],
             capture_output=True,
             text=True,
         )
@@ -116,7 +116,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         model_path = base_dir / filename
 
         if not _file_exists(model_path, remote_host, remote_user):
-            print(f"[SKIP] Model '{name}': file not found: {model_path}", file=sys.stderr)
+            logger.error(f"[SKIP] Model '{name}': file not found: {model_path}", file=sys.stderr)
             continue
 
         size_gib = _file_size_gib(model_path, remote_host, remote_user)
@@ -188,7 +188,7 @@ if __name__ == "__main__":
 
     config_path = Path(args.config)
     if not config_path.exists():
-        print(f"Error: config file '{config_path}' not found", file=sys.stderr)
+        logger.error(f"Error: config file '{config_path}' not found", file=sys.stderr)
         sys.exit(1)
 
     settings = get_settings()
@@ -196,11 +196,11 @@ if __name__ == "__main__":
     remote_user = args.remote_user if args.remote_user is not None else settings.LLAMA_SERVER_USER
 
     ms = load_models(config_path, remote_host=remote_host, remote_user=remote_user)
-    print(f"{len(ms)} models loaded (host: {remote_host or 'local'})")
+    logger.debug(f"{len(ms)} models loaded (host: {remote_host or 'local'})")
     for m in ms:
         rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or "-"
         size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"
-        print(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc=[{rpc}]")
+        logger.debug(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc=[{rpc}]")
         for s in m.rpcservers:
             disk = f"  disk={s.cachedisk}" if s.cachedisk else ""
-            print(f"    {s.IP}:{s.PORT}  user={s.remuser}  bin={s.bin}  cache={s.cachepath}{disk}")
+            logger.debug(f"    {s.IP}:{s.PORT}  user={s.remuser}  bin={s.bin}  cache={s.cachepath}{disk}")
