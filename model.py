@@ -118,7 +118,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         model_path = base_dir / filename
 
         if not _file_exists(model_path, remote_host, remote_user):
-            logger.error(f"[SKIP] Model '{name}': file not found: {model_path}", file=sys.stderr)
+            logger.error(f"[SKIP] Model '{name}': file not found: {model_path}")
             continue
 
         size_gib = _file_size_gib(model_path, remote_host, remote_user)
@@ -190,7 +190,7 @@ if __name__ == "__main__":
 
     config_path = Path(args.config)
     if not config_path.exists():
-        logger.error(f"Error: config file '{config_path}' not found", file=sys.stderr)
+        logger.error(f"Error: config file '{config_path}' not found")
         sys.exit(1)
 
     settings = get_settings()
