@@ -163,7 +163,7 @@ def stop_server() -> bool:
         pids = _server_pids()
 
     if pids:
-        logger.error(f"Error: could not stop llama-server on {where} (pid(s): {', '.join(pids)}).", file=sys.stderr)
+        logger.error(f"Error: could not stop llama-server on {where} (pid(s): {', '.join(pids)}).")
         return False
     print(f"llama-server stopped on {where}.")
     return True
@@ -209,7 +209,7 @@ def _run_server_action(action) -> "None":
     try:
         ok = action()
     except ServerHostUnreachable as e:
-        logger.error(f"Error: host unreachable — {e}", file=sys.stderr)
+        logger.error(f"Error: host unreachable — {e}")
         sys.exit(2)
     sys.exit(0 if ok else 1)
 
