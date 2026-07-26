@@ -121,58 +121,59 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
     models_section = config.get("models", {})
 
     models: list[Model] = []
-    if check_remote_file:
-        for name, spec in models_section.items():
-            filename = name if name.endswith(".gguf") else f"{name}.gguf"
-            model_path = base_dir / filename
+    
+    for name, spec in models_section.items():
+        filename = name if name.endswith(".gguf") else f"{name}.gguf"
+        model_path = base_dir / filename
 
+        if check_remote_file:
             if not _file_exists(model_path, remote_host, remote_user):
                 logger.error(f"[SKIP] Model '{name}': file not found: {model_path}")
                 continue
 
             size_gib = _file_size_gib(model_path, remote_host, remote_user)
 
-            rpcservers = [
-                RpcServer(
-                    IP=ip,
-                    #PUB_IP=str(["public_ip"]),
-                    PORT=int(srv["port"]),
-                    cachepath=str(srv["cachepath"]),
-                    bin=str(srv["bin"]),
-                    remuser=str(srv["remuser"]),
-                    cachedisk=str(srv["cachedisk"]) if srv.get("cachedisk") is not None else None,
-                )
-                for ip, srv in spec.get("RPC_SERVERS", {}).items()
-            ]
-
-            mtp = False
-            if 'MTP' in spec and spec['MTP'] == True:
-                mtp = True
-            
-            models.append(
-                Model(
-                    alias=str(spec["ALIAS"]),
-                    model_name=name,
-                    model_path=model_path,
-                    size_gib=size_gib,
-                    mmproj_path=Path(spec["MMPROJ"]) if spec["MMPROJ"] is not None else None,
-                    ctxsize=int(spec["ctx"]),
-                    temperature=float(spec["TEMP"]),
-                    top_p=float(spec["TOPP"]),
-                    top_k=int(spec["TOPK"]),
-                    min_p=float(spec["MINP"]),
-                    reasoning=str(spec["REAS"]),
-                    last_started=0,
-                    #fitt=str(spec["FITT"]),
-                    rpcservers=rpcservers,
-                    #extras=spec["EXTRAS"],
-                    kvquant=spec["KVQUANT"],
-                    ub=spec["UB"],
-                    b=spec["B"],
-                    mtp=mtp,
-                    native_ctx=int(spec.get("native_ctx", spec["ctx"]))
-                )
+        rpcservers = [
+            RpcServer(
+                IP=ip,
+                #PUB_IP=str(["public_ip"]),
+                PORT=int(srv["port"]),
+                cachepath=str(srv["cachepath"]),
+                bin=str(srv["bin"]),
+                remuser=str(srv["remuser"]),
+                cachedisk=str(srv["cachedisk"]) if srv.get("cachedisk") is not None else None,
             )
+            for ip, srv in spec.get("RPC_SERVERS", {}).items()
+        ]
+
+        mtp = False
+        if 'MTP' in spec and spec['MTP'] == True:
+            mtp = True
+        
+        models.append(
+            Model(
+                alias=str(spec["ALIAS"]),
+                model_name=name,
+                model_path=model_path,
+                size_gib=size_gib,
+                mmproj_path=Path(spec["MMPROJ"]) if spec["MMPROJ"] is not None else None,
+                ctxsize=int(spec["ctx"]),
+                temperature=float(spec["TEMP"]),
+                top_p=float(spec["TOPP"]),
+                top_k=int(spec["TOPK"]),
+                min_p=float(spec["MINP"]),
+                reasoning=str(spec["REAS"]),
+                last_started=0,
+                #fitt=str(spec["FITT"]),
+                rpcservers=rpcservers,
+                #extras=spec["EXTRAS"],
+                kvquant=spec["KVQUANT"],
+                ub=spec["UB"],
+                b=spec["B"],
+                mtp=mtp,
+                native_ctx=int(spec.get("native_ctx", spec["ctx"]))
+            )
+        )
     return models
 
 #___________________________________________________________________________________
