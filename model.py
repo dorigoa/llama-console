@@ -4,8 +4,10 @@ from logzero import logger
 from pathlib import Path
 import json
 import shlex
-import subprocess
+# import subprocess
 import sys
+
+from remote_cmd_executor import remote_exec
 
 #___________________________________________________________________________________
 @dataclass
@@ -49,11 +51,12 @@ def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bo
         args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",  "-o", "StrictHostKeyChecking=no", 
                      dest, "test", "-f", str(path)]
         logger.debug(f"Executing command {args}")
-        result = subprocess.run(
-            args,
-            capture_output=True,
-            text=True,
-        )
+        # result = subprocess.run(
+        #     args,
+        #     capture_output=True,
+        #     text=True,
+        # )
+        result = remote_exec( args )
         if result.returncode > 1:
             # returncode 0 = exists, 1 = not found (normal test -f); >1 = SSH error
             raise RuntimeError(
@@ -78,11 +81,16 @@ def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> 
         # back to BSD. Return codes stay 0 = ok / 1 = not found / 255 = SSH error,
         # so the (rc > 1) SSH-failure test below still holds for both variants.
         remote_cmd = f"stat -c %s {q} 2>/dev/null || stat -f %z {q}"
-        result = subprocess.run(
-            ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd],
-            capture_output=True,
-            text=True,
-        )
+        args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd]
+
+        # result = subprocess.run(
+        #     ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd],
+        #     capture_output=True,
+        #     text=True,
+        # )
+
+        result = remote_exec( args )
+
         if result.returncode > 1:
             # returncode 0 = ok, 1 = not found (both variants); >1 = SSH error
             raise RuntimeError(

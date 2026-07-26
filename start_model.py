@@ -17,9 +17,12 @@ import time
 import logzero
 import argparse
 import requests
-import subprocess
+# import subprocess
 from pathlib import Path
 from logzero import logger
+
+from remote_cmd_executor import remote_exec
+
 
 # The loglevel must be set HERE, before the project imports below: command_builder
 # calls get_settings() at import time, and config_manager logs at info/debug level
@@ -94,7 +97,7 @@ def _server_location() -> str:
 #     return f"[{b[0]}]{b[1:]}" if b else b
 
 #___________________________________________________________________________________
-def _run_on_server(shell_cmd: str, timeout: int = 15) -> subprocess.CompletedProcess:
+def _run_on_server(shell_cmd: str, timeout: int = 15):# -> subprocess.CompletedProcess:
     """Run shell_cmd on LLAMA_SERVER_HOST via SSH if configured, else locally.
 
     Raises ServerHostUnreachable if SSH itself fails (connection refused,
@@ -106,16 +109,15 @@ def _run_on_server(shell_cmd: str, timeout: int = 15) -> subprocess.CompletedPro
         argv = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", ssh_dest, shell_cmd]
     else:
         argv = ["bash", "-c", shell_cmd]
-    try:
-        logger.debug(f"Running command {argv}")
-        r = subprocess.run(argv, capture_output=True, text=True, timeout=timeout)
-    except subprocess.TimeoutExpired as e:
-        if ssh_dest:
-            raise ServerHostUnreachable(f"timeout after {timeout}s contacting {ssh_dest}") from e
-        raise
+    r = remote_exec( argv, timeout )
+
+    if not r:
+        sys.exit(1)
+
     if ssh_dest and r.returncode == 255:
         detail = r.stderr.strip() or "connection failed"
-        raise ServerHostUnreachable(f"SSH error contacting {ssh_dest}: {detail}")
+        logger.error(f"SSH error contacting {ssh_dest}: {detail}")
+        sys.exit(1)
     return r
 
 #___________________________________________________________________________________
@@ -201,7 +203,9 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
 
     logger.debug(f"Running command {argv}")
     try:
-        r = subprocess.run(argv)
+        r = remote_exec( argv )
+        if not r:
+            sys.exit(1)
     except KeyboardInterrupt:
         return 0
     return r.returncode
@@ -257,7 +261,9 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
         argv = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, remote_cmd]
     else:
         argv = ["bash", "-c", remote_cmd]
-    r = subprocess.run(argv, capture_output=True, text=True)
+    r = remote_exec( argv )#subprocess.run(argv, capture_output=True, text=True)
+    if not r:
+        sys.exit(1)
     if r.returncode != 0:
         logger.error(f"Failed to launch llama-server on {where}: {r.stderr.strip()}")
         sys.exit(1)
@@ -294,18 +300,21 @@ def _list_devices(binary: str, rpc_list: str, ssh_dest: str | None) -> list[str]
         argv = [binary, "--rpc", rpc_list, "--list-devices"]
 
     logger.debug(f"Running list-devices: {argv}")
-    try:
-        result = subprocess.run(argv, capture_output=True, text=True, timeout=_LIST_DEVICES_TIMEOUT)
-    except subprocess.TimeoutExpired:
-        # Not a hypothetical: against a busy ggml-rpc-server the request is sent,
-        # buffered by the kernel (netstat shows it sitting in Recv-Q) and never read,
-        # so llama-server waits forever and so would we. Report no device and let the
-        # caller diagnose; the RPC guard below turns this into an actionable message.
+    # try:
+    result = remote_exec( argv, _LIST_DEVICES_TIMEOUT )#subprocess.run(argv, capture_output=True, text=True, timeout=_LIST_DEVICES_TIMEOUT)
+    if not result:
         logger.error(
-            f"list-devices timed out after {_LIST_DEVICES_TIMEOUT}s — the RPC server "
-            f"accepted the connection but never answered."
-        )
+                    f"list-devices timed out after {_LIST_DEVICES_TIMEOUT}s — the RPC server "
+                    f"accepted the connection but never answered."
+                )
         return []
+    # except subprocess.TimeoutExpired:
+    #     # Not a hypothetical: against a busy ggml-rpc-server the request is sent,
+    #     # buffered by the kernel (netstat shows it sitting in Recv-Q) and never read,
+    #     # so llama-server waits forever and so would we. Report no device and let the
+    #     # caller diagnose; the RPC guard below turns this into an actionable message.
+        
+        # return []
     if result.stdout:
         logger.debug(result.stdout)
     if result.stderr:
@@ -472,10 +481,13 @@ def start_model(
     if ssh_dest:
         cmd = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", ssh_dest, "test", "-f", binary]
         logger.debug(f"Executing {cmd}")
-        r = subprocess.run(
-            cmd,
-            capture_output=True, text=True,
-        )
+        # r = subprocess.run(
+        #     cmd,
+        #     capture_output=True, text=True,
+        # )
+        r = remote_exec (cmd)
+        if not r:
+            sys.exit(1)
         if r.returncode != 0:
             logger.error(f"Error: llama-server binary not found at '{binary}' on {ssh_dest}")
             sys.exit(1)
