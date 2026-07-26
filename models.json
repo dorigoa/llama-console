@@ -138,7 +138,7 @@
                         "TEMP": 1.0,
                         "TOPP": 1.0,
                         "TOPK": 0,
-                        "MINP": -1,
+                        "MINP": 0,
                         "REAS": "high",
                         "MMPROJ": null,
                         "EXTRAS": null,
