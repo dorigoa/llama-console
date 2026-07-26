@@ -333,7 +333,7 @@ def start_model(
     model = next((m for m in models if m.model_name == model_name), None)
     if model is None:
         available = "\n  ".join(m.model_name for m in models)
-        logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}", file=sys.stderr)
+        logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}")
         sys.exit(1)
 
     if (override_fitt is None) != (override_devices is None):
@@ -401,11 +401,11 @@ def start_model(
             capture_output=True, text=True,
         )
         if r.returncode != 0:
-            logger.error(f"Error: llama-server binary not found at '{binary}' on {ssh_dest}", file=sys.stderr)
+            logger.error(f"Error: llama-server binary not found at '{binary}' on {ssh_dest}")
             sys.exit(1)
     else:
         if not Path(binary).is_file():
-            logger.error(f"Error: llama-server binary not found at '{binary}'", file=sys.stderr)
+            logger.error(f"Error: llama-server binary not found at '{binary}'")
             sys.exit(1)
 
     if not dry_run and not only_list_devs and model.rpcservers and not override_devices:
@@ -448,9 +448,8 @@ def start_model(
                     )
                 else:
                     result = subprocess.run(
-                        #f"{binary} --rpc {rpc_list} --list-devices",
                         [binary, "--rpc", rpc_list, "--list-devices"],
-                        shell=True,
+                        #shell=True,
                         capture_output=True,
                         text=True,
                     )
