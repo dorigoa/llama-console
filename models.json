@@ -49,7 +49,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": true,
+                        "MTP": false,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
@@ -68,7 +68,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": true,
+                        "MTP": false,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
@@ -87,7 +87,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": true,
+                        "MTP": false,
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
