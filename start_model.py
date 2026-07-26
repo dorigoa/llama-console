@@ -396,8 +396,10 @@ def start_model(
             logger.error(f"Error: host unreachable — {e}")
             sys.exit(2)
         sys.exit(rc)
-
-    models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER)
+    if only_check_rpc or only_list_devs or only_rpc:
+        models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=False)
+    else:
+        models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True)
 
     if list_models:
         models_info = []
