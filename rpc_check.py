@@ -30,7 +30,14 @@ def _tcp_reachable(addr: RpcServer, exec_host: str | None = None) -> bool:
     reports "Failed to connect". Use rpc_peers() to tell ready from busy.
     """
     if exec_host:
-        probe = f"timeout {int(_TIMEOUT)} bash -c 'exec 3<>/dev/tcp/{addr.IP}/{addr.PORT}'"
+        # nc, not bash's /dev/tcp: on macOS the Homebrew bash is SIGKILLed by the
+        # kernel the moment it opens a non-loopback socket (loopback is fine, any
+        # LAN or Internet address is not), so the probe returned 137 and reported a
+        # perfectly healthy RPC server as dead. Which bash the remote login shell
+        # picks up depends on its PATH, so the failure came and went with the client
+        # environment. nc needs no net-redirection support and behaves the same on
+        # macOS and Debian; -w bounds both the connect and the idle wait.
+        probe = f"nc -z -w {int(_TIMEOUT)} {addr.IP} {addr.PORT}"
         try:
             r = subprocess.run(
                 ["ssh", *_SSH_OPTS, exec_host, probe],
