@@ -121,7 +121,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
     models_section = config.get("models", {})
 
     models: list[Model] = []
-    
+    size_gib = 0
     for name, spec in models_section.items():
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
         model_path = base_dir / filename
