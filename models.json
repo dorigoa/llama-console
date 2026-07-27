@@ -50,7 +50,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 5,
+                        "kv_gb_256_fp16": 50,
                         "native_ctx": 32768
                 },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
