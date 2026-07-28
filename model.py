@@ -135,7 +135,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         if 'MTP' in spec and spec['MTP'] == True:
             mtp = True
         pp = None
-        if spec.get("pres_pen") > -1:
+        if spec.get("pres_pen") and spec.get("pres_pen") > -1:
             pp = float( spec.get("pres_pen") )
         models.append(
             Model(
