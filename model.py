@@ -135,8 +135,12 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         if 'MTP' in spec and spec['MTP'] == True:
             mtp = True
         pp = None
-        if spec.get("pres_pen") and spec.get("pres_pen") > -1:
+        if spec.get("PP") and spec.get("PP") > -1:
             pp = float( spec.get("pres_pen") )
+
+        rp = None
+        if spec.get("RP"):
+            rp = float( spec.get("RP") )
         models.append(
             Model(
                 alias=str(spec["ALIAS"]),
@@ -151,15 +155,13 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 min_p=float(spec["MINP"]),
                 reasoning=str(spec["REAS"]),
                 last_started=0,
-                #fitt=str(spec["FITT"]),
                 rpcservers=rpcservers,
-                #extras=spec["EXTRAS"],
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"],
                 mtp=mtp,
                 native_ctx=int(spec.get("native_ctx", spec["ctx"])),
-                rep_pen=float( spec.get("rep_pen") ),
+                rep_pen=rp,
                 pres_pen=pp
             
             )
