@@ -1,10 +1,8 @@
 from dataclasses import dataclass
 from logzero import logger
-#from typing import Tuple
 from pathlib import Path
 import json
 import shlex
-# import subprocess
 import sys
 
 from remote_cmd_executor import remote_exec
@@ -43,6 +41,8 @@ class Model:
     kvquant: str
     mtp: bool
     native_ctx: int
+    rep_pen: float
+    pres_pen: float | None
 
 #___________________________________________________________________________________
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
@@ -149,7 +149,9 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         mtp = False
         if 'MTP' in spec and spec['MTP'] == True:
             mtp = True
-        
+        pp = None
+        if spec.get("pres_pen") > -1:
+            pp = float( spec.get("pres_pen") )
         models.append(
             Model(
                 alias=str(spec["ALIAS"]),
@@ -171,7 +173,10 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 ub=spec["UB"],
                 b=spec["B"],
                 mtp=mtp,
-                native_ctx=int(spec.get("native_ctx", spec["ctx"]))
+                native_ctx=int(spec.get("native_ctx", spec["ctx"])),
+                rep_pen=float( spec.get("rep_pen") ),
+                pres_pen=pp
+            
             )
         )
     return models
