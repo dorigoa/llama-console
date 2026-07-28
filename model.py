@@ -11,7 +11,6 @@ from remote_cmd_executor import remote_exec
 @dataclass
 class RpcServer:
     IP: str
-    #PUB_IP: str
     PORT: int
     cachepath: str
     bin: str
@@ -33,9 +32,7 @@ class Model:
     min_p: float
     reasoning: str
     last_started: int
-    #fitt: str
     rpcservers: list[RpcServer]
-    #extras: list[str]
     ub: int
     b: int
     kvquant: str
@@ -51,11 +48,6 @@ def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bo
         args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",  "-o", "StrictHostKeyChecking=no", 
                      dest, "test", "-f", str(path)]
         logger.debug(f"Executing command {args}")
-        # result = subprocess.run(
-        #     args,
-        #     capture_output=True,
-        #     text=True,
-        # )
         result = remote_exec( args )
         if result.returncode > 1:
             # returncode 0 = exists, 1 = not found (normal test -f); >1 = SSH error
@@ -82,13 +74,6 @@ def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> 
         # so the (rc > 1) SSH-failure test below still holds for both variants.
         remote_cmd = f"stat -c %s {q} 2>/dev/null || stat -f %z {q}"
         args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd]
-
-        # result = subprocess.run(
-        #     ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd],
-        #     capture_output=True,
-        #     text=True,
-        # )
-
         result = remote_exec( args )
 
         if result.returncode > 1:
