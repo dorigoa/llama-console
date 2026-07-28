@@ -38,9 +38,9 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["--top-k", str(model.top_k)]
     cmd += ["--chat-template-kwargs", json.dumps(data)]
     cmd += ["--seed", "123456789"]
-    cmd += ["--repeat-penalty", float(model.rep_pen)]
+    cmd += ["--repeat-penalty", str(model.rep_pen)]
     if model.pres_pen:
-        cmd += ["--presence-penalty", float(model.pres_pen) ]
+        cmd += ["--presence-penalty", str(model.pres_pen) ]
     if model.kvquant:
         cmd += ["-ctk", model.kvquant]
         cmd += ["-ctv", model.kvquant]
