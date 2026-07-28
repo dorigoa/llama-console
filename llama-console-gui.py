@@ -137,7 +137,7 @@ class LlamaConsoleGUI:
         """Called on the main event loop thread to update UI widgets."""
         if self.model_dropdown is not None and models is not None:
             self.model_dropdown.options = models if models else ["No models found"]
-            self.model_dropdown.props('label=Model')
+            self.model_dropdown.props('label=Model selector')
             try:
                 self.model_dropdown.props(remove='disable')
             except:
