@@ -1,14 +1,14 @@
 import subprocess
 from logzero import logger
 
-def remote_exec( args, timeout = 120 ):
+def remote_exec( args, timeout: int | None = 120, capture_output: bool = True ):
 
     logger.debug(f"Executing command {args}")
 
     try:
         return subprocess.run(
                     args,
-                    capture_output=True,
+                    capture_output=capture_output,
                     text=True,
                     timeout=timeout
                 )

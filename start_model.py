@@ -203,7 +203,7 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
 
     logger.debug(f"Running command {argv}")
     try:
-        r = remote_exec( argv )
+        r = remote_exec(argv, timeout=None, capture_output=False)
         if not r:
             sys.exit(1)
     except KeyboardInterrupt:
