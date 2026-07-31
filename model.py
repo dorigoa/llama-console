@@ -97,7 +97,7 @@ def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> 
     return size_bytes / (1024 ** 3)
 
 #___________________________________________________________________________________
-def load_models(config_path: str | Path, remote_host: str = "", remote_user: str = "", check_remote_file: bool = True) -> list[Model]:
+def load_models(config_path: str | Path, remote_host: str = "", remote_user: str = "", check_remote_file: bool = True, check_model_name: str | None = None) -> list[Model]:
 
     config_path = Path(config_path)
     with config_path.open(encoding="utf-8") as f:
@@ -107,17 +107,22 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
     models_section = config.get("models", {})
 
     models: list[Model] = []
-    size_gib = 0
     for name, spec in models_section.items():
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
         model_path = base_dir / filename
 
-        if check_remote_file:
+        # When check_model_name is set, only check the remote file for that model;
+        # all others skip the SSH round-trip.
+        do_check = check_remote_file and (check_model_name is None or name == check_model_name)
+
+        if do_check:
             if not _file_exists(model_path, remote_host, remote_user):
                 logger.error(f"[SKIP] Model '{name}': file not found: {model_path}")
                 continue
 
             size_gib = _file_size_gib(model_path, remote_host, remote_user)
+        else:
+            size_gib = None
 
         rpcservers = [
             RpcServer(
