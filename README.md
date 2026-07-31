@@ -67,8 +67,10 @@ Models are defined in [`models.json`](models.json). Structure:
       "TOPP": 0.95,
       "TOPK": 64,
       "MINP": -1,
-      "REAS": "high",
-      "FITT": "6144,12288,2048,1024",
+      "RP": 1.0,
+      "PP": 0.0,
+      "REAS": "high" | null,
+      "PRES_THK": true | null,
       "KVQUANT": null,
       "UB": null,
       "B": null,
@@ -179,9 +181,6 @@ Parameters taken from `models.json` can be overridden on the fly for a single ru
 | `--override-min-p` | float | `MINP` (only passed when ≥ 0) |
 | `--override-ctx` | int | `ctx` (context size) |
 | `--override-devices` | csv | GPU device list (skips auto-discovery) |
-| `--override-fitt` | csv | `FITT` (fill-in-the-tensor split) |
-
-⚠️ `--override-devices` and `--override-fitt` must **always be given together**: specifying only one is an error. Both accept comma-separated alphanumeric tokens (e.g. `CUDA0,CUDA1`).
 
 Example:
 
@@ -189,8 +188,7 @@ Example:
 python start_model.py MODEL-NAME \
   --override-temp 0.7 \
   --override-ctx 32768 \
-  --override-devices CUDA0,CUDA1 \
-  --override-fitt 8192,8192
+  --override-devices CUDA0,CUDA1
 ```
 
 ---
@@ -215,8 +213,7 @@ python start_model.py MODEL-NAME \
 | `--override-top-k INT` | Override top-k. |
 | `--override-min-p FLOAT` | Override min-p. |
 | `--override-ctx INT` | Override the context size. |
-| `--override-devices STR` | GPU device list (csv). Also requires `--override-fitt`. |
-| `--override-fitt STR` | FITT split (csv). Also requires `--override-devices`. |
+| `--override-devices STR` | GPU device list (csv). |
 | `--debug` | Print debug messages. |
 
 ---
