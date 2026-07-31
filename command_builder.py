@@ -67,6 +67,4 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     # Log file for detached execution (UI polls it)
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 
-    cmd += ["--debug"]
-
     return cmd

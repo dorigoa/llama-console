@@ -202,6 +202,9 @@ class LlamaConsoleGUI:
                 args += ["--override-ctx", str(ctx_value)]
             if send_temp and temp_value is not None:
                 args += ["--override-temp", f"{temp_value:.4f}"]
+
+            args += ["--debug"]
+
             output, rc = run_command(args)
             if rc == 0:
                 ui.notify(f"Model {model} started successfully", type="positive")
