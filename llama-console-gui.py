@@ -96,6 +96,8 @@ class LlamaConsoleGUI:
         self.model_dropdown = None
         self.ctx_slider = None
         self.ctx_label = None
+        self.temp_slider = None
+        self.temp_label = None
         self.log_window = None
         self.log_thread = None
         self.stop_log_event = threading.Event()
@@ -116,12 +118,25 @@ class LlamaConsoleGUI:
         self.ctx_label.set_text(f"Context: {clamped_default:,}  (max: {native_ctx:,})")
         self.ctx_slider.update()
 
+    def _update_temp_slider(self, model_name: str):
+        """Update temperature slider max/value when model changes."""
+        spec = get_model_spec(model_name)
+        if spec is None:
+            return
+        max_temp = float(spec.get("TEMP", 1.0))
+        self.temp_slider._props['min'] = 0
+        self.temp_slider._props['max'] = max_temp
+        self.temp_slider.set_value(max_temp)
+        self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
+        self.temp_slider.update()
+
     def _on_model_change(self, e):
         """Called when the user picks a different model."""
         model_name = e.value
         if not model_name:
             return
         self._update_ctx_slider(model_name)
+        self._update_temp_slider(model_name)
 
     def _spawn_loader(self):
         """Called on event loop thread: spawn background thread for blocking I/O."""
@@ -146,9 +161,10 @@ class LlamaConsoleGUI:
             if models:
                 self.model_dropdown.set_value(models[0])
             self.model_dropdown.update()
-            # Initialize slider to first available model
+            # Initialize sliders to first available model
             if models:
                 self._update_ctx_slider(models[0])
+                self._update_temp_slider(models[0])
 
         if self.status_label is not None:
             self.status_label.set_text(f"Server Status: {text}")
@@ -171,11 +187,21 @@ class LlamaConsoleGUI:
             return
 
         ctx_value = int(self.ctx_slider.value) if self.ctx_slider and self.ctx_slider.value is not None else None
+        temp_value = float(self.temp_slider.value) if self.temp_slider and self.temp_slider.value is not None else None
+        spec = get_model_spec(model)
+        model_max_temp = float(spec.get("TEMP", 1.0)) if spec else None
+        # Only pass --override-temp if user actually changed it from the default
+        send_temp = False
+        if temp_value is not None and model_max_temp is not None:
+            if abs(temp_value - model_max_temp) > 0.001:
+                send_temp = True
         ui.notify(f"Starting model {model.split(' ')[0]} (ctx={ctx_value})...")
         def task():
             args = [model.split(' ')[0]]
             if ctx_value:
                 args += ["--override-ctx", str(ctx_value)]
+            if send_temp and temp_value is not None:
+                args += ["--override-temp", f"{temp_value:.4f}"]
             output, rc = run_command(args)
             if rc == 0:
                 ui.notify(f"Model {model} started successfully", type="positive")
@@ -260,6 +286,14 @@ class LlamaConsoleGUI:
                         min=1024, max=262144, value=8192, step=1024,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
                     ).classes('flex-grow').props('color=green')
+
+                # Temperature – same style as context slider
+                with ui.column().classes('w-full q-mt-sm'):
+                    self.temp_label = ui.label("Temperature: —").classes('text-subtitle1')
+                    self.temp_slider = ui.slider(
+                        min=0, max=1.0, value=1.0, step=0.01,
+                        on_change=lambda e: self.temp_label.set_text(f"Temperature: {e.value:.2f}")
+                    ).classes('flex-grow').props('color=orange')
 
             ui.label("Server Logs").classes('text-h6 q-mt-lg')
             with ui.row().classes('w-full items-center q-mb-sm'):
