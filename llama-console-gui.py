@@ -4,6 +4,7 @@ import logzero
 from logzero import logger
 import re
 import json
+import shlex
 from pathlib import Path
 from nicegui import ui
 from config_manager import get_settings
@@ -205,11 +206,32 @@ class LlamaConsoleGUI:
 
             args += ["--debug"]
 
-            output, rc = run_command(args)
-            if rc == 0:
-                ui.notify(f"Model {model} started successfully", type="positive")
-            else:
-                ui.notify(f"Error starting model: {output}", type="negative")
+            # Stream start_model.py output into the log window so the user sees
+            # RPC checks, device enumeration, launch confirmation, and errors.
+            # -u forces unbuffered Python output so lines arrive immediately.
+            cmd = ["python3", "-u", "start_model.py"] + args
+            self.log_window.push(f"--- Starting model: {shlex.join(cmd)} ---")
+            try:
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.STDOUT,
+                    text=True,
+                    bufsize=1
+                )
+                while True:
+                    line = process.stdout.readline()
+                    if not line:
+                        break
+                    self.log_window.push(line.rstrip())
+                rc = process.wait()
+                if rc == 0:
+                    ui.notify(f"Model {model} started successfully", type="positive")
+                else:
+                    ui.notify(f"Error starting model (exit {rc})", type="negative")
+            except Exception as e:
+                self.log_window.push(f"Launch Error: {str(e)}")
+                ui.notify(f"Error starting model: {e}", type="negative")
             self.update_status()
 
         threading.Thread(target=task, daemon=True).start()
@@ -300,7 +322,7 @@ class LlamaConsoleGUI:
 
             ui.label("Server Logs").classes('text-h6 q-mt-lg')
             with ui.row().classes('w-full items-center q-mb-sm'):
-                ui.button("Connect to Logs", on_click=self.start_log_streaming).props('small')
+                ui.button("Connect to llama-server logs", on_click=self.start_log_streaming).props('small')
                 ui.button("Clear Logs", on_click=lambda: self.log_window.clear()).props('small outline')
 
             self.log_window = ui.log().classes('w-full h-[600px] bg-black text-green-400 font-mono text-xs custom-log')
