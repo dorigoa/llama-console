@@ -30,7 +30,8 @@ class Model:
     top_p: float
     top_k: int
     min_p: float
-    reasoning: str
+    reasoning: str | None
+    preserv_think: bool | None
     last_started: int
     rpcservers: list[RpcServer]
     ub: int
@@ -141,6 +142,15 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
         rp = None
         if spec.get("RP"):
             rp = float( spec.get("RP") )
+
+        reas_eff = None
+        if spec.get("REAS"):
+            reas_eff = str(spec["REAS"])
+
+        preserv_think = None
+        if spec.get("PRES_THK"):
+            preserv_think = spec["PRES_THK"]
+
         models.append(
             Model(
                 alias=str(spec["ALIAS"]),
@@ -153,7 +163,8 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 top_p=float(spec["TOPP"]),
                 top_k=int(spec["TOPK"]),
                 min_p=float(spec["MINP"]),
-                reasoning=str(spec["REAS"]),
+                reasoning=reas_eff,
+                preserv_think=preserv_think,
                 last_started=0,
                 rpcservers=rpcservers,
                 kvquant=spec["KVQUANT"],

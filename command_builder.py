@@ -21,7 +21,15 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if model.mmproj_path and str(model.mmproj_path).lower() not in ("none", "null", ""):
         cmd += ["--mmproj", str(model.mmproj_path)]
 
-    data = {"reasoning_effort": model.reasoning}
+    data = None
+    if model.reasoning:
+        data = {"reasoning_effort": model.reasoning}
+
+    if model.preserv_think:
+        if data:
+            data['preserve_thinking'] = model.preserv_think
+        else:
+            data = {"preserve_thinking": model.preserv_think}
 
     cmd += ["--host", settings.ADDRESS_BIND]
     cmd += ["--port", str(settings.PORT_BIND)]
@@ -36,7 +44,9 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["--temp", str(model.temperature)]
     cmd += ["--top-p", str(model.top_p)]
     cmd += ["--top-k", str(model.top_k)]
-    cmd += ["--chat-template-kwargs", json.dumps(data)]
+    if data:
+        cmd += ["--chat-template-kwargs", json.dumps(data)]
+
     cmd += ["--seed", "123456789"]
     cmd += ["--repeat-penalty", str(model.rep_pen)]
     if model.pres_pen:
