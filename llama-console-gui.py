@@ -285,7 +285,7 @@ class LlamaConsoleGUI:
             with ui.column().classes('items-center q-mb-md'):
                 ui.label("LLama.cpp Console").classes('text-h5')
                 ui.label("by Alvise Dorigo").classes('text-h5')
-                ui.label("https://github.com/dorigoa/llama-console").classes('text-h5')
+                ui.link("https://github.com/dorigoa/llama-console", "https://github.com/dorigoa/llama-console").classes('text-caption no-underline')
 
             # Server status – larger label
             with ui.row().classes('items-center q-mb-md'):
