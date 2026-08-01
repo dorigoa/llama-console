@@ -282,7 +282,10 @@ class LlamaConsoleGUI:
         ui.dark_mode().enable()
 
         with ui.column().classes('w-full items-center p-8'):
-            ui.label(settings.UI_TITLE).classes('text-h4 q-mb-md')
+            with ui.column().classes('items-center q-mb-md'):
+                ui.label("LLama.cpp Console").classes('text-h5')
+                ui.label("by Alvise Dorigo").classes('text-h5')
+                ui.label("https://github.com/dorigoa/llama-console").classes('text-h5')
 
             # Server status – larger label
             with ui.row().classes('items-center q-mb-md'):
