@@ -6,18 +6,7 @@
                         "sizegb": 60,
                         "ALIAS": "NVIDIA-Nemotron-3-Super-120B-A12B-UD-IQ4_NL",
                         "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
+                                "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
                         "ctx": 512000,
                         "TEMP": 0.6,
@@ -129,12 +118,7 @@
                         "sizegb": 33,
                         "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
+                                "ids": [{"name": "mac1"}]
                         },
                         "ctx": 131072,
                         "TEMP": 1.0,
@@ -158,18 +142,7 @@
                         "sizegb": 59,
                         "ALIAS": "GPT-OSS-120B-MXFP4",
                         "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                },
-                                "192.168.30.2": {
-                                        "port": 50000,
-                                        "cachepath": "/nvme/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
+                                "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
                         "ctx": 131072,
                         "TEMP": 1.0,
@@ -193,12 +166,7 @@
                         "sizegb": 33,
                         "ALIAS": "Qwen3.6-27B-MTP-UD-Q8_K_XL",
                         "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
+                                "ids": [{"name": "mac1"}]
                         },
                         "ctx": 262144,
                         "TEMP": 0.6,
@@ -244,12 +212,7 @@
                         "sizegb": 36,
                         "ALIAS": "Qwen3.6-35B-A3B-UD-Q8_K_XL",
                         "RPC_SERVERS": {
-                                "192.168.20.1": {
-                                        "port": 50000,
-                                        "cachepath": "/Volumes/Home/llama-rpc-cache",
-                                        "bin": "/opt/llama.cpp/ggml-rpc-server",
-                                        "remuser": "alvise"
-                                }
+                                "ids": [{"name": "mac1"}]
                         },
                         "ctx": 262144,
                         "TEMP": 0.6,
