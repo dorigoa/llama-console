@@ -25,6 +25,7 @@ class Settings:
     LLAMA_SERVER_HOST: str = ""
     LLAMA_SERVER_USER: str = ""
     MODELS_JSON: Path = None
+    RPC_JSON: Path = None
     LLAMA_LOG_FILE: str = ""  # shared path for polling the output
     LLAMA_BOOT_LOG: str = ""  # startup stdout/stderr (crash diagnostics)
 

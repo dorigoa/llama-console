@@ -9,16 +9,6 @@ from remote_cmd_executor import remote_exec
 
 #___________________________________________________________________________________
 @dataclass
-class RpcServer:
-    IP: str
-    PORT: int
-    cachepath: str
-    bin: str
-    remuser: str
-    cachedisk: str | None = None
-
-#___________________________________________________________________________________
-@dataclass
 class Model:
     alias: str
     model_name: str
@@ -33,7 +23,7 @@ class Model:
     reasoning: str | None
     preserv_think: bool | None
     last_started: int
-    rpcservers: list[RpcServer]
+    rpcservers: list[str]
     ub: int
     b: int
     kvquant: str
@@ -97,16 +87,23 @@ def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> 
     return size_bytes / (1024 ** 3)
 
 #___________________________________________________________________________________
-def load_models(config_path: str | Path, remote_host: str = "", remote_user: str = "", check_remote_file: bool = True, check_model_name: str | None = None) -> list[Model]:
+def load_models(config_path: Path, 
+                remote_host: str = "", 
+                remote_user: str = "", 
+                check_remote_file: bool = True, 
+                check_model_name: str | None = None) -> list[Model]:
 
-    config_path = Path(config_path)
     with config_path.open(encoding="utf-8") as f:
         config = json.load(f)
 
+    
+
     base_dir = Path(config["MODEL_BASE_DIR"])
     models_section = config.get("models", {})
+    
 
     models: list[Model] = []
+
     for name, spec in models_section.items():
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
         model_path = base_dir / filename
@@ -123,19 +120,6 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
             size_gib = _file_size_gib(model_path, remote_host, remote_user)
         else:
             size_gib = None
-
-        rpcservers = [
-            RpcServer(
-                IP=ip,
-                #PUB_IP=str(["public_ip"]),
-                PORT=int(srv["port"]),
-                cachepath=str(srv["cachepath"]),
-                bin=str(srv["bin"]),
-                remuser=str(srv["remuser"]),
-                cachedisk=str(srv["cachedisk"]) if srv.get("cachedisk") is not None else None,
-            )
-            for ip, srv in spec.get("RPC_SERVERS", {}).items()
-        ]
 
         mtp = False
         if 'MTP' in spec and spec['MTP'] == True:
@@ -171,7 +155,7 @@ def load_models(config_path: str | Path, remote_host: str = "", remote_user: str
                 reasoning=reas_eff,
                 preserv_think=preserv_think,
                 last_started=0,
-                rpcservers=rpcservers,
+                rpcservers=spec['RPC_SERVERS'],
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"],
@@ -189,38 +173,35 @@ if __name__ == "__main__":
     import argparse
     from config_manager import get_settings
 
-    _default_models = Path(__file__).parent / "models.json"
+    parser = argparse.ArgumentParser(description="List models from models config file")
 
-    parser = argparse.ArgumentParser(description="List models from a models config file")
     parser.add_argument(
-        "config", nargs="?", default=str(_default_models),
-        help=f"Path to models JSON config (default: {_default_models})",
-    )
-    parser.add_argument(
-        "--remote-host", default=None,
+        "--master-host", default=None,
         help="SSH host for file existence check (overrides config.json)",
     )
     parser.add_argument(
-        "--remote-user", default=None,
+        "--master-user", default=None,
         help="SSH user for file existence check (overrides config.json)",
     )
+    parser.add_argument(
+        "--models-config", default=Path(__file__).parent / "models.json",
+        help="path of models json description file"
+    )
+
     args = parser.parse_args()
 
-    config_path = Path(args.config)
+    config_path = Path(args.models_config)
+
     if not config_path.exists():
         logger.error(f"Error: config file '{config_path}' not found")
         sys.exit(1)
-
+    
     settings = get_settings()
-    remote_host = args.remote_host if args.remote_host is not None else settings.LLAMA_SERVER_HOST
-    remote_user = args.remote_user if args.remote_user is not None else settings.LLAMA_SERVER_USER
+    master_host = args.master_host if args.master_host is not None else settings.LLAMA_SERVER_HOST
+    master_user = args.master_user if args.master_user is not None else settings.LLAMA_SERVER_USER
 
-    ms = load_models(config_path, remote_host=remote_host, remote_user=remote_user)
-    logger.debug(f"{len(ms)} models loaded (host: {remote_host or 'local'})")
+    ms = load_models(config_path=config_path, remote_host=master_host, remote_user=master_user)
+    logger.debug(f"{len(ms)} models loaded (host: {master_host or 'local'})")
     for m in ms:
-        rpc = ",".join(f"{s.IP}:{s.PORT}" for s in m.rpcservers) or "-"
         size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"
-        logger.debug(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc=[{rpc}]")
-        for s in m.rpcservers:
-            disk = f"  disk={s.cachedisk}" if s.cachedisk else ""
-            logger.debug(f"    {s.IP}:{s.PORT}  user={s.remuser}  bin={s.bin}  cache={s.cachepath}{disk}")
+        logger.debug(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc=[{m.rpcservers}]")

@@ -6,6 +6,7 @@
         "LLAMA_SERVER_HOST": "192.168.1.191",
         "LLAMA_SERVER_USER": "alvise",
         "MODELS_JSON": "models.json",
+        "RPC_JSON": "rpc.json",
         "LLAMA_LOG_FILE": "/tmp/llama-server.log",
         "LLAMA_BOOT_LOG": "/tmp/llama-server.boot.log"
 }
