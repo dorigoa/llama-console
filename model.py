@@ -1,11 +1,14 @@
 from dataclasses import dataclass
 from logzero import logger
 from pathlib import Path
-import json
 import shlex
+import json
 import sys
 
 from remote_cmd_executor import remote_exec
+from rpc import RpcServer,load_rpcs
+
+
 
 #___________________________________________________________________________________
 @dataclass
@@ -23,7 +26,7 @@ class Model:
     reasoning: str | None
     preserv_think: bool | None
     last_started: int
-    rpcservers: list[str]
+    rpcservers: list[RpcServer]
     ub: int
     b: int
     kvquant: str
@@ -187,21 +190,46 @@ if __name__ == "__main__":
         "--models-config", default=Path(__file__).parent / "models.json",
         help="path of models json description file"
     )
+    parser.add_argument(
+        "--rpc-config", default=Path(__file__).parent / "rpc.json",
+        help="path of models json description file"
+    )
+    parser.add_argument(
+            "--nocheck", action="store_true", default=False,
+            help="fast mode only for debug"
+        )
 
     args = parser.parse_args()
 
-    config_path = Path(args.models_config)
+    if not args.models_config.exists():
+        logger.error(f"Error: config file '{args.models_config}' not found")
+        sys.exit(1)
 
-    if not config_path.exists():
-        logger.error(f"Error: config file '{config_path}' not found")
+    if not args.rpc_config.exists():
+        logger.error(f"Error: config file '{args.rpc_config}' not found")
         sys.exit(1)
     
     settings = get_settings()
     master_host = args.master_host if args.master_host is not None else settings.LLAMA_SERVER_HOST
     master_user = args.master_user if args.master_user is not None else settings.LLAMA_SERVER_USER
 
-    ms = load_models(config_path=config_path, remote_host=master_host, remote_user=master_user)
+    rpcs = load_rpcs( args.rpc_config )
+
+    ms = load_models(config_path=args.models_config, remote_host=master_host, remote_user=master_user, check_remote_file=args.nocheck)
     logger.debug(f"{len(ms)} models loaded (host: {master_host or 'local'})")
     for m in ms:
         size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"
-        logger.debug(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc=[{m.rpcservers}]")
+        endpoints = []
+        rpc_names = m.rpcservers.get('ids')
+        #array = m.rpcservers['ids']
+        #print(f"\n\naray={array}\n\n")
+        #sys.exit(0)
+        if rpc_names: 
+            for id in rpc_names:
+                #print(f"{id}")
+                rpc_name=id['name']
+                ip=rpcs[rpc_name].IP
+                port=rpcs[rpc_name].PORT
+                endpoints.append(f"{ip}:{port}")
+        
+        logger.debug(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc={','.join(endpoints)}")
