@@ -1,14 +1,14 @@
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from logzero import logger
 import socket
 import shlex
-#import subprocess
-import sys
 import time
-from concurrent.futures import ThreadPoolExecutor, as_completed
-
-from model import Model, RpcServer
+import sys
 
 from remote_cmd_executor import remote_exec
-from logzero import logger
+from model import load_models
+from rpc import RpcServer
+
 
 _TIMEOUT = 2.0
 
@@ -41,16 +41,11 @@ def _tcp_reachable(addr: RpcServer, exec_host: str | None = None) -> bool:
         # environment. nc needs no net-redirection support and behaves the same on
         # macOS and Debian; -w bounds both the connect and the idle wait.
         probe = f"nc -z -w {int(_TIMEOUT)} {addr.IP} {addr.PORT}"
-        # try:
-            # r = subprocess.run(
-            #     ["ssh", *_SSH_OPTS, exec_host, probe],
-            #     capture_output=True, text=True, timeout=_TIMEOUT + 8,
-            # )
+
         r = remote_exec( ["ssh", *_SSH_OPTS, exec_host, probe], timeout=_TIMEOUT + 8 )
         if not r:
             return False
-        #   except subprocess.TimeoutExpired:
-        #     return False
+
         return r.returncode == 0
     try:
         with socket.create_connection((addr.IP, addr.PORT), timeout=_TIMEOUT):
@@ -103,13 +98,11 @@ def rpc_peers(addr: RpcServer, exec_host: str | None = None) -> list[str]:
         argv = ["ssh", *_SSH_OPTS, exec_host, inner]
     else:
         argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
-    # try:
-        #result = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+
     result = remote_exec( argv, 20 )
     if not result:
         return []
-    # except subprocess.TimeoutExpired:
-    #     return []
+
     return [line.strip() for line in result.stdout.splitlines() if line.strip()]
 
 #___________________________________________________________________________________
@@ -138,12 +131,6 @@ def start_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
         argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
         shown = f"{addr.remuser}@{addr.IP}"
     logger.error(f"  SSH: {shown}  \"{remote_cmd}\"")
-    # result = subprocess.run(
-    #     argv,
-    #     capture_output=True,
-    #     text=True,
-    #     timeout=20,
-    # )
 
     result = remote_exec( argv, 20 )
 
@@ -177,14 +164,11 @@ def kill_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
         argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
         shown = f"{addr.remuser}@{addr.IP}"
     logger.error(f"  SSH: {shown}  \"{remote_cmd}\"")
-    # try:
-        #result = subprocess.run(argv, capture_output=True, text=True, timeout=20)
+
     result = remote_exec( argv, 20 )
     if not result:
         return False
-    # except subprocess.TimeoutExpired:
-    #     logger.error(f"  SSH timeout contacting {shown}")
-    #     return False
+
     if result.returncode not in (0, 1):
         logger.error(f"  SSH stderr: {result.stderr.strip()}")
         return False
@@ -209,13 +193,13 @@ def wait_for_rpc_servers(servers: list[RpcServer], exec_host: str | None = None)
 
 #___________________________________________________________________________________
 if __name__ == "__main__":
-    from model import load_models
-
+    
     if len(sys.argv) < 2:
         logger.info("Usage: python rpc_check.py <config.json>")
         sys.exit(1)
 
     for m in load_models(sys.argv[1]):
+        
         down = unreachable_rpc_servers(m.rpcservers)
         if not m.rpcservers:
             logger.error(f"{m.model_name}: no rpc server configured")

@@ -26,7 +26,7 @@ class Model:
     reasoning: str | None
     preserv_think: bool | None
     last_started: int
-    rpcservers: list[RpcServer]
+    rpcservers: list[RpcServer] | None
     ub: int
     b: int
     kvquant: str
@@ -34,6 +34,56 @@ class Model:
     native_ctx: int
     rep_pen: float
     pres_pen: float | None
+
+    def __init__(self, 
+                alias: str,
+                model_name: str,
+                model_path: Path,
+                size_gib: float,
+                mmproj_path: Path,
+                ctxsize: int,
+                temperature: float,
+                top_p: float,
+                top_k: int,
+                min_p: float,
+                reasoning: str,
+                preserv_think: bool,
+                last_started: int,
+                rpcservers: list[RpcServer],
+                ub: int,
+                b: int,
+                kvquant: str,
+                mtp: bool,
+                native_ctx: int,
+                rep_pen: float,
+                pres_pen: float):
+        self.alias=alias
+        self.model_name=model_name
+        self.model_path=model_path
+        self.size_gib=size_gib
+        self.mmproj_path=mmproj_path
+        self.ctxsize=ctxsize
+        self.temperature=temperature
+        self.top_p=top_p
+        self.top_k=top_k
+        self.min_p=min_p
+        self.reasoning=reasoning
+        self.preserv_think=preserv_think
+        self.last_started=last_started
+        self.rpcservers=rpcservers
+        self.ub=ub
+        self.b=b
+        self.kvquant=kvquant
+        self.mtp=mtp
+        self.native_ctx=native_ctx
+        self.rep_pen=rep_pen
+        self.pres_pen=pres_pen
+
+    def rpc_endpoints( self ):
+        endpoints = []
+        for R in self.rpcservers:
+            endpoints.append( R.endpoint() )
+        return ','.join(endpoints)
 
 #___________________________________________________________________________________
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
@@ -91,6 +141,7 @@ def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> 
 
 #___________________________________________________________________________________
 def load_models(config_path: Path, 
+                rpc_config_path: Path,
                 remote_host: str = "", 
                 remote_user: str = "", 
                 check_remote_file: bool = True, 
@@ -99,13 +150,12 @@ def load_models(config_path: Path,
     with config_path.open(encoding="utf-8") as f:
         config = json.load(f)
 
-    
-
     base_dir = Path(config["MODEL_BASE_DIR"])
     models_section = config.get("models", {})
     
-
     models: list[Model] = []
+
+    rpcs = load_rpcs( rpc_config_path )
 
     for name, spec in models_section.items():
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
@@ -143,6 +193,16 @@ def load_models(config_path: Path,
         if spec.get("PRES_THK"):
             preserv_think = spec["PRES_THK"]
 
+        rpcs_for_this_model = []
+        if spec.get('RPC_SERVERS') and spec.get('RPC_SERVERS')['ids'] and len(spec.get('RPC_SERVERS')['ids']):
+            
+            rpc_names = spec.get('RPC_SERVERS')['ids']         
+            if rpc_names: 
+                for n in rpc_names:
+                    rpc_name=n['name']
+                    rpcs_for_this_model.append( rpcs[rpc_name] )
+
+
         models.append(
             Model(
                 alias=str(spec["ALIAS"]),
@@ -158,7 +218,7 @@ def load_models(config_path: Path,
                 reasoning=reas_eff,
                 preserv_think=preserv_think,
                 last_started=0,
-                rpcservers=spec['RPC_SERVERS'],
+                rpcservers=rpcs_for_this_model, #spec['RPC_SERVERS'],
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"],
@@ -166,7 +226,6 @@ def load_models(config_path: Path,
                 native_ctx=int(spec.get("native_ctx", spec["ctx"])),
                 rep_pen=rp,
                 pres_pen=pp
-            
             )
         )
     return models
@@ -213,23 +272,13 @@ if __name__ == "__main__":
     master_host = args.master_host if args.master_host is not None else settings.LLAMA_SERVER_HOST
     master_user = args.master_user if args.master_user is not None else settings.LLAMA_SERVER_USER
 
-    rpcs = load_rpcs( args.rpc_config )
-
-    ms = load_models(config_path=args.models_config, remote_host=master_host, remote_user=master_user, check_remote_file=args.nocheck)
+    ms = load_models(config_path=args.models_config, 
+                     rpc_config_path=args.rpc_config, 
+                     remote_host=master_host, 
+                     remote_user=master_user, 
+                     check_remote_file=args.nocheck)
+    
     logger.debug(f"{len(ms)} models loaded (host: {master_host or 'local'})")
     for m in ms:
         size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"
-        endpoints = []
-        rpc_names = m.rpcservers.get('ids')
-        #array = m.rpcservers['ids']
-        #print(f"\n\naray={array}\n\n")
-        #sys.exit(0)
-        if rpc_names: 
-            for id in rpc_names:
-                #print(f"{id}")
-                rpc_name=id['name']
-                ip=rpcs[rpc_name].IP
-                port=rpcs[rpc_name].PORT
-                endpoints.append(f"{ip}:{port}")
-        
-        logger.debug(f"  {m.model_name:50s} ctx={m.ctxsize:<7d} size={size:>11s} rpc={','.join(endpoints)}")
+        logger.debug(f"  alias={m.alias:45} - size={size:>11s} rpc={m.rpc_endpoints()}")

@@ -30,6 +30,7 @@ from remote_cmd_executor import remote_exec
 # So we pre-scan sys.argv to know the flag early.
 logzero.loglevel(logzero.DEBUG if "--debug" in sys.argv else logzero.INFO)
 
+from rpc import RpcServer, load_rpcs
 from model import Model, load_models
 from config_manager import get_settings
 from command_builder import build_command
@@ -88,13 +89,6 @@ class ServerHostUnreachable(Exception):
 #___________________________________________________________________________________
 def _server_location() -> str:
     return _ssh_dest() or "localhost"
-
-#___________________________________________________________________________________
-# def _pgrep_pattern() -> str:
-#     """Regex for pgrep/pkill -f that matches the llama-server command line but
-#     NOT the wrapping shell/ssh that carries this very pattern (classic [x] trick)."""
-#     b = settings.LLAMA_SERVER_BIN
-#     return f"[{b[0]}]{b[1:]}" if b else b
 
 #___________________________________________________________________________________
 def _run_on_server(shell_cmd: str, timeout: int = 15):# -> subprocess.CompletedProcess:
@@ -300,7 +294,7 @@ def _list_devices(binary: str, rpc_list: str, ssh_dest: str | None) -> list[str]
         argv = [binary, "--rpc", rpc_list, "--list-devices"]
 
     logger.debug(f"Running list-devices: {argv}")
-    # try:
+    
     result = remote_exec( argv, _LIST_DEVICES_TIMEOUT )#subprocess.run(argv, capture_output=True, text=True, timeout=_LIST_DEVICES_TIMEOUT)
     if not result:
         logger.error(
@@ -308,13 +302,7 @@ def _list_devices(binary: str, rpc_list: str, ssh_dest: str | None) -> list[str]
                     f"accepted the connection but never answered."
                 )
         return []
-    # except subprocess.TimeoutExpired:
-    #     # Not a hypothetical: against a busy ggml-rpc-server the request is sent,
-    #     # buffered by the kernel (netstat shows it sitting in Recv-Q) and never read,
-    #     # so llama-server waits forever and so would we. Report no device and let the
-    #     # caller diagnose; the RPC guard below turns this into an actionable message.
-        
-        # return []
+    
     if result.stdout:
         logger.debug(result.stdout)
     if result.stderr:
@@ -380,7 +368,6 @@ def start_model(
     override_top_k: int | None = None,
     override_min_p: float | None = None,
     override_devices: str | None = None,
-    #override_fitt: str | None = None,
     override_ctx: int | None = None
 ) -> None:
     if server_status:
@@ -396,12 +383,13 @@ def start_model(
             logger.error(f"Error: host unreachable — {e}")
             sys.exit(2)
         sys.exit(rc)
+
     if only_check_rpc or only_list_devs or only_rpc:
-        models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=False)
+        models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON), remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=False)
     elif list_models:
-        models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True)
+        models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON), remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True)
     else:
-        models = load_models(settings.MODELS_JSON, remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True, check_model_name=model_name)
+        models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON),remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True, check_model_name=model_name)
 
     if list_models:
         models_info = []
@@ -424,16 +412,6 @@ def start_model(
         available = "\n  ".join(m.model_name for m in models)
         logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}")
         sys.exit(1)
-
-    # if (override_fitt is None) != (override_devices is None):
-    #     logger.error(f"If override-devices is specified than also override-fitt must be specified, and vice versa")
-    #     sys.exit(1)
-
-    # if (override_fitt):
-    #     if not (valid_csv_tokens(override_fitt) and valid_csv_tokens(override_devices)):
-    #         logger.error(f"Invalid format of {override_devices} or {override_fitt}")
-    #         sys.exit(1)
-    #     model.fitt = override_fitt
 
     if override_temp is not None:
         model.temperature = override_temp
@@ -627,7 +605,6 @@ def main() -> None:
         override_top_k=args.override_top_k,
         override_min_p=args.override_min_p,
         override_devices=args.override_devices,
-        #override_fitt=args.override_fitt,
         override_ctx=args.override_ctx
     )
 

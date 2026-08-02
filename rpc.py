@@ -9,10 +9,20 @@ import sys
 class RpcServer:
     IP: str
     PORT: int
-    cachepath: str
-    bin: str
+    cachepath: Path
+    bin: Path
     remuser: str
-    cachedisk: str | None = None
+
+    def __init__(self, IP: str, PORT: int, cachepath: Path, bin: Path, remuser: str ):
+        self.IP = IP
+        self.PORT = PORT
+        self.cachepath = cachepath
+        self.bin = bin
+        self.remuser = remuser
+
+    def endpoint( self ) -> str:
+        return f"{self.IP}:{self.PORT}"
+           
 
 #___________________________________________________________________________________
 def load_rpcs(config_path: Path):
