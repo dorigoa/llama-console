@@ -56,6 +56,8 @@ def get_server_status():
     output, rc = run_command(["--server-status"])
     is_running = ('is RUNNING' in output)
     status_text = "RUNNING" if is_running else "NOT RUNNING"
+    model = ""
+    ctx = ""
     if is_running:
         if "Running model:" in output:
             # here we assume that the model name doesn't contain space(s)
@@ -66,7 +68,7 @@ def get_server_status():
             ctx = pieces[l-1]
             status_text += f" | {model} | ctx {ctx}"
     color = "#00ff88" if is_running else "red"
-    return status_text, color#, output
+    return status_text, color, model, ctx
 
 
 def get_available_models():
@@ -93,7 +95,9 @@ def get_available_models():
 
 class LlamaConsoleGUI:
     def __init__(self):
-        self.status_label = None
+        self.status_server_label = None
+        self.status_model_label = None
+        self.status_ctx_label = None
         self.model_dropdown = None
         self.ctx_slider = None
         self.ctx_label = None
@@ -148,10 +152,10 @@ class LlamaConsoleGUI:
     def _load_data_async(self):
         """Run in a background thread: fetch models and status, then update UI."""
         models = get_available_models()
-        text, color = get_server_status()
-        self._apply_data(models, text, color)
+        text, color, model, ctx = get_server_status()
+        self._apply_data(models, text, color, model, ctx)
 
-    def _apply_data(self, models, text, color):
+    def _apply_data(self, models, text, color, model=None, ctx=None):
         """Called on the main event loop thread to update UI widgets."""
         if self.model_dropdown is not None and models is not None:
             self.model_dropdown.options = models if models else ["No models found"]
@@ -169,15 +173,21 @@ class LlamaConsoleGUI:
                 self._update_ctx_slider(models[0])
                 self._update_temp_slider(models[0])
 
-        if self.status_label is not None:
-            self.status_label.set_text(f"Server Status: {text}")
-            self.status_label.style(f"color: {color}; font-weight: bold")
+        if self.status_server_label is not None:
+            self.status_server_label.set_text(f"Server Status: {text}")
+            self.status_server_label.style(f"color: {color};")
+            self.status_model_label.style(f"color: {color};")
+            self.status_ctx_label.style(f"color: {color};")
+            if model:
+                self.status_model_label.set_text(f"Model: {model}")
+            if ctx:
+                self.status_ctx_label.set_text(f"Context: {ctx}")
             ui.notify(f"Status updated: {text}")
 
     def _refresh_status_thread(self):
         """Background thread for status refresh."""
-        text, color = get_server_status()
-        self._apply_data(None, text, color)
+        text, color, model, ctx = get_server_status()
+        self._apply_data(None, text, color, model, ctx)
 
     def update_status(self):
         """Refresh status asynchronously (non-blocking)."""
@@ -290,12 +300,18 @@ class LlamaConsoleGUI:
                 ui.label("by Alvise Dorigo").classes('text-h5')
                 ui.link("https://github.com/dorigoa/llama-console", "https://github.com/dorigoa/llama-console").classes('text-caption no-underline')
 
-            # Server status – larger label
-            with ui.row().classes('items-center q-mb-md'):
-                self.status_label = ui.label("Checking llama-server status...")
-                self.status_label.classes('text-h5')
-                self.status_label.style('font-weight: bold')
-                ui.button("Refresh", on_click=self.update_status).props('outline')
+            # Server status – three small lines, left-aligned with the card below
+            with ui.column().classes('w-full max-w-2xl gap-1 q-mb-4 pr-4'):
+                with ui.row().classes('items-center justify-between'):
+                    self.status_server_label = ui.label("Checking llama-server status...")
+                    self.status_server_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
+                    ui.button("Refresh", on_click=self.update_status).props('outline small')
+
+                self.status_model_label = ui.label("")
+                self.status_model_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
+
+                self.status_ctx_label = ui.label("")
+                self.status_ctx_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
                 ui.label("Model Control").classes('text-h6')
