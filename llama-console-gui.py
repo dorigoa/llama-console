@@ -64,11 +64,12 @@ def get_server_status():
             # we also assume that the output format is not gonna change...
             pieces = output.split(' ')
             l = len(pieces)
-            model = pieces[l-5]
-            ctx = pieces[l-1]
+            model = pieces[l-8]
+            ctx = pieces[l-4]
+            temp = pieces[l-1]
             # status_text += f" | {model} | ctx {ctx}"
     color = "#00ff88" if is_running else "red"
-    return status_text, color, model, ctx
+    return status_text, color, model, ctx, temp
 
 
 def get_available_models():
@@ -98,6 +99,7 @@ class LlamaConsoleGUI:
         self.status_server_label = None
         self.status_model_label = None
         self.status_ctx_label = None
+        self.status_temp_label = None
         self.model_dropdown = None
         self.ctx_slider = None
         self.ctx_label = None
@@ -152,10 +154,10 @@ class LlamaConsoleGUI:
     def _load_data_async(self):
         """Run in a background thread: fetch models and status, then update UI."""
         models = get_available_models()
-        text, color, model, ctx = get_server_status()
-        self._apply_data(models, text, color, model, ctx)
+        text, color, model, ctx, temp = get_server_status()
+        self._apply_data(models, text, color, model, ctx, temp)
 
-    def _apply_data(self, models, text, color, model=None, ctx=None):
+    def _apply_data(self, models, text, color, model=None, ctx=None, temp=None):
         """Called on the main event loop thread to update UI widgets."""
         if self.model_dropdown is not None and models is not None:
             self.model_dropdown.options = models if models else ["No models found"]
@@ -178,10 +180,13 @@ class LlamaConsoleGUI:
             self.status_server_label.style(f"color: {color};")
             self.status_model_label.style(f"color: {color};")
             self.status_ctx_label.style(f"color: {color};")
+            self.status_temp_label.style(f"color: {color};")
             if model:
                 self.status_model_label.set_text(f"Model: {model}")
             if ctx:
                 self.status_ctx_label.set_text(f"Context: {ctx}")
+            if temp:
+                self.status_temp_label.set_text(f"Temp: {temp}")
             ui.notify(f"Status updated: {text}")
 
     def _refresh_status_thread(self):
@@ -310,6 +315,9 @@ class LlamaConsoleGUI:
 
                 self.status_ctx_label = ui.label("")
                 self.status_ctx_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
+
+                self.status_temp_label = ui.label("")
+                self.status_temp_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
 
                 ui.button("Refresh", on_click=self.update_status).props('outline small')
 

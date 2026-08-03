@@ -51,23 +51,40 @@ def valid_csv_tokens(s) -> bool:
     return isinstance(s, str) and _CSV_TOKENS.fullmatch(s) is not None
 
 #___________________________________________________________________________________
-def _get_first_model_name(endpoint: str) -> tuple[str,int] | None:
+def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
 
-    url = f"http://{endpoint}/models"
+    url = f"http://{endpoint}/props"
     try:
         response = requests.get(url)
         response.raise_for_status()  # raise an exception for HTTP codes 4xx, 5xx
         data = response.json()
         # Let's make sure the structure is as expected
-        if isinstance(data, dict) and 'models' in data and isinstance(data['models'], list) and len(data['models']) > 0 and 'data' in data and len(data['data']) > 0:
-            first_model = data['models'][0]
-            first_data  = data['data'][0]#['meta']#['n_ctx']
-            if isinstance(first_model, dict) and 'name' in first_model and isinstance(first_data, dict) and 'meta' in first_data:
-                return (first_model['name'], first_data['meta']['n_ctx'])
-            else:
-                return None
+        # if isinstance(data, dict) and 'models' in data and isinstance(data['models'], list) and len(data['models']) > 0 and 'data' in data and len(data['data']) > 0:
+        #     first_model = data['models'][0]
+        #     first_data  = data['data'][0]#['meta']#['n_ctx']
+        #     if isinstance(first_model, dict) and 'name' in first_model and isinstance(first_data, dict) and 'meta' in first_data:
+        #         return (first_model['name'], first_data['meta']['n_ctx'])
+        #     else:
+        #         return None
+        # else:
+        # logger.debug(f"data={data}")
+        if (
+            isinstance(data, dict)
+            and 'default_generation_settings' in data
+            and isinstance(data['default_generation_settings'], dict)
+            and 'params' in data['default_generation_settings']
+            and isinstance(data['default_generation_settings']['params'], dict)
+            and 'n_ctx' in data['default_generation_settings']
+            and 'temperature' in data['default_generation_settings']['params']
+            and 'model_alias' in data
+        ):
+            model = data['model_alias']
+            n_ctx = data['default_generation_settings']['n_ctx']
+            temp  = data['default_generation_settings']['params']['temperature']
+            return model, n_ctx, temp
         else:
-            raise ValueError("JSON response has a bad structure: missing or empty 'models' and/or 'data or they are not lists")
+            raise ValueError("JSON response has a bad structure")
+        
     except requests.exceptions.RequestException as e:
         raise RuntimeError(f"HTTP request error: {e}") from e
     except json.JSONDecodeError as e:
@@ -131,12 +148,12 @@ def report_server_status() -> bool:
     if pids:
         print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
         try:
-            model, ctxsize = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
+            model, ctxsize, temp = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
         except RuntimeError as e:
             print(f"llama-server is RUNNING but not ready yet: {e}")
         else:
             if model:
-                print(f"Running model: {model} - CTX Size: {ctxsize}")
+                print(f"Running model: {model} - CTX Size: {ctxsize} - Temp: {temp:.1f}")
         return True
     print(f"llama-server is NOT RUNNING on {where}")
     return False
