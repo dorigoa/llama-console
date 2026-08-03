@@ -302,16 +302,16 @@ class LlamaConsoleGUI:
 
             # Server status – three small lines, left-aligned with the card below
             with ui.column().classes('w-full max-w-2xl gap-1 q-mb-4 pr-4'):
-                with ui.row().classes('items-center justify-between'):
-                    self.status_server_label = ui.label("Checking llama-server status...")
-                    self.status_server_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
-                    ui.button("Refresh", on_click=self.update_status).props('outline small')
+                self.status_server_label = ui.label("Checking llama-server status...")
+                self.status_server_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
 
                 self.status_model_label = ui.label("")
                 self.status_model_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
 
                 self.status_ctx_label = ui.label("")
                 self.status_ctx_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
+
+                ui.button("Refresh", on_click=self.update_status).props('outline small')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
                 ui.label("Model Control").classes('text-h6')
