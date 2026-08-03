@@ -19,10 +19,11 @@ class Model:
     size_gib: float | None
     mmproj_path: Path | None
     ctxsize: int
-    temperature: float
-    top_p: float
-    top_k: int
-    min_p: float
+    # temperature: float
+    # top_p: float
+    # top_k: int
+    # min_p: float
+    samplers: str
     reasoning: str | None
     preserv_think: bool | None
     last_started: int
@@ -42,10 +43,11 @@ class Model:
                 size_gib: float,
                 mmproj_path: Path,
                 ctxsize: int,
-                temperature: float,
-                top_p: float,
-                top_k: int,
-                min_p: float,
+                samplers: str,
+                # temperature: float,
+                # top_p: float,
+                # top_k: int,
+                # min_p: float,
                 reasoning: str,
                 preserv_think: bool,
                 last_started: int,
@@ -63,10 +65,11 @@ class Model:
         self.size_gib=size_gib
         self.mmproj_path=mmproj_path
         self.ctxsize=ctxsize
-        self.temperature=temperature
-        self.top_p=top_p
-        self.top_k=top_k
-        self.min_p=min_p
+        # self.temperature=temperature
+        # self.top_p=top_p
+        # self.top_k=top_k
+        # self.min_p=min_p
+        self.samplers=samplers
         self.reasoning=reasoning
         self.preserv_think=preserv_think
         self.last_started=last_started
@@ -84,6 +87,9 @@ class Model:
         for R in self.rpcservers:
             endpoints.append( R.endpoint() )
         return ','.join(endpoints)
+
+    def get_samplers( self ):
+        return self.samplers.split(':')
 
 #___________________________________________________________________________________
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
@@ -195,12 +201,16 @@ def load_models(config_path: Path,
 
         rpcs_for_this_model = []
         if spec.get('RPC_SERVERS') and spec.get('RPC_SERVERS')['ids'] and len(spec.get('RPC_SERVERS')['ids']):
-            
             rpc_names = spec.get('RPC_SERVERS')['ids']         
             if rpc_names: 
                 for n in rpc_names:
                     rpc_name=n['name']
                     rpcs_for_this_model.append( rpcs[rpc_name] )
+
+        if not spec.get("SAMPLERS"):
+            if len(spec("SAMPLERS")) < 4:
+                logger.error(f"Error: for model {spec["ALIAS"]} samplers is to well formed")
+                sys.exit(1)
 
 
         models.append(
@@ -211,10 +221,11 @@ def load_models(config_path: Path,
                 size_gib=size_gib,
                 mmproj_path=Path(spec["MMPROJ"]) if spec["MMPROJ"] is not None else None,
                 ctxsize=int(spec["ctx"]),
-                temperature=float(spec["TEMP"]),
-                top_p=float(spec["TOPP"]),
-                top_k=int(spec["TOPK"]),
-                min_p=float(spec["MINP"]),
+                # temperature=float(spec["TEMP"]),
+                # top_p=float(spec["TOPP"]),
+                # top_k=int(spec["TOPK"]),
+                # min_p=float(spec["MINP"]),
+                samplers=spec["SAMPLERS"],
                 reasoning=reas_eff,
                 preserv_think=preserv_think,
                 last_started=0,

@@ -124,7 +124,9 @@ class LlamaConsoleGUI:
         spec = get_model_spec(model_name)
         if spec is None:
             return
-        max_temp = float(spec.get("TEMP", 1.0))
+        
+        #max_temp = float(spec.get("TEMP", 1.0))
+        max_temp = float(spec.get("SAMPLERS").split(':')[0])
         self.temp_slider._props['min'] = 0
         self.temp_slider._props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
@@ -190,7 +192,8 @@ class LlamaConsoleGUI:
         ctx_value = int(self.ctx_slider.value) if self.ctx_slider and self.ctx_slider.value is not None else None
         temp_value = float(self.temp_slider.value) if self.temp_slider and self.temp_slider.value is not None else None
         spec = get_model_spec(model)
-        model_max_temp = float(spec.get("TEMP", 1.0)) if spec else None
+        #model_max_temp = float(spec.get("TEMP", 1.0)) if spec else None
+        model_max_temp = float(spec.get("SAMPLERS").split(':')[0])
         # Only pass --override-temp if user actually changed it from the default
         send_temp = False
         if temp_value is not None and model_max_temp is not None:

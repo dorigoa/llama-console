@@ -31,6 +31,8 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         else:
             data = {"preserve_thinking": model.preserv_think}
 
+    samplers = model.samplers
+
     cmd += ["--host", settings.ADDRESS_BIND]
     cmd += ["--port", str(settings.PORT_BIND)]
     cmd += ["--split-mode", "layer"]
@@ -41,9 +43,9 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["-fitc", "8192"]
     cmd += ["-np", "1"] # Required by MTP processing
     cmd += ["--no-warmup"]
-    cmd += ["--temp", str(model.temperature)]
-    cmd += ["--top-p", str(model.top_p)]
-    cmd += ["--top-k", str(model.top_k)]
+    cmd += ["--temp", str(samplers.split(':')[0])]
+    cmd += ["--top-p", str(samplers.split(':')[1])]
+    cmd += ["--top-k", str(samplers.split(':')[2])]
     if data:
         cmd += ["--chat-template-kwargs", json.dumps(data)]
 
@@ -56,7 +58,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         cmd += ["-ctv", model.kvquant]
     cmd += ["--alias", str(model.alias)]
     if model.min_p >= 0:
-        cmd += ["--min-p", str(model.min_p)]
+        cmd += ["--min-p", str(samplers.split(':')[3])]
 
     if model.ub:
         cmd += ["-ub", str(model.ub)]
