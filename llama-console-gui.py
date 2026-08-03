@@ -66,7 +66,7 @@ def get_server_status():
             l = len(pieces)
             model = pieces[l-5]
             ctx = pieces[l-1]
-            status_text += f" | {model} | ctx {ctx}"
+            # status_text += f" | {model} | ctx {ctx}"
     color = "#00ff88" if is_running else "red"
     return status_text, color, model, ctx
 
