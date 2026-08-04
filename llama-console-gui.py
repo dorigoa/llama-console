@@ -308,10 +308,11 @@ class LlamaConsoleGUI:
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
                 for label in (self.status_model_label,
                               self.status_ctx_label, self.status_temp_label):
-                    label.style(
-                        'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
-                        'font-size: 0.9rem; font-weight: 600; white-space: nowrap;'
-                    )
+                    label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
+                    # label.style(
+                    #     'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
+                    #     'font-size: 0.9rem; font-weight: 600; white-space: nowrap;'
+                    # )
 
                 ui.button("Refresh", on_click=self.refresh).props('outline small')
 
