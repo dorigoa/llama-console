@@ -1,101 +1,85 @@
-import subprocess
-import threading
-import logzero
-from logzero import logger
-import re
+"""NiceGUI front-end for start_model.py.
+
+Everything this UI knows about models and about the server comes from
+`start_model.py --json`: the CLI is the single source of truth, and the two
+communicate over a real data structure instead of the printed text the UI used
+to slice by word position.
+"""
+
+import asyncio
+import contextlib
 import json
+import os
 import shlex
+import signal
+import sys
 from pathlib import Path
-from nicegui import ui
+
+from logzero import logger
+from nicegui import context, ui
+
 from config_manager import get_settings
 
 settings = get_settings()
-#MODELS_JSON = Path(__file__).parent / "models.json"
+
+# Resolve start_model.py next to this file: relying on the process CWD broke as
+# soon as the systemd unit was started from anywhere else.
+_START_MODEL = str(Path(__file__).parent / "start_model.py")
+# sys.executable, not "python3": the child must run in the same interpreter (and
+# virtualenv) as the GUI, not whatever "python3" resolves to in PATH.
+_PY = sys.executable
+
+_CTX_MIN = 8192
+_CTX_STEP = 1024
 
 
-def _load_models_json():
-    """Return the raw models dict from models.json (name -> spec)."""
+#___________________________________________________________________________________
+async def _capture(argv: list[str]) -> tuple[str, int]:
+    """Run argv to completion off the event loop; return (stdout, returncode)."""
+    logger.debug(f"Executing {argv}")
+    proc = await asyncio.create_subprocess_exec(
+        *argv,
+        stdout=asyncio.subprocess.PIPE,
+        stderr=asyncio.subprocess.PIPE,
+    )
+    stdout, stderr = await proc.communicate()
+    if stderr:
+        logger.debug(stderr.decode(errors="replace").rstrip())
+    return stdout.decode(errors="replace"), proc.returncode
+
+
+#___________________________________________________________________________________
+async def _run_json(args: list[str]) -> dict | None:
+    """Run start_model.py with --json and return the parsed stdout, or None.
+
+    The return code is deliberately ignored: --server-status exits 1 to mean
+    'not running', which is a perfectly valid answer, not a failure. What tells
+    success from failure here is whether stdout carried parseable JSON.
+    """
+    out, rc = await _capture([_PY, _START_MODEL, *args, "--json"])
+    if not out.strip():
+        logger.error(f"start_model.py {' '.join(args)} produced no output (rc={rc})")
+        return None
     try:
-        with open(settings.MODELS_JSON, encoding="utf-8") as f:
-            data = json.load(f)
-        return data.get("models", {})
-    except Exception:
-        return {}
+        return json.loads(out)
+    except json.JSONDecodeError as e:
+        logger.error(f"start_model.py {' '.join(args)} returned invalid JSON: {e}")
+        return None
 
 
-def get_model_spec(model_name: str) -> dict | None:
-    """Look up a model's spec in models.json. Returns None if not found."""
-    models = _load_models_json()
-    # Try exact match first, then strip size/RPC suffix from dropdown label
-    if model_name in models:
-        return models[model_name]
-    # Dropdown may show "ModelName (60 GiB - 2 RPC)" — strip everything after ' ('
-    base = model_name.split(" (")[0].strip()
-    return models.get(base)
-
-
-def run_command(args):
-    """Helper to run a shell command and return output."""
-    try:
-        full_command = ["python3", "start_model.py"] + args
-        logger.debug(f"Executing Command from array {full_command}")
-        result = subprocess.run(
-            full_command,
-            capture_output=True,
-            text=True,
-            check=False
-        )
-        output = result.stdout.strip()
-        logger.debug(f"output={output}")
-        return output, result.returncode
-    except Exception as e:
-        return str(e), 1
-
-
-def get_server_status():
-    output, rc = run_command(["--server-status"])
-    is_running = ('is RUNNING' in output)
-    status_text = "RUNNING" if is_running else "NOT RUNNING"
-    model = ""
-    ctx = ""
-    if is_running:
-        if "Running model:" in output:
-            # here we assume that the model name doesn't contain space(s)
-            # we also assume that the output format is not gonna change...
-            pieces = output.split(' ')
-            l = len(pieces)
-            model = pieces[l-8]
-            ctx = pieces[l-4]
-            temp = pieces[l-1]
-            # status_text += f" | {model} | ctx {ctx}"
-    color = "#00ff88" if is_running else "red"
-    return status_text, color, model, ctx, temp
-
-
-def get_available_models():
-    output, rc = run_command(["--list-models"])
-    if rc != 0:
-        return []
-    # The output format is:
-    # Available models:
-    #   model1 (10 GiB - 0 RPC)
-    #   model2 (5 GiB - 2 RPC)
-    models = []
-    lines = output.splitlines()
-    for line in lines:
-        line = line.strip()
-        if line and not line.startswith("Available models:"):
-            # Extract the model name (everything before the first '(')
-            #match = re.match(r"^([^(]+)\\(.*\\)$", line)
-            #if match:
-            #    models.append(match.group(1).strip())
-            #else:
-            models.append(line)
-    return models
-
-
+#___________________________________________________________________________________
 class LlamaConsoleGUI:
+    """One instance per connected browser.
+
+    The UI used to be built once at import time, so every client shared the same
+    widget objects; it is now created inside an @ui.page handler (see below),
+    which is also what puts UI updates on the right client context.
+    """
+
     def __init__(self):
+        self.specs: dict[str, dict] = {}
+        self.log_task: asyncio.Task | None = None
+
         self.status_server_label = None
         self.status_model_label = None
         self.status_ctx_label = None
@@ -106,243 +90,245 @@ class LlamaConsoleGUI:
         self.temp_slider = None
         self.temp_label = None
         self.log_window = None
-        self.log_thread = None
-        self.stop_log_event = threading.Event()
+        self.stop_log_button = None
 
-    def _update_ctx_slider(self, model_name: str):
-        """Update slider min/max/value when model changes."""
-        spec = get_model_spec(model_name)
+    # ---------------------------------------------------------------- data ---
+    async def load_models(self) -> None:
+        data = await _run_json(["--list-models"])
+        if data is None:
+            self.model_dropdown.options = {"": "No models found"}
+            self.model_dropdown.update()
+            ui.notify("Could not load the model list", type="negative")
+            return
+
+        self.specs = {m["name"]: m for m in data.get("models", [])}
+        if not self.specs:
+            self.model_dropdown.options = {"": "No models found"}
+            self.model_dropdown.update()
+            return
+
+        # Dict options: the value stays the bare model name, so nothing
+        # downstream has to strip the ' (60 GiB - 2 RPC)' suffix back off.
+        self.model_dropdown.options = {
+            name: f"{name} ({int(s['size_gib']) if s.get('size_gib') is not None else '?'} GiB"
+                  f" - {s['rpc_count']} RPC)"
+            for name, s in self.specs.items()
+        }
+        self.model_dropdown.props(remove='disable')
+        self.model_dropdown.props('label="Model selector"')
+        first = next(iter(self.specs))
+        self.model_dropdown.set_value(first)
+        self.model_dropdown.update()
+        self._apply_model_spec(first)
+
+    async def update_status(self) -> None:
+        info = await _run_json(["--server-status"])
+        if info is None:
+            self.status_server_label.set_text("Server Status: UNKNOWN")
+            self.status_server_label.style("color: orange;")
+            return
+
+        running = bool(info.get("running"))
+        color = "#00ff88" if running else "red"
+        self.status_server_label.set_text(
+            f"Server Status: {'RUNNING' if running else 'NOT RUNNING'}"
+        )
+        for label in (self.status_server_label, self.status_model_label,
+                      self.status_ctx_label, self.status_temp_label):
+            label.style(f"color: {color};")
+
+        if running and info.get("ready"):
+            self.status_model_label.set_text(f"Model: {info['model']}")
+            self.status_ctx_label.set_text(f"Context: {info['ctx']}")
+            # Rounded: llama-server reports the float32 round-trip of 0.6 as
+            # 0.6000000238418579.
+            self.status_temp_label.set_text(f"Temp: {float(info['temperature']):.2f}")
+        elif running:
+            self.status_model_label.set_text("Model: (starting up...)")
+            self.status_ctx_label.set_text("")
+            self.status_temp_label.set_text("")
+        else:
+            self.status_model_label.set_text("")
+            self.status_ctx_label.set_text("")
+            self.status_temp_label.set_text("")
+
+    async def refresh(self) -> None:
+        await self.update_status()
+        ui.notify("Status updated")
+
+    # -------------------------------------------------------------- sliders ---
+    def _apply_model_spec(self, model_name: str) -> None:
+        """Point both sliders at the selected model's bounds and defaults."""
+        spec = self.specs.get(model_name)
         if spec is None:
             return
-        native_ctx = int(spec.get("native_ctx", spec.get("ctx", 8192)))
-        default_ctx = int(spec.get("ctx", 8192))
-        # Clamp default to [min, native_ctx]
-        min_val = 8192
-        clamped_default = max(min_val, min(default_ctx, native_ctx))
-        self.ctx_slider._props['min'] = min_val
-        self.ctx_slider._props['max'] = native_ctx
-        self.ctx_slider.set_value(clamped_default)
-        self.ctx_label.set_text(f"Context: {clamped_default:,}  (max: {native_ctx:,})")
-        self.ctx_slider.update()
 
-    def _update_temp_slider(self, model_name: str):
-        """Update temperature slider max/value when model changes."""
-        spec = get_model_spec(model_name)
-        if spec is None:
-            return
-        
-        #max_temp = float(spec.get("TEMP", 1.0))
-        max_temp = float(spec.get("SAMPLERS").split(':')[0])
-        self.temp_slider._props['min'] = 0
-        self.temp_slider._props['max'] = max_temp
+        native_ctx = int(spec["native_ctx"])
+        # min() guards a model whose native context is below the usual floor:
+        # a slider with min > max cannot be dragged at all.
+        ctx_min = min(_CTX_MIN, native_ctx)
+        ctx_value = max(ctx_min, min(int(spec["ctx"]), native_ctx))
+        # element.props is a public observable dict in NiceGUI 3.x, so assigning
+        # to it schedules the update by itself. The value still goes through
+        # set_value(): pushing it as a 'value=' prop is what breaks dragging.
+        self.ctx_slider.props['min'] = ctx_min
+        self.ctx_slider.props['max'] = native_ctx
+        self.ctx_slider.set_value(ctx_value)
+        self.ctx_label.set_text(f"Context: {ctx_value:,}  (max: {native_ctx:,})")
+
+        # NOTE: unchanged semantics — the model's configured temperature doubles
+        # as the slider maximum, so it can only be lowered from here.
+        max_temp = float(spec["temperature"])
+        self.temp_slider.props['min'] = 0
+        self.temp_slider.props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
-        self.temp_slider.update()
 
-    def _on_model_change(self, e):
-        """Called when the user picks a different model."""
-        model_name = e.value
-        if not model_name:
-            return
-        self._update_ctx_slider(model_name)
-        self._update_temp_slider(model_name)
+    def _on_model_change(self, e) -> None:
+        if e.value:
+            self._apply_model_spec(e.value)
 
-    def _spawn_loader(self):
-        """Called on event loop thread: spawn background thread for blocking I/O."""
-        threading.Thread(target=self._load_data_async, daemon=True).start()
+    # ------------------------------------------------------------- commands ---
+    async def _stream(self, argv: list[str]) -> int:
+        """Run argv and push its output into the log window line by line."""
+        # start_new_session gives the child its own process group so that the
+        # whole tree can be signalled at once. Terminating just the direct child
+        # left start_model.py's own `ssh -t ... tail -F` orphaned onto init,
+        # still holding a tail open on the remote host.
+        proc = await asyncio.create_subprocess_exec(
+            *argv,
+            stdout=asyncio.subprocess.PIPE,
+            stderr=asyncio.subprocess.STDOUT,
+            start_new_session=True,
+        )
+        try:
+            async for raw in proc.stdout:
+                self.log_window.push(raw.decode(errors="replace").rstrip())
+            return await proc.wait()
+        finally:
+            if proc.returncode is None:
+                with contextlib.suppress(ProcessLookupError, PermissionError):
+                    os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
-    def _load_data_async(self):
-        """Run in a background thread: fetch models and status, then update UI."""
-        models = get_available_models()
-        text, color, model, ctx, temp = get_server_status()
-        self._apply_data(models, text, color, model, ctx, temp)
-
-    def _apply_data(self, models, text, color, model=None, ctx=None, temp=None):
-        """Called on the main event loop thread to update UI widgets."""
-        if self.model_dropdown is not None and models is not None:
-            self.model_dropdown.options = models if models else ["No models found"]
-            self.model_dropdown.props('label=Model selector')
-            try:
-                self.model_dropdown.props(remove='disable')
-            except:
-                pass
-            # Select the first model if any are available
-            if models:
-                self.model_dropdown.set_value(models[0])
-            self.model_dropdown.update()
-            # Initialize sliders to first available model
-            if models:
-                self._update_ctx_slider(models[0])
-                self._update_temp_slider(models[0])
-
-        if self.status_server_label is not None:
-            self.status_server_label.set_text(f"Server Status: {text}")
-            self.status_server_label.style(f"color: {color};")
-            self.status_model_label.style(f"color: {color};")
-            self.status_ctx_label.style(f"color: {color};")
-            self.status_temp_label.style(f"color: {color};")
-            if model:
-                self.status_model_label.set_text(f"Model: {model}")
-            if ctx:
-                self.status_ctx_label.set_text(f"Context: {ctx}")
-            if temp:
-                self.status_temp_label.set_text(f"Temp: {temp}")
-            ui.notify(f"Status updated: {text}")
-
-    def _refresh_status_thread(self):
-        """Background thread for status refresh."""
-        text, color, model, ctx = get_server_status()
-        self._apply_data(None, text, color, model, ctx)
-
-    def update_status(self):
-        """Refresh status asynchronously (non-blocking)."""
-        threading.Thread(target=self._refresh_status_thread, daemon=True).start()
-
-    def start_selected_model(self):
+    async def start_selected_model(self) -> None:
         model = self.model_dropdown.value
-        if not model:
+        spec = self.specs.get(model)
+        if spec is None:
             ui.notify("Please select a model first", type="warning")
             return
 
-        ctx_value = int(self.ctx_slider.value) if self.ctx_slider and self.ctx_slider.value is not None else None
-        temp_value = float(self.temp_slider.value) if self.temp_slider and self.temp_slider.value is not None else None
-        spec = get_model_spec(model)
-        #model_max_temp = float(spec.get("TEMP", 1.0)) if spec else None
-        model_max_temp = float(spec.get("SAMPLERS").split(':')[0])
-        # Only pass --override-temp if user actually changed it from the default
-        send_temp = False
-        if temp_value is not None and model_max_temp is not None:
-            if abs(temp_value - model_max_temp) > 0.001:
-                send_temp = True
-        ui.notify(f"Starting model {model.split(' ')[0]} (ctx={ctx_value})...")
-        def task():
-            args = [model.split(' ')[0]]
-            if ctx_value:
-                args += ["--override-ctx", str(ctx_value)]
-            if send_temp and temp_value is not None:
-                args += ["--override-temp", f"{temp_value:.4f}"]
+        args = [model]
+        ctx_value = int(self.ctx_slider.value)
+        args += ["--override-ctx", str(ctx_value)]
 
-            args += ["--debug"]
+        # Only override the temperature if the user actually moved the slider.
+        temp_value = float(self.temp_slider.value)
+        if abs(temp_value - float(spec["temperature"])) > 0.001:
+            args += ["--override-temp", f"{temp_value:.4f}"]
+        args += ["--debug"]
 
-            # Stream start_model.py output into the log window so the user sees
-            # RPC checks, device enumeration, launch confirmation, and errors.
-            # -u forces unbuffered Python output so lines arrive immediately.
-            cmd = ["python3", "-u", "start_model.py"] + args
-            self.log_window.push(f"--- Starting model: {shlex.join(cmd)} ---")
-            try:
-                process = subprocess.Popen(
-                    cmd,
-                    stdout=subprocess.PIPE,
-                    stderr=subprocess.STDOUT,
-                    text=True,
-                    bufsize=1
-                )
-                while True:
-                    line = process.stdout.readline()
-                    if not line:
-                        break
-                    self.log_window.push(line.rstrip())
-                rc = process.wait()
-                if rc == 0:
-                    ui.notify(f"Model {model} started successfully", type="positive")
-                else:
-                    ui.notify(f"Error starting model (exit {rc})", type="negative")
-            except Exception as e:
-                self.log_window.push(f"Launch Error: {str(e)}")
-                ui.notify(f"Error starting model: {e}", type="negative")
-            self.update_status()
-
-        threading.Thread(target=task, daemon=True).start()
-
-    def stop_server(self):
-        ui.notify("Stopping server...")
-        def task():
-            output, rc = run_command(["--kill-server"])
-            if rc == 0:
-                ui.notify("Server stopped", type="positive")
-            else:
-                ui.notify(f"Error stopping server: {output}", type="negative")
-            self.update_status()
-
-        threading.Thread(target=task, daemon=True).start()
-
-    def stream_logs(self):
-        process = None
+        ui.notify(f"Starting model {model} (ctx={ctx_value})...")
+        # -u keeps the child's output unbuffered so lines arrive as they happen.
+        cmd = [_PY, "-u", _START_MODEL, *args]
+        self.log_window.push(f"--- Starting model: {shlex.join(cmd)} ---")
         try:
-            process = subprocess.Popen(
-                ["python3", "start_model.py", "--tail-log", "-n", "1000"],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.STDOUT,
-                text=True,
-                bufsize=1
-            )
+            rc = await self._stream(cmd)
+        except OSError as e:
+            self.log_window.push(f"Launch Error: {e}")
+            ui.notify(f"Error starting model: {e}", type="negative")
+        else:
+            if rc == 0:
+                ui.notify(f"Model {model} started successfully", type="positive")
+            else:
+                ui.notify(f"Error starting model (exit {rc})", type="negative")
+        await self.update_status()
 
-            while not self.stop_log_event.is_set():
-                line = process.stdout.readline()
-                if not line:
-                    break
-                self.log_window.push(line.strip())
+    async def stop_server(self) -> None:
+        ui.notify("Stopping server...")
+        out, rc = await _capture([_PY, _START_MODEL, "--kill-server"])
+        if rc == 0:
+            ui.notify("Server stopped", type="positive")
+        else:
+            ui.notify(f"Error stopping server: {out.strip()}", type="negative")
+        await self.update_status()
 
-        except Exception as e:
-            self.log_window.push(f"Log Error: {str(e)}")
+    # ------------------------------------------------------------ log tail ---
+    async def _stream_logs(self) -> None:
+        argv = [_PY, "-u", _START_MODEL, "--tail-log", "-n", "1000"]
+        try:
+            await self._stream(argv)
+        except asyncio.CancelledError:
+            self.log_window.push("--- log streaming stopped ---")
+            raise
+        except OSError as e:
+            self.log_window.push(f"Log Error: {e}")
         finally:
-            if 'process' in locals():
-                if process:
-                    process.terminate()
+            if self.stop_log_button is not None:
+                self.stop_log_button.disable()
 
-    def start_log_streaming(self):
-        self.stop_log_event.clear()
-        self.log_thread = threading.Thread(target=self.stream_logs, daemon=True)
-        self.log_thread.start()
+    def start_log_streaming(self) -> None:
+        # Without this guard every click stacked another `tail -F` that nothing
+        # could ever stop.
+        if self.log_task is not None and not self.log_task.done():
+            ui.notify("Log streaming is already running", type="warning")
+            return
+        self.log_task = asyncio.create_task(self._stream_logs())
+        self.stop_log_button.enable()
         ui.notify("Log streaming started")
 
-    def build_ui(self):
-        ui.dark_mode().enable()
+    def stop_log_streaming(self) -> None:
+        if self.log_task is None or self.log_task.done():
+            ui.notify("Log streaming is not running", type="warning")
+            return
+        self.log_task.cancel()
+        ui.notify("Log streaming stopped")
 
+    def cleanup(self) -> None:
+        """Tear down the tail when the browser tab goes away."""
+        if self.log_task is not None and not self.log_task.done():
+            self.log_task.cancel()
+
+    # ------------------------------------------------------------------ UI ---
+    def build_ui(self) -> None:
         with ui.column().classes('w-full items-center p-8'):
             with ui.column().classes('items-center q-mb-md'):
                 ui.label("LLama.cpp Console").classes('text-h5')
                 ui.label("by Alvise Dorigo").classes('text-h5')
-                ui.link("https://github.com/dorigoa/llama-console", "https://github.com/dorigoa/llama-console").classes('text-caption no-underline')
+                ui.link("https://github.com/dorigoa/llama-console",
+                        "https://github.com/dorigoa/llama-console").classes('text-caption no-underline')
 
-            # Server status – three small lines, left-aligned with the card below
             with ui.column().classes('w-full max-w-2xl gap-1 q-mb-4 pr-4'):
                 self.status_server_label = ui.label("Checking llama-server status...")
-                self.status_server_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
-
                 self.status_model_label = ui.label("")
-                self.status_model_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
-
                 self.status_ctx_label = ui.label("")
-                self.status_ctx_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
-
                 self.status_temp_label = ui.label("")
-                self.status_temp_label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
+                for label in (self.status_server_label, self.status_model_label,
+                              self.status_ctx_label, self.status_temp_label):
+                    label.style('font-size: 0.8rem; font-weight: 600; white-space: nowrap;')
 
-                ui.button("Refresh", on_click=self.update_status).props('outline small')
+                ui.button("Refresh", on_click=self.refresh).props('outline small')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
                 ui.label("Model Control").classes('text-h6')
 
                 with ui.row().classes('w-full items-center q-mb-md'):
                     self.model_dropdown = ui.select(
-                        options=["Loading models..."],
+                        options={"": "Loading models..."},
+                        value="",
                         label="Loading models...",
-                        on_change=self._on_model_change
+                        on_change=self._on_model_change,
                     ).props('disable').classes('flex-grow')
 
                     ui.button("START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
 
-                # Context size – larger label, modern slider
                 with ui.column().classes('w-full q-mt-sm'):
                     self.ctx_label = ui.label("Context: —").classes('text-subtitle1')
                     self.ctx_slider = ui.slider(
-                        min=1024, max=262144, value=8192, step=1024,
+                        min=_CTX_MIN, max=262144, value=_CTX_MIN, step=_CTX_STEP,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
                     ).classes('flex-grow').props('color=green')
 
-                # Temperature – same style as context slider
                 with ui.column().classes('w-full q-mt-sm'):
                     self.temp_label = ui.label("Temperature: —").classes('text-subtitle1')
                     self.temp_slider = ui.slider(
@@ -352,13 +338,17 @@ class LlamaConsoleGUI:
 
             ui.label("Server Logs").classes('text-h6 q-mt-lg')
             with ui.row().classes('w-full items-center q-mb-sm'):
-                ui.button("Connect to llama-server logs", on_click=self.start_log_streaming).props('small')
+                ui.button("Connect to llama-server logs",
+                          on_click=self.start_log_streaming).props('small')
+                self.stop_log_button = ui.button("Stop log streaming",
+                                                 on_click=self.stop_log_streaming).props('small outline')
+                self.stop_log_button.disable()
                 ui.button("Clear Logs", on_click=lambda: self.log_window.clear()).props('small outline')
 
-            self.log_window = ui.log().classes('w-full h-[600px] bg-black text-green-400 font-mono text-xs custom-log')
+            self.log_window = ui.log().classes(
+                'w-full h-[600px] bg-black text-green-400 font-mono text-xs custom-log')
 
-            # Custom scrollbar styles for the log window
-            ui.add_head_html('''
+        ui.add_head_html('''
 <style>
 .custom-log {
     scrollbar-width: thin !important;
@@ -383,12 +373,21 @@ class LlamaConsoleGUI:
 </style>
 ''')
 
-        # Use ui.timer to defer data loading until the event loop is running.
-        # This ensures the page renders immediately without blocking.
-        ui.timer(0, self._spawn_loader, once=True)
+    async def load_initial_data(self) -> None:
+        await self.load_models()
+        await self.update_status()
 
 
-gui_app = LlamaConsoleGUI()
-gui_app.build_ui()
+#___________________________________________________________________________________
+@ui.page('/')
+def index() -> None:
+    ui.dark_mode().enable()
+    gui = LlamaConsoleGUI()
+    gui.build_ui()
+    context.client.on_disconnect(gui.cleanup)
+    # Deferred so the page renders immediately instead of waiting on the SSH
+    # round-trips behind --list-models / --server-status.
+    ui.timer(0, gui.load_initial_data, once=True)
 
-ui.run(title=settings.UI_TITLE, port=8501, host="0.0.0.0", reload=False, show=False)
+
+ui.run(title=settings.UI_TITLE, port=settings.UI_PORT, host="0.0.0.0", reload=False, show=False)

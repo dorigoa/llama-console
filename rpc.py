@@ -4,6 +4,11 @@ from pathlib import Path
 import json
 import sys
 
+from errors import ConfigError
+
+# Every RPC server entry in rpc.json must carry all of these.
+_REQUIRED_KEYS = ("ip", "port", "cachepath", "bin", "remuser")
+
 #___________________________________________________________________________________
 @dataclass
 class RpcServer:
@@ -13,16 +18,9 @@ class RpcServer:
     bin: Path
     remuser: str
 
-    def __init__(self, IP: str, PORT: int, cachepath: Path, bin: Path, remuser: str ):
-        self.IP = IP
-        self.PORT = PORT
-        self.cachepath = cachepath
-        self.bin = bin
-        self.remuser = remuser
-
     def endpoint( self ) -> str:
         return f"{self.IP}:{self.PORT}"
-           
+
 
 #___________________________________________________________________________________
 def load_rpcs(config_path: Path):
@@ -31,36 +29,23 @@ def load_rpcs(config_path: Path):
 
     rpc_section = rpcs.get("RPC_SERVERS", {})
     if not rpc_section:
-        logger.error(f"Malformed json file {config_path}: missing section 'RPC_SERVERS'")
-        sys.exit(1)
+        raise ConfigError(f"Malformed json file {config_path}: missing section 'RPC_SERVERS'")
 
     rpc = {}
-    
-    for name in rpc_section:
-        if not rpc_section[name].get("ip"):
-            logger.error(f"Malformed json file {config_path}: missing attribute 'ip' for {name}")
-            sys.exit(1)
-        if not rpc_section[name].get("ip"):
-                    logger.error(f"Malformed json file {config_path}: missing attribute 'ip' for {name}")
-                    sys.exit(1)
-        if not rpc_section[name].get("port"):
-                    logger.error(f"Malformed json file {config_path}: missing attribute 'ip' for {name}")
-                    sys.exit(1)
-        if not rpc_section[name].get("cachepath"):
-                    logger.error(f"Malformed json file {config_path}: missing attribute 'ip' for {name}")
-                    sys.exit(1)
-        if not rpc_section[name].get("bin"):
-                    logger.error(f"Malformed json file {config_path}: missing attribute 'ip' for {name}")
-                    sys.exit(1)
-        if not rpc_section[name].get("remuser"):
-                    logger.error(f"Malformed json file {config_path}: missing attribute 'ip' for {name}")
-                    sys.exit(1)
+
+    for name, spec in rpc_section.items():
+        missing = [k for k in _REQUIRED_KEYS if not spec.get(k)]
+        if missing:
+            raise ConfigError(
+                f"Malformed json file {config_path}: RPC server '{name}' is missing "
+                f"attribute(s): {', '.join(missing)}"
+            )
         rpc[name] = RpcServer(
-                IP=rpc_section[name]["ip"],
-                PORT=int(rpc_section[name]["port"]),
-                cachepath=rpc_section[name]["cachepath"],
-                bin=rpc_section[name]["bin"],
-                remuser=rpc_section[name]["remuser"]
+                IP=spec["ip"],
+                PORT=int(spec["port"]),
+                cachepath=spec["cachepath"],
+                bin=spec["bin"],
+                remuser=spec["remuser"]
             )
     return rpc
 
@@ -85,7 +70,11 @@ if __name__ == "__main__":
         sys.exit(1)
     
     settings = get_settings()
-    
-    rpcs = load_rpcs(config_path=config_path)
+
+    try:
+        rpcs = load_rpcs(config_path=config_path)
+    except ConfigError as e:
+        logger.error(e)
+        sys.exit(1)
     logger.debug(f"{len(rpcs)} RPC servers loaded")
     logger.debug(f"RPC={rpcs}")

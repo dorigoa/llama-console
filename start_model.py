@@ -7,9 +7,6 @@ UI can poll via SSH.
 """
 
 
-#import logging
-import os
-import re
 import shlex
 import sys
 import json
@@ -17,7 +14,6 @@ import time
 import logzero
 import argparse
 import requests
-# import subprocess
 from pathlib import Path
 from logzero import logger
 
@@ -30,25 +26,18 @@ from remote_cmd_executor import remote_exec
 # So we pre-scan sys.argv to know the flag early.
 logzero.loglevel(logzero.DEBUG if "--debug" in sys.argv else logzero.INFO)
 
-from rpc import RpcServer, load_rpcs
+from errors import ConfigError
 from model import Model, load_models
 from config_manager import get_settings
 from command_builder import build_command
 from rpc_check import unreachable_rpc_servers, start_rpc_server, wait_for_rpc_servers, kill_rpc_server, rpc_peers
 
 
-
-_CSV_TOKENS = re.compile(r"[A-Za-z0-9]+(?:,[A-Za-z0-9]+)*")
-
 # Backend init (Metal/CUDA enumeration) alone can take ~10s, so this is deliberately
 # generous: it is a deadlock guard, not a latency budget.
 _LIST_DEVICES_TIMEOUT = 60
 
 settings = get_settings()
-
-#___________________________________________________________________________________
-def valid_csv_tokens(s) -> bool:
-    return isinstance(s, str) and _CSV_TOKENS.fullmatch(s) is not None
 
 #___________________________________________________________________________________
 def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
@@ -123,12 +112,11 @@ def _run_on_server(shell_cmd: str, timeout: int = 15):# -> subprocess.CompletedP
     r = remote_exec( argv, timeout )
 
     if not r:
-        sys.exit(1)
+        raise ServerHostUnreachable(f"{_server_location()} did not answer within {timeout}s")
 
     if ssh_dest and r.returncode == 255:
         detail = r.stderr.strip() or "connection failed"
-        logger.error(f"SSH error contacting {ssh_dest}: {detail}")
-        sys.exit(1)
+        raise ServerHostUnreachable(f"SSH error contacting {ssh_dest}: {detail}")
     return r
 
 #___________________________________________________________________________________
@@ -141,22 +129,47 @@ def _server_pids() -> list[str]:
     return [p for p in r.stdout.split() if p.strip().isdigit()]
 
 #___________________________________________________________________________________
-def report_server_status() -> bool:
-    """Print whether llama-server is running. Return True if running."""
-    where = _server_location()
+def server_status() -> dict:
+    """Structured status of llama-server: the single source of truth behind both
+    the human-readable report and --json.
+
+    'running' says a process exists; 'ready' says it also answers /props (a
+    freshly started server is RUNNING but not yet ready for a while)."""
+    info = {"where": _server_location(), "running": False, "ready": False, "pids": []}
     pids = _server_pids()
-    if pids:
-        print(f"llama-server is RUNNING on {where} (pid(s): {', '.join(pids)})")
-        try:
-            model, ctxsize, temp = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
-        except RuntimeError as e:
-            print(f"llama-server is RUNNING but not ready yet: {e}")
-        else:
-            if model:
-                print(f"Running model: {model} - CTX Size: {ctxsize} - Temp: {temp:.1f}")
-        return True
-    print(f"llama-server is NOT RUNNING on {where}")
-    return False
+    if not pids:
+        return info
+
+    info["running"] = True
+    info["pids"] = pids
+    try:
+        model, ctxsize, temp = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
+    except (RuntimeError, ValueError) as e:
+        # ValueError too: _get_first_model_name raises it on an unexpected JSON
+        # shape, and it is not a subclass of RuntimeError.
+        info["error"] = str(e)
+    else:
+        info.update(ready=True, model=model, ctx=ctxsize, temperature=temp)
+    return info
+
+#___________________________________________________________________________________
+def report_server_status(as_json: bool = False) -> bool:
+    """Print whether llama-server is running. Return True if running."""
+    info = server_status()
+    if as_json:
+        print(json.dumps(info))
+        return info["running"]
+
+    if not info["running"]:
+        print(f"llama-server is NOT RUNNING on {info['where']}")
+        return False
+
+    print(f"llama-server is RUNNING on {info['where']} (pid(s): {', '.join(info['pids'])})")
+    if info["ready"]:
+        print(f"Running model: {info['model']} - CTX Size: {info['ctx']} - Temp: {info['temperature']:.1f}")
+    else:
+        print(f"llama-server is RUNNING but not ready yet: {info['error']}")
+    return True
 
 #___________________________________________________________________________________
 def stop_server() -> bool:
@@ -197,8 +210,11 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
     where = _server_location()
     ssh_dest = _ssh_dest()
 
-    flag = "-F" if follow else ""
-    tail_cmd = f"tail -n {int(lines)} {flag} {shlex.quote(settings.LLAMA_LOG_FILE)}".replace("  ", " ")
+    tail_args = ["tail", "-n", str(int(lines))]
+    if follow:
+        tail_args.append("-F")
+    tail_args.append(shlex.quote(settings.LLAMA_LOG_FILE))
+    tail_cmd = " ".join(tail_args)
 
     if follow:
         logger.info(f"Following {settings.LLAMA_LOG_FILE} on {where} (Ctrl-C to stop)...")
@@ -216,7 +232,7 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
     try:
         r = remote_exec(argv, timeout=None, capture_output=False)
         if not r:
-            sys.exit(1)
+            raise ServerHostUnreachable(f"could not tail the log on {where}")
     except KeyboardInterrupt:
         return 0
     return r.returncode
@@ -272,9 +288,9 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
         argv = ["ssh", "-o", "ConnectTimeout=5", "-o", "BatchMode=yes", ssh_dest, remote_cmd]
     else:
         argv = ["bash", "-c", remote_cmd]
-    r = remote_exec( argv )#subprocess.run(argv, capture_output=True, text=True)
+    r = remote_exec( argv )
     if not r:
-        sys.exit(1)
+        raise ServerHostUnreachable(f"timed out launching llama-server on {where}")
     if r.returncode != 0:
         logger.error(f"Failed to launch llama-server on {where}: {r.stderr.strip()}")
         sys.exit(1)
@@ -294,8 +310,13 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
 
     # Not alive: it crashed at startup. Show the boot log so the user knows why.
     logger.error(f"llama-server did NOT stay up on {where}. Boot log ({settings.LLAMA_BOOT_LOG}):")
-    boot = _run_on_server(f"tail -n 40 {shlex.quote(settings.LLAMA_BOOT_LOG)} 2>/dev/null || true")
-    logger.error("\n" + (boot.stdout.rstrip() if boot.stdout.strip() else "(boot log empty)"))
+    try:
+        boot = _run_on_server(f"tail -n 40 {shlex.quote(settings.LLAMA_BOOT_LOG)} 2>/dev/null || true")
+    except ServerHostUnreachable as e:
+        # Don't let a second failure mask the launch failure we are reporting.
+        logger.error(f"(boot log unavailable: {e})")
+    else:
+        logger.error("\n" + (boot.stdout.rstrip() if boot.stdout.strip() else "(boot log empty)"))
     sys.exit(1)
 
 #___________________________________________________________________________________
@@ -385,10 +406,11 @@ def start_model(
     override_top_k: int | None = None,
     override_min_p: float | None = None,
     override_devices: str | None = None,
-    override_ctx: int | None = None
+    override_ctx: int | None = None,
+    as_json: bool = False
 ) -> None:
     if server_status:
-        _run_server_action(report_server_status)
+        _run_server_action(lambda: report_server_status(as_json=as_json))
 
     if kill_server:
         _run_server_action(stop_server)
@@ -409,15 +431,33 @@ def start_model(
         models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON),remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True, check_model_name=model_name)
 
     if list_models:
-        models_info = []
-        for m in models:
-            m_info = f"{m.model_name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB - {len(m.rpcservers)} RPC)"
-            models_info.append(m_info)
-        
-        print(
-            "Available models:\n  "
-            + "\n  ".join(m_info for m_info in models_info)
-        )
+        if as_json:
+            # Everything a UI needs about a model, in one call: without this the
+            # GUI had to re-open and re-parse models.json on its own.
+            print(json.dumps({"models": [
+                {
+                    "name": m.model_name,
+                    "alias": m.alias,
+                    "size_gib": m.size_gib,
+                    "rpc_count": len(m.rpcservers),
+                    "ctx": m.ctxsize,
+                    "native_ctx": m.native_ctx,
+                    "temperature": m.temperature,
+                    "top_p": m.top_p,
+                    "top_k": m.top_k,
+                    "min_p": m.min_p,
+                }
+                for m in models
+            ]}))
+        else:
+            print(
+                "Available models:\n  "
+                + "\n  ".join(
+                    f"{m.model_name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB "
+                    f"- {len(m.rpcservers)} RPC)"
+                    for m in models
+                )
+            )
         sys.exit(0)
 
     if not model_name:
@@ -526,7 +566,8 @@ def start_model(
                 via = f"{ssh_dest} -> " if ssh_dest else ""
                 logger.warning(f"RPC server {addr.IP}:{addr.PORT} unreachable — starting via SSH as {via}{addr.remuser}...")
                 start_rpc_server(addr, exec_host=ssh_dest)
-                time.sleep(5)
+            # No fixed sleep per server: wait_for_rpc_servers() already polls all
+            # of them together and returns as soon as they answer.
             still_dead = wait_for_rpc_servers(dead, exec_host=ssh_dest)
             if still_dead:
                 addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in still_dead)
@@ -596,14 +637,18 @@ def main() -> None:
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
     #parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
+    parser.add_argument("--json", action="store_true", help="Machine-readable output for --server-status and --list-models")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
 
 
     args = parser.parse_args()
-    
+
     # The level was already set at import time (see top of the file); realign it
-    # here with the authoritative value coming from argparse.
-    logzero.loglevel(logzero.DEBUG if args.debug else logzero.WARNING)
+    # here with the authoritative value coming from argparse. INFO (not WARNING)
+    # is the default on purpose: the progress messages of a launch — RPC checks,
+    # device list, launch confirmation — are logged at info level, and dropping
+    # them made a normal run look completely silent.
+    logzero.loglevel(logzero.DEBUG if args.debug else logzero.INFO)
 
     start_model(
         args.model_name,
@@ -622,9 +667,17 @@ def main() -> None:
         override_top_k=args.override_top_k,
         override_min_p=args.override_min_p,
         override_devices=args.override_devices,
-        override_ctx=args.override_ctx
+        override_ctx=args.override_ctx,
+        as_json=args.json
     )
 
 #___________________________________________________________________________________
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except ConfigError as e:
+        logger.error(f"Configuration error: {e}")
+        sys.exit(1)
+    except ServerHostUnreachable as e:
+        logger.error(f"Error: host unreachable — {e}")
+        sys.exit(2)

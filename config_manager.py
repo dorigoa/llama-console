@@ -1,13 +1,14 @@
 
-from dataclasses import dataclass, field, fields
-from typing import List, Optional, Any, Dict
+from dataclasses import dataclass, fields
+from typing import Optional, Any, Dict
 from logzero import logger
 from pathlib import Path
 import threading
 import json
 import sys
 import os
-import re
+
+from errors import ConfigError
 
 _LOCAL_CONFIG = Path(__file__).parent / "config.json"
 CONFIG_FILE = Path(
@@ -28,22 +29,25 @@ class Settings:
     RPC_JSON: Path = None
     LLAMA_LOG_FILE: str = ""  # shared path for polling the output
     LLAMA_BOOT_LOG: str = ""  # startup stdout/stderr (crash diagnostics)
+    UI_PORT: int = 8501       # port the NiceGUI console listens on
+    # llama-server tunables that used to be hardcoded in command_builder.py.
+    SEED: int = 123456789
+    FITC: int = 8192
+    NP: int = 1               # parallel sequences; 1 is required by MTP processing
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:
     if not path.is_file():
-        logger.warning("Config override not found in %s: using defaults.", path)
+        logger.warning(f"Config override not found in {path}: using defaults.")
         return {}
     try:
         with path.open("r", encoding="utf-8") as f:
             data = json.load(f)
     except json.JSONDecodeError as e:
-        logger.error(f"Invalid JSON in {path}: {e}")
-        sys.exit(1)
+        raise ConfigError(f"Invalid JSON in {path}: {e}") from e
     if not isinstance(data, dict):
-        logger.error(f"File {path} must contain a JSON object, found {type(data).__name__}.")
-        sys.exit(1)
-    logger.info("Config override loaded from %s (%d keys).", path, len(data))
+        raise ConfigError(f"File {path} must contain a JSON object, found {type(data).__name__}.")
+    logger.info(f"Config override loaded from {path} ({len(data)} keys).")
     for k in data:
         logger.debug(f"'{k}': '{data[k]}'")
     return data
@@ -57,11 +61,11 @@ def _coerce(value: Any, target_type: Any, key: str) -> Any:
             if isinstance(value, str):
                 return value.strip().lower() in ("1", "true", "yes", "on")
             return bool(value)
-        if target_type in (int, float, str):
+        if target_type in (int, float, str, Path):
             return target_type(value)
         return value
     except (TypeError, ValueError) as e:
-        raise ValueError(
+        raise ConfigError(
             f"Invalid value for '{key}': expected {getattr(target_type, '__name__', target_type)}, "
             f"got {value!r} ({e})."
         ) from e
@@ -73,21 +77,18 @@ def _build_settings() -> Settings:
     if not overrides:
         return s
 
-    unknown = False
     type_by_name = {f.name: f.type for f in fields(Settings)}
-    # for f in fields(Settings):
-    #     logger.debug(f"f.name={f.name} - f.type={f.type}")
     unknown = set(overrides) - set(type_by_name)
 
     if unknown:
-        raise ValueError(
+        raise ConfigError(
             f"Unknown keys in config: {sorted(unknown)}. "
             f"Valid ones are: {sorted(type_by_name)}"
         )
 
     for k, v in overrides.items():
-       setattr(s, k, _coerce(v, type_by_name[k], k))
-        
+        setattr(s, k, _coerce(v, type_by_name[k], k))
+
     return s
 
 _settings_lock = threading.Lock()
@@ -95,11 +96,27 @@ _settings_instance: Optional[Settings] = None
 
 #_________________________________________________________________________________________
 def get_settings() -> Settings:
+    """The process-wide Settings, built once from CONFIG_FILE.
+
+    Unlike the other loaders, a ConfigError is turned into a clean message and
+    SystemExit right here rather than propagated: every module calls this at
+    IMPORT time (see the note at the top of start_model.py), so there is no
+    caller in a position to handle it — a bare traceback would be the only
+    alternative.
+    """
     global _settings_instance
     with _settings_lock:
         if _settings_instance is None:
-            _settings_instance = _build_settings()#Settings()
+            try:
+                _settings_instance = _build_settings()
+            except ConfigError as e:
+                logger.error(f"Configuration error: {e}")
+                raise SystemExit(1) from e
     return _settings_instance
 
 if __name__ == "__main__":
-    _build_settings()
+    try:
+        _build_settings()
+    except ConfigError as e:
+        logger.error(f"Configuration error: {e}")
+        sys.exit(1)

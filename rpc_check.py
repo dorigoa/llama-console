@@ -1,5 +1,6 @@
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from logzero import logger
+from pathlib import Path
 import socket
 import shlex
 import time
@@ -8,6 +9,7 @@ import sys
 from remote_cmd_executor import remote_exec
 from model import load_models
 from rpc import RpcServer
+from errors import ConfigError
 
 
 _TIMEOUT = 2.0
@@ -130,12 +132,13 @@ def start_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
     else:
         argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
         shown = f"{addr.remuser}@{addr.IP}"
-    logger.error(f"  SSH: {shown}  \"{remote_cmd}\"")
+    logger.debug(f"  SSH: {shown}  \"{remote_cmd}\"")
 
     result = remote_exec( argv, 20 )
 
     if not result:
-        sys.exit(1)
+        logger.error(f"  Timed out starting rpc-server on {shown}")
+        return False
 
     if result.returncode != 0:
         logger.error(f"  SSH stderr: {result.stderr.strip()}")
@@ -163,7 +166,7 @@ def kill_rpc_server(addr: RpcServer, exec_host: str | None = None) -> bool:
     else:
         argv = ["ssh", *_SSH_OPTS, f"{addr.remuser}@{addr.IP}", remote_cmd]
         shown = f"{addr.remuser}@{addr.IP}"
-    logger.error(f"  SSH: {shown}  \"{remote_cmd}\"")
+    logger.debug(f"  SSH: {shown}  \"{remote_cmd}\"")
 
     result = remote_exec( argv, 20 )
     if not result:
@@ -188,18 +191,26 @@ def wait_for_rpc_servers(servers: list[RpcServer], exec_host: str | None = None)
         remaining = [a for a in remaining if not _tcp_reachable(a, exec_host)]
         if remaining:
             addrs = ", ".join(f"{a.IP}:{a.PORT}" for a in remaining)
-            logger.error(f"  Still unreachable: {addrs}")
+            logger.debug(f"  Still unreachable: {addrs}")
     return remaining
 
 #___________________________________________________________________________________
 if __name__ == "__main__":
     
-    if len(sys.argv) < 2:
-        logger.info("Usage: python rpc_check.py <config.json>")
+    if len(sys.argv) < 3:
+        logger.info("Usage: python rpc_check.py <models.json> <rpc.json>")
         sys.exit(1)
 
-    for m in load_models(sys.argv[1]):
-        
+    # check_remote_file=False: this tool only inspects RPC servers, so the
+    # per-model SSH round-trip to stat the .gguf would be pure overhead.
+    try:
+        models = load_models(Path(sys.argv[1]), Path(sys.argv[2]), check_remote_file=False)
+    except ConfigError as e:
+        logger.error(e)
+        sys.exit(1)
+
+    for m in models:
+
         down = unreachable_rpc_servers(m.rpcservers)
         if not m.rpcservers:
             logger.error(f"{m.model_name}: no rpc server configured")

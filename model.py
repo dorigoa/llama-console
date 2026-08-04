@@ -7,6 +7,7 @@ import sys
 
 from remote_cmd_executor import remote_exec
 from rpc import RpcServer,load_rpcs
+from errors import ConfigError
 
 
 
@@ -19,10 +20,10 @@ class Model:
     size_gib: float | None
     mmproj_path: Path | None
     ctxsize: int
-    # temperature: float
-    # top_p: float
-    # top_k: int
-    # min_p: float
+    # temperature / top_p / top_k / min_p are NOT stored fields: they are the
+    # four values packed inside `samplers`, exposed by the properties further
+    # down. Keeping them as fields too would duplicate the same data in two
+    # places, free to drift apart.
     samplers: str
     reasoning: str | None
     preserv_think: bool | None
@@ -36,52 +37,6 @@ class Model:
     rep_pen: float
     pres_pen: float | None
 
-    def __init__(self, 
-                alias: str,
-                model_name: str,
-                model_path: Path,
-                size_gib: float,
-                mmproj_path: Path,
-                ctxsize: int,
-                samplers: str,
-                # temperature: float,
-                # top_p: float,
-                # top_k: int,
-                # min_p: float,
-                reasoning: str,
-                preserv_think: bool,
-                last_started: int,
-                rpcservers: list[RpcServer],
-                ub: int,
-                b: int,
-                kvquant: str,
-                mtp: bool,
-                native_ctx: int,
-                rep_pen: float,
-                pres_pen: float):
-        self.alias=alias
-        self.model_name=model_name
-        self.model_path=model_path
-        self.size_gib=size_gib
-        self.mmproj_path=mmproj_path
-        self.ctxsize=ctxsize
-        # self.temperature=temperature
-        # self.top_p=top_p
-        # self.top_k=top_k
-        # self.min_p=min_p
-        self.samplers=samplers
-        self.reasoning=reasoning
-        self.preserv_think=preserv_think
-        self.last_started=last_started
-        self.rpcservers=rpcservers
-        self.ub=ub
-        self.b=b
-        self.kvquant=kvquant
-        self.mtp=mtp
-        self.native_ctx=native_ctx
-        self.rep_pen=rep_pen
-        self.pres_pen=pres_pen
-
     def rpc_endpoints( self ):
         endpoints = []
         for R in self.rpcservers:
@@ -89,7 +44,56 @@ class Model:
         return ','.join(endpoints)
 
     def get_samplers( self ):
-        return self.samplers.split(':')
+        """The sampler values as strings, from SAMPLERS ('temp:top_p:top_k:min_p')."""
+        parts = self.samplers.split(':')
+        if len(parts) < 4:
+            raise ValueError(
+                f"model '{self.model_name}': SAMPLERS must be "
+                f"'temp:top_p:top_k:min_p', got '{self.samplers}'"
+            )
+        return parts
+
+    def _set_sampler( self, index: int, value ) -> None:
+        parts = self.get_samplers()
+        parts[index] = str(value)
+        self.samplers = ':'.join(parts)
+
+    # The four sampler values live packed in a single SAMPLERS string, but both
+    # build_command() and the --override-* options need them individually. These
+    # properties read from and write back into that string: without the setters,
+    # `model.temperature = x` would just create a stray attribute nobody reads,
+    # and the override would be silently dropped.
+    @property
+    def temperature( self ) -> float:
+        return float(self.get_samplers()[0])
+
+    @temperature.setter
+    def temperature( self, value: float ) -> None:
+        self._set_sampler(0, value)
+
+    @property
+    def top_p( self ) -> float:
+        return float(self.get_samplers()[1])
+
+    @top_p.setter
+    def top_p( self, value: float ) -> None:
+        self._set_sampler(1, value)
+
+    @property
+    def top_k( self ) -> int:
+        return int(self.get_samplers()[2])
+
+    @top_k.setter
+    def top_k( self, value: int ) -> None:
+        self._set_sampler(2, value)
+
+    @property
+    def min_p( self ) -> float:
+        return float(self.get_samplers()[3])
+
+    @min_p.setter
+    def min_p( self, value: float ) -> None:
+        self._set_sampler(3, value)
 
 #___________________________________________________________________________________
 def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
@@ -200,17 +204,21 @@ def load_models(config_path: Path,
             preserv_think = spec["PRES_THK"]
 
         rpcs_for_this_model = []
-        if spec.get('RPC_SERVERS') and spec.get('RPC_SERVERS')['ids'] and len(spec.get('RPC_SERVERS')['ids']):
-            rpc_names = spec.get('RPC_SERVERS')['ids']         
-            if rpc_names: 
-                for n in rpc_names:
-                    rpc_name=n['name']
-                    rpcs_for_this_model.append( rpcs[rpc_name] )
+        for n in (spec.get('RPC_SERVERS') or {}).get('ids') or []:
+            rpc_name = n['name']
+            if rpc_name not in rpcs:
+                raise ConfigError(
+                    f"model '{name}' references RPC server '{rpc_name}', which is not "
+                    f"defined in {rpc_config_path}. Known ones: {', '.join(sorted(rpcs)) or '(none)'}"
+                )
+            rpcs_for_this_model.append( rpcs[rpc_name] )
 
-        if not spec.get("SAMPLERS"):
-            if len(spec("SAMPLERS")) < 4:
-                logger.error(f"Error: for model {spec["ALIAS"]} samplers is to well formed")
-                sys.exit(1)
+        samplers = spec.get("SAMPLERS")
+        if not samplers or len(str(samplers).split(':')) < 4:
+            raise ConfigError(
+                f"model '{name}': SAMPLERS must be 'temp:top_p:top_k:min_p', "
+                f"got {samplers!r}"
+            )
 
 
         models.append(
@@ -257,12 +265,12 @@ if __name__ == "__main__":
         help="SSH user for file existence check (overrides config.json)",
     )
     parser.add_argument(
-        "--models-config", default=Path(__file__).parent / "models.json",
+        "--models-config", type=Path, default=Path(__file__).parent / "models.json",
         help="path of models json description file"
     )
     parser.add_argument(
-        "--rpc-config", default=Path(__file__).parent / "rpc.json",
-        help="path of models json description file"
+        "--rpc-config", type=Path, default=Path(__file__).parent / "rpc.json",
+        help="path of rpc servers json description file"
     )
     parser.add_argument(
             "--nocheck", action="store_true", default=False,
@@ -283,12 +291,17 @@ if __name__ == "__main__":
     master_host = args.master_host if args.master_host is not None else settings.LLAMA_SERVER_HOST
     master_user = args.master_user if args.master_user is not None else settings.LLAMA_SERVER_USER
 
-    ms = load_models(config_path=args.models_config, 
-                     rpc_config_path=args.rpc_config, 
-                     remote_host=master_host, 
-                     remote_user=master_user, 
-                     check_remote_file=args.nocheck)
-    
+    try:
+        ms = load_models(config_path=args.models_config,
+                         rpc_config_path=args.rpc_config,
+                         remote_host=master_host,
+                         remote_user=master_user,
+                         check_remote_file=not args.nocheck)
+    except ConfigError as e:
+        logger.error(e)
+        sys.exit(1)
+
+
     logger.debug(f"{len(ms)} models loaded (host: {master_host or 'local'})")
     for m in ms:
         size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"

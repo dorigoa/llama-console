@@ -31,8 +31,6 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         else:
             data = {"preserve_thinking": model.preserv_think}
 
-    samplers = model.samplers
-
     cmd += ["--host", settings.ADDRESS_BIND]
     cmd += ["--port", str(settings.PORT_BIND)]
     cmd += ["--split-mode", "layer"]
@@ -40,16 +38,16 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["--jinja"]
     cmd += ["-fa", "on"]
     cmd += ["-fit", "on"] # Using "on" makes the rpc/Vulkan on PC with 2 NVidia cards crash
-    cmd += ["-fitc", "8192"]
-    cmd += ["-np", "1"] # Required by MTP processing
+    cmd += ["-fitc", str(settings.FITC)]
+    cmd += ["-np", str(settings.NP)] # NP=1 is required by MTP processing
     cmd += ["--no-warmup"]
-    cmd += ["--temp", str(samplers.split(':')[0])]
-    cmd += ["--top-p", str(samplers.split(':')[1])]
-    cmd += ["--top-k", str(samplers.split(':')[2])]
+    cmd += ["--temp", str(model.temperature)]
+    cmd += ["--top-p", str(model.top_p)]
+    cmd += ["--top-k", str(model.top_k)]
     if data:
         cmd += ["--chat-template-kwargs", json.dumps(data)]
 
-    cmd += ["--seed", "123456789"]
+    cmd += ["--seed", str(settings.SEED)]
     cmd += ["--repeat-penalty", str(model.rep_pen)]
     if model.pres_pen:
         cmd += ["--presence-penalty", str(model.pres_pen) ]
@@ -57,8 +55,9 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         cmd += ["-ctk", model.kvquant]
         cmd += ["-ctv", model.kvquant]
     cmd += ["--alias", str(model.alias)]
+    # A negative min_p in SAMPLERS means "leave llama-server's default alone".
     if model.min_p >= 0:
-        cmd += ["--min-p", str(samplers.split(':')[3])]
+        cmd += ["--min-p", str(model.min_p)]
 
     if model.ub:
         cmd += ["-ub", str(model.ub)]
