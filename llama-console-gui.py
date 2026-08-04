@@ -133,16 +133,17 @@ class LlamaConsoleGUI:
         self.status_server_label.set_text(
             f"Server Status: {'RUNNING' if running else 'NOT RUNNING'}"
         )
-        for label in (self.status_server_label, self.status_model_label,
-                      self.status_ctx_label, self.status_temp_label):
-            label.style(f"color: {color};")
+        # for label in (self.status_server_label, self.status_model_label,
+        #               self.status_ctx_label, self.status_temp_label):
+        #     label.style(f"color: {color};")
+        self.status_server_label.style(f"color: {color};")
 
         if running and info.get("ready"):
-            self.status_model_label.set_text(f"Model: {info['model']}")
-            self.status_ctx_label.set_text(f"Context: {info['ctx']}")
+            self.status_model_label.set_text(f" - Model:   {info['model']}")
+            self.status_ctx_label.set_text(  f" - Context: {info['ctx']}")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
-            self.status_temp_label.set_text(f"Temp: {float(info['temperature']):.2f}")
+            self.status_temp_label.set_text( f" - Temp:    {float(info['temperature']):.2f}")
         elif running:
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
