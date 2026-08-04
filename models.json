@@ -145,7 +145,7 @@
                         "sizegb": 33,
                         "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
-                                "ids": [{"name": "mac1"}]
+                                "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
                         "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:-1",
