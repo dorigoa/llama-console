@@ -139,11 +139,11 @@ class LlamaConsoleGUI:
         self.status_server_label.style(f"color: {color};")
 
         if running and info.get("ready"):
-            self.status_model_label.set_text(f" - Model   :   {info['model']}")
+            self.status_model_label.set_text(f" - Model   : {info['model']}")
             self.status_ctx_label.set_text(  f" - Context : {info['ctx']}")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
-            self.status_temp_label.set_text( f" - Temp    :    {float(info['temperature']):.1f}")
+            self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
         elif running:
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
@@ -308,7 +308,7 @@ class LlamaConsoleGUI:
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
                 for label in (self.status_model_label,
                               self.status_ctx_label, self.status_temp_label):
-                    label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
+                    label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: pre;')
                     # label.style(
                     #     'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
                     #     'font-size: 0.9rem; font-weight: 600; white-space: nowrap;'
