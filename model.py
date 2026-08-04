@@ -189,7 +189,7 @@ def load_models(config_path: Path,
             mtp = True
         pp = None
         if spec.get("PP") and spec.get("PP") > -1:
-            pp = float( spec.get("pres_pen") )
+            pp = float( spec.get("PP") )
 
         rp = None
         if spec.get("RP"):
