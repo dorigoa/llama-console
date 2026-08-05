@@ -141,11 +141,10 @@ class LlamaConsoleGUI:
         if running and info.get("ready"):
             self.status_model_label.set_text(f" - Model   : {info['model'].strip()}")
             c = (str(info['ctx'])).strip()
-            self.status_ctx_label.set_text(  f" - Context : {c}")
+            self.status_ctx_label.set_text(  f" - Context : {c} tokens")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
-            t = (str(float(info['temperature']))).strip()
-            self.status_temp_label.set_text( f" - Temp    : {t:.1f}")
+            self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
         elif running:
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
