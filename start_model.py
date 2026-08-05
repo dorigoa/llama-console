@@ -407,7 +407,8 @@ def start_model(
     override_min_p: float | None = None,
     override_devices: str | None = None,
     override_ctx: int | None = None,
-    as_json: bool = False
+    as_json: bool = False,
+    debug: bool = False
 ) -> None:
     if server_status:
         _run_server_action(lambda: report_server_status(as_json=as_json))
@@ -604,7 +605,7 @@ def start_model(
             logger.warning("'--only-list-devices' specified. Gracefully exiting.")
             sys.exit(0)
 
-    cmd = build_command(binary, model, devices, override_ctx)
+    cmd = build_command(binary, model, devices, override_ctx, debug)
     logger.debug(f"Command: {cmd}")
 
     if dry_run:
@@ -668,7 +669,8 @@ def main() -> None:
         override_min_p=args.override_min_p,
         override_devices=args.override_devices,
         override_ctx=args.override_ctx,
-        as_json=args.json
+        as_json=args.json,
+        debug=args.debug
     )
 
 #___________________________________________________________________________________
