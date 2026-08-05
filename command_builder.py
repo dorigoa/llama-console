@@ -5,7 +5,7 @@ import json
 settings = get_settings()
 
 #___________________________________________________________________________________
-def build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None) -> list[str]:
+def build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None, verbose: bool = False) -> list[str]:
     cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else model.ctxsize)]
 
     #if model.fitt:
@@ -68,7 +68,8 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     # Log file for detached execution (UI polls it)
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 
-    cmd += ["--verbose"]
+    if verbose:
+        cmd += ["--verbose"]
     cmd += ["-ctxcp", "8"]
     
     return cmd
