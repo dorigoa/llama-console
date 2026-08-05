@@ -141,13 +141,74 @@
                         "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
+                "gemma-4-26B-A4B-it-UD-Q6_K_XL": {
+                        "sizegb": 22,
+                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q6_K_XL",
+                        "RPC_SERVERS": { 
+                                "ids": [{"name": "mac1"}] 
+                        },
+                        "ctx": 262144,
+                        "SAMPLERS": "1.0:0.95:64:-1",
+                        "RP": 1.0,
+                        "PP": -1,
+                        "REAS": null,
+                        "PRES_THK": null,
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "MTP": false,
+                        "kv_gb_256_fp16": 15,
+                        "native_ctx": 262144
+                },
+                "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
+                        "sizegb": 26,
+                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
+                        "RPC_SERVERS": { 
+                                "ids": [{"name": "mac1"}] 
+                        },
+                        "ctx": 262144,
+                        "SAMPLERS": "1.0:0.95:64:-1",
+                        "RP": 1.0,
+                        "PP": -1,
+                        "REAS": null,
+                        "PRES_THK": null,
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "MTP": false,
+                        "kv_gb_256_fp16": 15,
+                        "native_ctx": 262144
+                },
+                "gemma-4-31B-it-qat-UD-Q4_K_XL": {
+                        "sizegb": 17,
+                        "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
+                        "RPC_SERVERS": { },
+                        "ctx": 262144,
+                        "SAMPLERS": "1.0:0.95:64:-1",
+                        "RP": 1.0,
+                        "PP": -1,
+                        "REAS": null,
+                        "PRES_THK": null,
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "MTP": false,
+                        "kv_gb_256_fp16": 15,
+                        "native_ctx": 262144
+                },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "sizegb": 33,
                         "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
-                        "ctx": 131072,
+                        "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
                         "RP": 1.0,
                         "PP": -1,
