@@ -248,7 +248,7 @@
                         "sizegb": 33,
                         "ALIAS": "Qwen3.6-27B-MTP-UD-Q8_K_XL",
                         "RPC_SERVERS": {
-                                "ids": [{"name": "mac1"}]
+                                "ids": [{"name": "mac1"}, {"name": "linux"} ]
                         },
                         "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
