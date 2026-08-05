@@ -69,5 +69,6 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 
     cmd += ["--verbose"]
+    cmd += ["-ctxcp", "8"]
     
     return cmd
