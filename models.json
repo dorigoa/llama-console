@@ -176,7 +176,9 @@
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 17,
-                        "RPC_SERVERS": { },
+                        "RPC_SERVERS": { 
+                                "ids": [{"name": "mac1"}]
+                        },
                         "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
                         "RP": 1.0,
