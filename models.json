@@ -4,7 +4,6 @@
         "models": {
                 "Laguna-XS-2.1-BF16": {
                         "sizegb": 67,
-                        "ALIAS": "Laguna-XS-2.1-BF16",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
@@ -25,7 +24,6 @@
                 },
                 "Laguna-XS-2.1-Q4_K_M": {
                         "sizegb": 20,
-                        "ALIAS": "Laguna-XS-2.1-Q4_K_M",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
                         },
@@ -46,7 +44,6 @@
                 },
                 "NVIDIA-Nemotron-3-Super-120B-A12B-UD-IQ4_NL": {
                         "sizegb": 60,
-                        "ALIAS": "NVIDIA-Nemotron-3-Super-120B-A12B-UD-IQ4_NL",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
@@ -67,7 +64,6 @@
                 },
                 "Phi-4-reasoning-plus-UD-Q8_K_XL": {
                         "sizegb": 17,
-                        "ALIAS": "Phi-4-reasoning-plus-UD-Q8_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 32768,
                         "SAMPLERS": "0.8:0.95:50:0.0",
@@ -86,7 +82,6 @@
                 },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 3.9,
-                        "ALIAS": "gemma-4-E4B-it-qat-UD-Q4_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:0.0",
@@ -105,7 +100,6 @@
                 },
                 "gemma-4-E4B-it-UD-Q8_K_XL": {
                         "sizegb": 8.1,
-                        "ALIAS": "gemma-4-E4B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:0.0",
@@ -124,7 +118,6 @@
                 },
                 "gemma-4-E4B-it-BF16": {
                         "sizegb": 14,
-                        "ALIAS": "gemma-4-E4B-it-BF16",
                         "RPC_SERVERS": { },
                         "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:0.0",
@@ -143,7 +136,6 @@
                 },
                 "gemma-4-26B-A4B-it-UD-Q6_K_XL": {
                         "sizegb": 22,
-                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q6_K_XL",
                         "RPC_SERVERS": { 
                                 "ids": [{"name": "mac1"}] 
                         },
@@ -164,7 +156,6 @@
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
                         "sizegb": 26,
-                        "ALIAS": "gemma-4-26B-A4B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": { 
                                 "ids": [{"name": "mac1"}] 
                         },
@@ -185,7 +176,6 @@
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 17,
-                        "ALIAS": "gemma-4-31B-it-qat-UD-Q4_K_XL",
                         "RPC_SERVERS": { },
                         "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
@@ -204,7 +194,6 @@
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
                         "sizegb": 33,
-                        "ALIAS": "gemma-4-31B-it-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
@@ -225,7 +214,6 @@
                 },
                 "GPT-OSS-120B-MXFP4": {
                         "sizegb": 59,
-                        "ALIAS": "GPT-OSS-120B-MXFP4",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
@@ -246,7 +234,6 @@
                 },
                 "Qwen3.6-27B-MTP-UD-Q8_K_XL": {
                         "sizegb": 33,
-                        "ALIAS": "Qwen3.6-27B-MTP-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"} ]
                         },
@@ -267,7 +254,6 @@
                 },
                 "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
                         "sizegb": 21,
-                        "ALIAS": "Qwen3.6-35B-A3B-UD-Q4_K_XL",
                         "RPC_SERVERS": {},
                         "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
@@ -286,7 +272,6 @@
                 },
                 "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
                         "sizegb": 36,
-                        "ALIAS": "Qwen3.6-35B-A3B-UD-Q8_K_XL",
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
                         },

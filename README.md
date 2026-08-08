@@ -60,7 +60,6 @@ Models are defined in [`models.json`](models.json). Structure:
   "MODEL_BASE_DIR": "/Volumes/Home/gguf_models",
   "models": {
     "Model-name": {
-      "ALIAS": "alias-name",
       "MMPROJ": null,
       "ctx": 512000,
       "TEMP": 1.0,
