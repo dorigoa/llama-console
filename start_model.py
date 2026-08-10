@@ -486,7 +486,9 @@ def start_model(
         rpcs = load_rpcs(settings.RPC_JSON)
         server_names = override_rpc.split(',')
         model.rpcservers = []
+        logger.debug(f"")
         for name in server_names:
+            logger.debug(f"RPC Override: adding rpc {name}({rpcs[name].IP})")
             model.rpcservers.append( rpcs[name] )
 
 
