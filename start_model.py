@@ -18,7 +18,7 @@ from pathlib import Path
 from logzero import logger
 
 from remote_cmd_executor import remote_exec
-
+from rpc import load_rpcs
 
 # The loglevel must be set HERE, before the project imports below: command_builder
 # calls get_settings() at import time, and config_manager logs at info/debug level
@@ -407,6 +407,7 @@ def start_model(
     override_min_p: float | None = None,
     override_devices: str | None = None,
     override_ctx: int | None = None,
+    override_rpc: str | None = None,
     as_json: bool = False,
     debug: bool = False
 ) -> None:
@@ -471,16 +472,23 @@ def start_model(
         logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}")
         sys.exit(1)
 
-    if override_temp is not None:
+    if override_temp:
         model.temperature = override_temp
-    if override_top_p is not None:
+    if override_top_p:
         model.top_p = override_top_p
-    if override_top_k is not None:
+    if override_top_k:
         model.top_k = override_top_k
-    if override_min_p is not None:
+    if override_min_p:
         model.min_p = override_min_p
-    if override_ctx is not None:
+    if override_ctx:
         model.ctxsize = override_ctx
+    if override_rpc:
+        rpcs = load_rpcs(settings.RPC_JSON)
+        server_names = override_rpc.split(',')
+        model.rpcservers = []
+        for name in server_names:
+            model.rpcservers.append( rpcs[name] )
+
 
     binary = settings.LLAMA_SERVER_BIN
     ssh_dest = _ssh_dest()
@@ -636,7 +644,7 @@ def main() -> None:
     parser.add_argument("--override-top-k", type=int, default=None, metavar="INT")
     parser.add_argument("--override-min-p", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
-    #parser.add_argument("--override-fitt", type=str, default=None, metavar="STR")
+    parser.add_argument("--override-rpc", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
     parser.add_argument("--json", action="store_true", help="Machine-readable output for --server-status and --list-models")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
@@ -669,6 +677,7 @@ def main() -> None:
         override_min_p=args.override_min_p,
         override_devices=args.override_devices,
         override_ctx=args.override_ctx,
+        override_rpc=args.override_rpc,
         as_json=args.json,
         debug=args.debug
     )
