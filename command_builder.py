@@ -54,7 +54,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if model.kvquant:
         cmd += ["-ctk", model.kvquant]
         cmd += ["-ctv", model.kvquant]
-    cmd += ["--alias", str(model.alias)]
+    cmd += ["--alias", "local_AI"]
     # A negative min_p in SAMPLERS means "leave llama-server's default alone".
     if model.min_p >= 0:
         cmd += ["--min-p", str(model.min_p)]

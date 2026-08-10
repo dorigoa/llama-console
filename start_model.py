@@ -438,7 +438,7 @@ def start_model(
             print(json.dumps({"models": [
                 {
                     "name": m.model_name,
-                    "alias": m.alias,
+                    #"alias": m.alias,
                     "size_gib": m.size_gib,
                     "rpc_count": len(m.rpcservers),
                     "ctx": m.ctxsize,

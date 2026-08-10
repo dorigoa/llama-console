@@ -14,7 +14,7 @@ from errors import ConfigError
 #___________________________________________________________________________________
 @dataclass
 class Model:
-    alias: str
+    #alias: str
     model_name: str
     model_path: Path
     size_gib: float | None
@@ -223,7 +223,7 @@ def load_models(config_path: Path,
 
         models.append(
             Model(
-                alias=str(spec["ALIAS"]),
+                #alias=str(spec["ALIAS"]),
                 model_name=name,
                 model_path=model_path,
                 size_gib=size_gib,
@@ -305,4 +305,4 @@ if __name__ == "__main__":
     logger.debug(f"{len(ms)} models loaded (host: {master_host or 'local'})")
     for m in ms:
         size = f"{m.size_gib:.2f} GiB" if m.size_gib is not None else "n/a"
-        logger.debug(f"  alias={m.alias:45} - size={size:>11s} rpc={m.rpc_endpoints()}")
+        logger.debug(f"  name={m.model_name:45} - size={size:>11s} rpc={m.rpc_endpoints()}")
