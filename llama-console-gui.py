@@ -22,6 +22,15 @@ from config_manager import get_settings
 
 settings = get_settings()
 
+# Load RPC server definitions
+_rpc_config_path = Path(__file__).parent / "rpc.json"
+try:
+    with open(_rpc_config_path) as f:
+        _rpc_config = json.load(f)
+    RPC_SERVERS: dict = _rpc_config.get("RPC_SERVERS", {})
+except (FileNotFoundError, json.JSONDecodeError):
+    RPC_SERVERS = {}
+
 # Resolve start_model.py next to this file: relying on the process CWD broke as
 # soon as the systemd unit was started from anywhere else.
 _START_MODEL = str(Path(__file__).parent / "start_model.py")
@@ -91,6 +100,7 @@ class LlamaConsoleGUI:
         self.temp_label = None
         self.log_window = None
         self.stop_log_button = None
+        self.server_checkboxes: dict[str, ui.checkbox] = {}
 
     # ---------------------------------------------------------------- data ---
     async def load_models(self) -> None:
@@ -330,6 +340,13 @@ class LlamaConsoleGUI:
 
                     ui.button("START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
+
+                # RPC server checkboxes — one per server defined in rpc.json
+                if RPC_SERVERS:
+                    with ui.row().classes('w-full items-center q-mt-sm gap-3'):
+                        ui.label('RPC servers:').classes('text-subtitle1')
+                        for name in RPC_SERVERS:
+                            self.server_checkboxes[name] = ui.checkbox(name)
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.ctx_label = ui.label("Context: —").classes('text-subtitle1')
