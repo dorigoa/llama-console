@@ -137,21 +137,22 @@ def server_status() -> dict:
 
     'running' says a process exists; 'ready' says it also answers /props (a
     freshly started server is RUNNING but not yet ready for a while)."""
-    info = {"where": _server_location(), "running": False, "ready": False, "pids": []}
+    info = {"where": _server_location(), "running": False, "ready": False, "pids": [], "quant": ""}
     pids = _server_pids()
     if not pids:
         return info
 
     info["running"] = True
     info["pids"] = pids
+    info
     try:
-        model, ctxsize, temp = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
+        model, ctxsize, temp, quant = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
     except (RuntimeError, ValueError) as e:
         # ValueError too: _get_first_model_name raises it on an unexpected JSON
         # shape, and it is not a subclass of RuntimeError.
         info["error"] = str(e)
     else:
-        info.update(ready=True, model=model, ctx=ctxsize, temperature=temp)
+        info.update(ready=True, model=model, ctx=ctxsize, temperature=temp, quant=quant)
     return info
 
 #___________________________________________________________________________________
