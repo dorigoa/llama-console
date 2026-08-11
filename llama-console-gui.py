@@ -133,12 +133,12 @@ class LlamaConsoleGUI:
         self._apply_model_spec(first)
         selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
         
-        for cb in self.server_checkboxes:
+        for cb_name in self.server_checkboxes:
             for rpc in selected_model.rpcservers:
-                if rpc.name == cb.text:
-                    cb.value = True
+                if rpc.name == cb_name:
+                    self.server_checkboxes[cb_name].value = True
                 else:
-                    cb.value = False
+                    self.server_checkboxes[cb_name].value = False
             
 
 
