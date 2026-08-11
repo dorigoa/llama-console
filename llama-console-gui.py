@@ -103,6 +103,11 @@ class LlamaConsoleGUI:
         self.stop_log_button = None
         self.server_checkboxes: dict[str, ui.checkbox] = {}
 
+    # ---------------------------------------------------------------- status ---
+    def uncheck_rpc_checkboxes(self):
+        for name in self.server_checkboxes:
+            self.server_checkboxes[name].value = False
+
     # ---------------------------------------------------------------- data ---
     async def load_models(self) -> None:
         data = await _run_json(["--list-models"])
@@ -134,6 +139,8 @@ class LlamaConsoleGUI:
         selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
 
         logger.debug(f"Selected model: {selected_model.model_name}")
+
+        self.uncheck_rpc_checkboxes()
         
         for cb_name in self.server_checkboxes:
             logger.debug(f"current cb_name=[{cb_name}]")
@@ -142,12 +149,8 @@ class LlamaConsoleGUI:
                 if rpc.name == cb_name:
                     logger.debug(f"MATCH - settings checkbox to True")
                     self.server_checkboxes[cb_name].value = True
-                else:
-                    logger.debug(f"UNMATCH - settings checkbox to False")
-                    self.server_checkboxes[cb_name].value = False
-            
 
-
+    # ---------------------------------------------------------------- update ---
     async def update_status(self) -> None:
         info = await _run_json(["--server-status"])
         if info is None:
