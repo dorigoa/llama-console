@@ -257,10 +257,11 @@ def get_model_byname( name: str, config_path: Path, rpc_config_path: Path ) -> M
                             False, 
                             None)
 
+    m = None
     for m in models:
         if m.model_name == name:
             return m
-    return None
+    return m
 
 #___________________________________________________________________________________
 if __name__ == "__main__":

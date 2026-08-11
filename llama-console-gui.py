@@ -348,7 +348,8 @@ class LlamaConsoleGUI:
 
                 selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
 
-
+                # if not selected_model:
+                #     selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
 
                 if RPC_SERVERS:
                     with ui.row().classes('w-full items-center q-mt-sm gap-3'):
