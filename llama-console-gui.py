@@ -131,6 +131,16 @@ class LlamaConsoleGUI:
         self.model_dropdown.set_value(first)
         self.model_dropdown.update()
         self._apply_model_spec(first)
+        selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+        
+        for cb in self.server_checkboxes:
+            for rpc in selected_model.rpcservers:
+                if rpc.name == cb.text:
+                    cb.value = True
+                else:
+                    cb.value = False
+            
+
 
     async def update_status(self) -> None:
         info = await _run_json(["--server-status"])
@@ -346,7 +356,7 @@ class LlamaConsoleGUI:
 
                 # RPC server checkboxes — one per server defined in rpc.json
 
-                selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+                #selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
 
                 # if not selected_model:
                 #     selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
@@ -355,11 +365,11 @@ class LlamaConsoleGUI:
                     with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                         ui.label('RPC servers:').classes('text-subtitle1')
                         for name in RPC_SERVERS:
-                            self.server_checkboxes[name] = ui.checkbox(name)
-                            if name == selected_model.model_name:
-                                self.server_checkboxes[name].value = True
-                            else:
-                                self.server_checkboxes[name].value = False
+                            self.server_checkboxes[name] = ui.checkbox(name, id=name)
+                            # if name == selected_model.model_name:
+                            #     self.server_checkboxes[name].value = True
+                            # else:
+                            #     self.server_checkboxes[name].value = False
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.ctx_label = ui.label("Context: —").classes('text-subtitle1')

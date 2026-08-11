@@ -17,6 +17,7 @@ class RpcServer:
     cachepath: Path
     bin: Path
     remuser: str
+    name: str
 
     def endpoint( self ) -> str:
         return f"{self.IP}:{self.PORT}"
@@ -45,7 +46,8 @@ def load_rpcs(config_path: Path):
                 PORT=int(spec["port"]),
                 cachepath=spec["cachepath"],
                 bin=spec["bin"],
-                remuser=spec["remuser"]
+                remuser=spec["remuser"],
+                name=name
             )
     return rpc
 
