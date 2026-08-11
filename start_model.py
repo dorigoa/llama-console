@@ -67,10 +67,12 @@ def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
             and 'temperature' in data['default_generation_settings']['params']
             and 'model_alias' in data
         ):
-            model = data['model_alias']
+            #model = data['model_alias']
+            model = data['model_path'].split('/')[-1].removesuffix(".gguf")
             n_ctx = data['default_generation_settings']['n_ctx']
             temp  = data['default_generation_settings']['params']['temperature']
-            return model, n_ctx, temp
+            quant = data['model_ftype']
+            return model, n_ctx, temp, quant
         else:
             raise ValueError("JSON response has a bad structure")
         
