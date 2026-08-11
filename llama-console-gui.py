@@ -94,6 +94,7 @@ class LlamaConsoleGUI:
         self.status_model_label = None
         self.status_ctx_label = None
         self.status_temp_label = None
+        self.status_quant_label = None
         self.model_dropdown = None
         self.ctx_slider = None
         self.ctx_label = None
@@ -176,7 +177,8 @@ class LlamaConsoleGUI:
             self.status_ctx_label.set_text(  f" - Context : {c} tokens")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
-            self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
+             self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
+            self.status_quant_label.set_text( f" - Quant   : {info['quant']}")
         elif running:
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
@@ -347,6 +349,7 @@ class LlamaConsoleGUI:
             with ui.column().classes('w-full max-w-2xl gap-1 q-mb-4 pr-4'):
                 self.status_server_label = ui.label("Checking llama-server status...")
                 self.status_model_label = ui.label("")
+                self.status_quant_label = ui.label("")
                 self.status_ctx_label = ui.label("")
                 self.status_temp_label = ui.label("")
                 for label in (self.status_server_label, self.status_model_label,
