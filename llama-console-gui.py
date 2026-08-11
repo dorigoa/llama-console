@@ -16,7 +16,7 @@ import sys
 from pathlib import Path
 
 from logzero import logger
-from nicegui import context, ui
+from nicegui import app, context, ui
 
 from config_manager import get_settings
 from model import get_model_byname
@@ -78,6 +78,32 @@ async def _run_json(args: list[str]) -> dict | None:
 
 
 #___________________________________________________________________________________
+# Model-list cache: --list-models is slow (SSH round-trips), so it runs once at
+# application boot and, after that, only when the user presses "Recheck models".
+# Every page (re)load reads this cache instead of spawning start_model.py again.
+_model_specs: dict[str, dict] | None = None
+_model_specs_lock = asyncio.Lock()
+
+
+async def fetch_model_specs(force: bool = False) -> tuple[dict[str, dict] | None, bool]:
+    """Return ({name: spec}, ok). Runs --list-models only when the cache is
+    empty or force=True; a failed forced refresh keeps the previous list."""
+    global _model_specs
+    async with _model_specs_lock:
+        if _model_specs is None or force:
+            data = await _run_json(["--list-models"])
+            if data is None:
+                return _model_specs, False
+            _model_specs = {m["name"]: m for m in data.get("models", [])}
+        return _model_specs, True
+
+
+# Kick the fetch off in the background at boot: pages opened before it finishes
+# just await the same in-flight call via the lock instead of starting their own.
+app.on_startup(lambda: asyncio.create_task(fetch_model_specs()))
+
+
+#___________________________________________________________________________________
 class LlamaConsoleGUI:
     """One instance per connected browser.
 
@@ -89,6 +115,9 @@ class LlamaConsoleGUI:
     def __init__(self):
         self.specs: dict[str, dict] = {}
         self.log_task: asyncio.Task | None = None
+        self._status_busy = False
+        self._start_busy = False
+        self.start_button = None
 
         self.status_server_label = None
         self.status_model_label = None
@@ -124,19 +153,22 @@ class LlamaConsoleGUI:
             self.server_checkboxes[name].value = False
 
     # ---------------------------------------------------------------- data ---
-    async def load_models(self) -> None:
-        data = await _run_json(["--list-models"])
-        if data is None:
+    async def load_models(self, force: bool = False) -> bool:
+        specs, ok = await fetch_model_specs(force)
+        if specs is None:
             self.model_dropdown.options = {"": "No models found"}
             self.model_dropdown.update()
             ui.notify("Could not load the model list", type="negative")
-            return
+            return False
+        if not ok:
+            ui.notify("Could not reload the model list — keeping the previous one",
+                      type="negative")
 
-        self.specs = {m["name"]: m for m in data.get("models", [])}
+        self.specs = specs
         if not self.specs:
             self.model_dropdown.options = {"": "No models found"}
             self.model_dropdown.update()
-            return
+            return ok
 
         # Dict options: the value stays the bare model name, so nothing
         # downstream has to strip the ' (60 GiB - 2 RPC)' suffix back off.
@@ -147,14 +179,36 @@ class LlamaConsoleGUI:
         }
         self.model_dropdown.props(remove='disable')
         self.model_dropdown.props('label="Model selector"')
-        first = next(iter(self.specs))
-        self.model_dropdown.set_value(first)
+        # Keep the current selection across a recheck when it still exists.
+        previous = self.model_dropdown.value
+        selected = previous if previous in self.specs else next(iter(self.specs))
+        self.model_dropdown.set_value(selected)
         self.model_dropdown.update()
-        self._apply_model_spec(first)
+        self._apply_model_spec(selected)
         self._update_rpc_checkboxes()
+        return ok
+
+    async def recheck_models(self) -> None:
+        """Re-run --list-models on demand — the only trigger besides app boot."""
+        self.model_dropdown.props('disable')
+        self.model_dropdown.props('label="Reloading models..."')
+        ui.notify("Rechecking models...")
+        if await self.load_models(force=True):
+            ui.notify("Model list updated", type="positive")
 
     # ---------------------------------------------------------------- update ---
     async def update_status(self) -> None:
+        # Polled every 5 s by a ui.timer: if the previous check is still in
+        # flight (slow SSH round-trip), skip this tick instead of stacking up.
+        if self._status_busy:
+            return
+        self._status_busy = True
+        try:
+            await self._update_status_once()
+        finally:
+            self._status_busy = False
+
+    async def _update_status_once(self) -> None:
         info = await _run_json(["--server-status"])
         if info is None:
             self.status_server_label.set_text("Server Status: UNKNOWN")
@@ -162,6 +216,13 @@ class LlamaConsoleGUI:
             return
 
         running = bool(info.get("running"))
+        # Starting a second model over a live server is never valid, so START
+        # follows the polled status; the click handler re-checks to close the
+        # window between two polls.
+        if running:
+            self.start_button.disable()
+        else:
+            self.start_button.enable()
         color = "#00ff88" if running else "red"
         self.status_server_label.set_text(
             f"Server Status: {'RUNNING' if running else 'NOT RUNNING'}"
@@ -250,47 +311,63 @@ class LlamaConsoleGUI:
                     os.killpg(os.getpgid(proc.pid), signal.SIGTERM)
 
     async def start_selected_model(self) -> None:
+        if self._start_busy:
+            ui.notify("A model start is already in progress", type="warning")
+            return
         model = self.model_dropdown.value
         spec = self.specs.get(model)
         if spec is None:
             ui.notify("Please select a model first", type="warning")
             return
 
-        args = [model]
-        ctx_value = int(self.ctx_slider.value)
-        args += ["--override-ctx", str(ctx_value)]
-
-        override_rpc = []
-        for cb_name in self.server_checkboxes:
-            if self.server_checkboxes[cb_name].value == True:
-                override_rpc.append(cb_name)
-
-        if len(override_rpc):
-            args += ["--override-rpc", f"{','.join(override_rpc)}"]
-
-        # Only override the temperature if the user actually moved the slider.
-        temp_value = float(self.temp_slider.value)
-        if abs(temp_value - float(spec["temperature"])) > 0.001:
-            args += ["--override-temp", f"{temp_value:.4f}"]
-        args += ["--debug"]
-
-        
-
-        ui.notify(f"Starting model {model} (ctx={ctx_value})...")
-        # -u keeps the child's output unbuffered so lines arrive as they happen.
-        cmd = [_PY, "-u", _START_MODEL, *args]
-        self.log_window.push(f"--- Starting model: {shlex.join(cmd)} ---")
+        self._start_busy = True
         try:
-            rc = await self._stream(cmd)
-        except OSError as e:
-            self.log_window.push(f"Launch Error: {e}")
-            ui.notify(f"Error starting model: {e}", type="negative")
-        else:
-            if rc == 0:
-                ui.notify(f"Model {model} started successfully", type="positive")
+            # Fresh check at click time: the polled status (and the START
+            # button state it drives) can be up to 5 s stale.
+            info = await _run_json(["--server-status"])
+            if info is not None and info.get("running"):
+                current = (info.get("model") or "").strip()
+                suffix = f" ({current})" if current else ""
+                ui.notify(f"llama-server is already running{suffix} — "
+                          "stop it before starting another model", type="negative")
+                await self.update_status()
+                return
+
+            args = [model]
+            ctx_value = int(self.ctx_slider.value)
+            args += ["--override-ctx", str(ctx_value)]
+
+            override_rpc = []
+            for cb_name in self.server_checkboxes:
+                if self.server_checkboxes[cb_name].value == True:
+                    override_rpc.append(cb_name)
+
+            if len(override_rpc):
+                args += ["--override-rpc", f"{','.join(override_rpc)}"]
+
+            # Only override the temperature if the user actually moved the slider.
+            temp_value = float(self.temp_slider.value)
+            if abs(temp_value - float(spec["temperature"])) > 0.001:
+                args += ["--override-temp", f"{temp_value:.4f}"]
+            args += ["--debug"]
+
+            ui.notify(f"Starting model {model} (ctx={ctx_value})...")
+            # -u keeps the child's output unbuffered so lines arrive as they happen.
+            cmd = [_PY, "-u", _START_MODEL, *args]
+            self.log_window.push(f"--- Starting model: {shlex.join(cmd)} ---")
+            try:
+                rc = await self._stream(cmd)
+            except OSError as e:
+                self.log_window.push(f"Launch Error: {e}")
+                ui.notify(f"Error starting model: {e}", type="negative")
             else:
-                ui.notify(f"Error starting model (exit {rc})", type="negative")
-        await self.update_status()
+                if rc == 0:
+                    ui.notify(f"Model {model} started successfully", type="positive")
+                else:
+                    ui.notify(f"Error starting model (exit {rc})", type="negative")
+            await self.update_status()
+        finally:
+            self._start_busy = False
 
     async def stop_server(self) -> None:
         ui.notify("Stopping server...")
@@ -376,8 +453,12 @@ class LlamaConsoleGUI:
                         on_change=self._on_model_change,
                     ).props('disable').classes('flex-grow')
 
-                    ui.button("START", on_click=self.start_selected_model).props('color=green')
+                    self.start_button = ui.button(
+                        "START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
+
+                ui.button("Recheck models",
+                          on_click=self.recheck_models).props('small outline')
 
                 # RPC server checkboxes — one per server defined in rpc.json
 
@@ -447,11 +528,6 @@ class LlamaConsoleGUI:
 </style>
 ''')
 
-    async def load_initial_data(self) -> None:
-        await self.load_models()
-        await self.update_status()
-
-
 #___________________________________________________________________________________
 @ui.page('/')
 def index() -> None:
@@ -459,9 +535,12 @@ def index() -> None:
     gui = LlamaConsoleGUI()
     gui.build_ui()
     context.client.on_disconnect(gui.cleanup)
-    # Deferred so the page renders immediately instead of waiting on the SSH
-    # round-trips behind --list-models / --server-status.
-    ui.timer(0, gui.load_initial_data, once=True)
+    # Models come from the app-level cache filled at boot, so a page (re)load
+    # no longer re-runs --list-models; only "Recheck models" forces it.
+    ui.timer(0, gui.load_models, once=True)
+    # Status polling: fires immediately on connect, then every 5 s, so the
+    # user always sees whether (and what) the server is running.
+    ui.timer(5.0, gui.update_status)
 
 
 ui.run(title=settings.UI_TITLE, port=settings.UI_PORT, host="0.0.0.0", reload=False, show=False)
