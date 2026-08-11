@@ -104,7 +104,21 @@ class LlamaConsoleGUI:
         self.server_checkboxes: dict[str, ui.checkbox] = {}
 
     # ---------------------------------------------------------------- status ---
-    def uncheck_rpc_checkboxes(self):
+    def _update_rpc_checkboxes( self ) -> None:
+        selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+        #logger.debug(f"Selected model: {selected_model.model_name}")
+        self._uncheck_rpc_checkboxes()
+        
+        for cb_name in self.server_checkboxes:
+            #logger.debug(f"current cb_name=[{cb_name}]")
+            for rpc in selected_model.rpcservers:
+                #logger.debug(f"current rpc name=[{rpc.name}]")
+                if rpc.name == cb_name:
+                    #logger.debug(f"MATCH - settings checkbox to True")
+                    self.server_checkboxes[cb_name].value = True
+
+    # ---------------------------------------------------------------- status ---
+    def _uncheck_rpc_checkboxes(self):
         for name in self.server_checkboxes:
             self.server_checkboxes[name].value = False
 
@@ -136,19 +150,20 @@ class LlamaConsoleGUI:
         self.model_dropdown.set_value(first)
         self.model_dropdown.update()
         self._apply_model_spec(first)
-        selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+        self._update_rpc_checkboxes()
+        # selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
 
-        logger.debug(f"Selected model: {selected_model.model_name}")
+        # logger.debug(f"Selected model: {selected_model.model_name}")
 
-        self.uncheck_rpc_checkboxes()
+        # self.uncheck_rpc_checkboxes()
         
-        for cb_name in self.server_checkboxes:
-            logger.debug(f"current cb_name=[{cb_name}]")
-            for rpc in selected_model.rpcservers:
-                logger.debug(f"current rpc name=[{rpc.name}]")
-                if rpc.name == cb_name:
-                    logger.debug(f"MATCH - settings checkbox to True")
-                    self.server_checkboxes[cb_name].value = True
+        # for cb_name in self.server_checkboxes:
+        #     logger.debug(f"current cb_name=[{cb_name}]")
+        #     for rpc in selected_model.rpcservers:
+        #         logger.debug(f"current rpc name=[{rpc.name}]")
+        #         if rpc.name == cb_name:
+        #             logger.debug(f"MATCH - settings checkbox to True")
+        #             self.server_checkboxes[cb_name].value = True
 
     # ---------------------------------------------------------------- update ---
     async def update_status(self) -> None:
@@ -216,10 +231,13 @@ class LlamaConsoleGUI:
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
 
+        self._update_rpc_checkboxes( )
+        
+
     def _on_model_change(self, e) -> None:
         if e.value:
-            self._apply_model_spec(e.value)
-
+           self._apply_model_spec(e.value)
+        
     # ------------------------------------------------------------- commands ---
     async def _stream(self, argv: list[str]) -> int:
         """Run argv and push its output into the log window line by line."""
