@@ -169,7 +169,7 @@ def report_server_status(as_json: bool = False) -> bool:
 
     print(f"llama-server is RUNNING on {info['where']} (pid(s): {', '.join(info['pids'])})")
     if info["ready"]:
-        print(f"Running model: {info['model']} - CTX Size: {info['ctx']} - Temp: {info['temperature']:.1f}")
+        print(f"Running model: {info['model']} - CTX Size: {info['ctx']} - Temp: {info['temperature']:.1f} - Quant: {info['quant']}")
     else:
         print(f"llama-server is RUNNING but not ready yet: {info['error']}")
     return True
