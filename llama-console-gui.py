@@ -353,10 +353,10 @@ class LlamaConsoleGUI:
                 self.status_ctx_label = ui.label("")
                 self.status_temp_label = ui.label("")
                 for label in (self.status_server_label, self.status_model_label,
-                              self.status_ctx_label, self.status_temp_label):
+                              self.status_ctx_label, self.status_temp_label, self.status_quant_label):
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
                 for label in (self.status_model_label,
-                              self.status_ctx_label, self.status_temp_label):
+                              self.status_ctx_label, self.status_temp_label,self.status_quant_label):
                     label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: pre;')
                     # label.style(
                     #     'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
