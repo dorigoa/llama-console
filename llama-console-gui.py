@@ -132,9 +132,13 @@ class LlamaConsoleGUI:
         self.model_dropdown.update()
         self._apply_model_spec(first)
         selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+
+        logger.debug(f"Selected model: {selected_model.model_name}")
         
         for cb_name in self.server_checkboxes:
+            logger.debug(f"current cb_name=[{cb_name}]")
             for rpc in selected_model.rpcservers:
+                logger.debug(f"current rpc name=[{rpc.name}]")
                 if rpc.name == cb_name:
                     self.server_checkboxes[cb_name].value = True
                 else:
