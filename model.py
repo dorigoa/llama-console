@@ -249,6 +249,19 @@ def load_models(config_path: Path,
         )
     return models
 
+def get_model_byname( name: str, config_path: Path, rpc_config_path: Path ) -> Model | None:
+    models = load_models(config_path, 
+                            rpc_config_path,
+                            "", 
+                            "", 
+                            False, 
+                            None)
+
+    for m in models:
+        if m.model_name == name:
+            return m
+    return None
+
 #___________________________________________________________________________________
 if __name__ == "__main__":
     import argparse
@@ -276,6 +289,10 @@ if __name__ == "__main__":
             "--nocheck", action="store_true", default=False,
             help="fast mode only for debug"
         )
+    parser.add_argument(
+                "--get-model-byname", type=str, required=False,
+                help="Get a model specifying its name"
+            )
 
     args = parser.parse_args()
 
@@ -290,6 +307,11 @@ if __name__ == "__main__":
     settings = get_settings()
     master_host = args.master_host if args.master_host is not None else settings.LLAMA_SERVER_HOST
     master_user = args.master_user if args.master_user is not None else settings.LLAMA_SERVER_USER
+
+    if args.get_model_byname:
+        m = get_model_byname( args.get_model_byname, args.models_config, args.rpc_config)
+        logger.info(f"Model={m}")
+        sys.exit(0)
 
     try:
         ms = load_models(config_path=args.models_config,

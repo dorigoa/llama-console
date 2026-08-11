@@ -239,6 +239,8 @@ class LlamaConsoleGUI:
             args += ["--override-temp", f"{temp_value:.4f}"]
         args += ["--debug"]
 
+        
+
         ui.notify(f"Starting model {model} (ctx={ctx_value})...")
         # -u keeps the child's output unbuffered so lines arrive as they happen.
         cmd = [_PY, "-u", _START_MODEL, *args]
@@ -342,11 +344,20 @@ class LlamaConsoleGUI:
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
 
                 # RPC server checkboxes — one per server defined in rpc.json
+
+                selected_model = self.get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+
+
+
                 if RPC_SERVERS:
                     with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                         ui.label('RPC servers:').classes('text-subtitle1')
                         for name in RPC_SERVERS:
                             self.server_checkboxes[name] = ui.checkbox(name)
+                            if name == selected_model.model_name:
+                                self.server_checkboxes[name].value = True
+                            else:
+                                self.server_checkboxes[name].value = False
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.ctx_label = ui.label("Context: —").classes('text-subtitle1')
