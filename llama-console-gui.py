@@ -365,7 +365,7 @@ class LlamaConsoleGUI:
                     with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                         ui.label('RPC servers:').classes('text-subtitle1')
                         for name in RPC_SERVERS:
-                            self.server_checkboxes[name] = ui.checkbox(name, id=name)
+                            self.server_checkboxes[name] = ui.checkbox(name)
                             # if name == selected_model.model_name:
                             #     self.server_checkboxes[name].value = True
                             # else:
