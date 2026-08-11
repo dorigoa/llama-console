@@ -244,10 +244,12 @@ class LlamaConsoleGUI:
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
             self.status_temp_label.set_text("")
+            self.status_quant_label.set_text("")
         else:
             self.status_model_label.set_text("")
             self.status_ctx_label.set_text("")
             self.status_temp_label.set_text("")
+            self.status_quant_label.set_text("")
 
     async def refresh(self) -> None:
         await self.update_status()
