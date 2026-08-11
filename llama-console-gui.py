@@ -140,8 +140,10 @@ class LlamaConsoleGUI:
             for rpc in selected_model.rpcservers:
                 logger.debug(f"current rpc name=[{rpc.name}]")
                 if rpc.name == cb_name:
+                    logger.debug(f"MATCH - settings checkbox to True")
                     self.server_checkboxes[cb_name].value = True
                 else:
+                    logger.debug(f"UNMATCH - settings checkbox to False")
                     self.server_checkboxes[cb_name].value = False
             
 
