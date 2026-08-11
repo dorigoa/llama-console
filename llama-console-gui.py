@@ -19,6 +19,7 @@ from logzero import logger
 from nicegui import context, ui
 
 from config_manager import get_settings
+from model import get_model_byname
 
 settings = get_settings()
 
@@ -345,7 +346,7 @@ class LlamaConsoleGUI:
 
                 # RPC server checkboxes — one per server defined in rpc.json
 
-                selected_model = self.get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
+                selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
 
 
 
