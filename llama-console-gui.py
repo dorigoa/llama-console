@@ -151,19 +151,6 @@ class LlamaConsoleGUI:
         self.model_dropdown.update()
         self._apply_model_spec(first)
         self._update_rpc_checkboxes()
-        # selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
-
-        # logger.debug(f"Selected model: {selected_model.model_name}")
-
-        # self.uncheck_rpc_checkboxes()
-        
-        # for cb_name in self.server_checkboxes:
-        #     logger.debug(f"current cb_name=[{cb_name}]")
-        #     for rpc in selected_model.rpcservers:
-        #         logger.debug(f"current rpc name=[{rpc.name}]")
-        #         if rpc.name == cb_name:
-        #             logger.debug(f"MATCH - settings checkbox to True")
-        #             self.server_checkboxes[cb_name].value = True
 
     # ---------------------------------------------------------------- update ---
     async def update_status(self) -> None:
@@ -270,6 +257,14 @@ class LlamaConsoleGUI:
         args = [model]
         ctx_value = int(self.ctx_slider.value)
         args += ["--override-ctx", str(ctx_value)]
+
+        override_rpc = []
+        for cb_name in self.server_checkboxes:
+            if self.server_checkboxes[cb_name].value == True:
+                override_rpc.append(cb_name)
+
+        if len(override_rpc):
+            args += ["--override-rpc", f"{','.join(override_rpc)}"]
 
         # Only override the temperature if the user actually moved the slider.
         temp_value = float(self.temp_slider.value)
