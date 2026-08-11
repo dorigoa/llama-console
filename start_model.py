@@ -144,7 +144,7 @@ def server_status() -> dict:
 
     info["running"] = True
     info["pids"] = pids
-    info
+    info["quant"] = 'BOH'
     try:
         model, ctxsize, temp, quant = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
     except (RuntimeError, ValueError) as e:
