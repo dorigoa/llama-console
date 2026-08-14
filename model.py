@@ -19,7 +19,7 @@ class Model:
     model_path: Path
     size_gib: float | None
     mmproj_path: Path | None
-    ctxsize: int
+    #ctxsize: int
     # temperature / top_p / top_k / min_p are NOT stored fields: they are the
     # four values packed inside `samplers`, exposed by the properties further
     # down. Keeping them as fields too would duplicate the same data in two
@@ -228,7 +228,7 @@ def load_models(config_path: Path,
                 model_path=model_path,
                 size_gib=size_gib,
                 mmproj_path=Path(spec["MMPROJ"]) if spec["MMPROJ"] is not None else None,
-                ctxsize=int(spec["ctx"]),
+                #ctxsize=int(spec["ctx"]),
                 # temperature=float(spec["TEMP"]),
                 # top_p=float(spec["TOPP"]),
                 # top_k=int(spec["TOPK"]),

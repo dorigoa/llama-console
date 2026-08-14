@@ -266,7 +266,8 @@ class LlamaConsoleGUI:
         # min() guards a model whose native context is below the usual floor:
         # a slider with min > max cannot be dragged at all.
         ctx_min = min(_CTX_MIN, native_ctx)
-        ctx_value = max(ctx_min, min(int(spec["ctx"]), native_ctx))
+        #ctx_value = max(ctx_min, min(int(spec["ctx"]), native_ctx))
+        ctx_value = settings.DEFAULT_CTX
         # element.props is a public observable dict in NiceGUI 3.x, so assigning
         # to it schedules the update by itself. The value still goes through
         # set_value(): pushing it as a 'value=' prop is what breaks dragging.

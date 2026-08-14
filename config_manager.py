@@ -34,6 +34,7 @@ class Settings:
     SEED: int = 123456789
     FITC: int = 8192
     NP: int = 1               # parallel sequences; 1 is required by MTP processing
+    DEFAULT_CTX: int = 8192
 
 #_________________________________________________________________________________________
 def _load_overrides(path: Path) -> Dict[str, Any]:

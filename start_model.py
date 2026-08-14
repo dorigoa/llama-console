@@ -445,7 +445,7 @@ def start_model(
                     #"alias": m.alias,
                     "size_gib": m.size_gib,
                     "rpc_count": len(m.rpcservers),
-                    "ctx": m.ctxsize,
+                    #"ctx": m.ctxsize,
                     "native_ctx": m.native_ctx,
                     "temperature": m.temperature,
                     "top_p": m.top_p,
@@ -483,8 +483,8 @@ def start_model(
         model.top_k = override_top_k
     if override_min_p:
         model.min_p = override_min_p
-    if override_ctx:
-        model.ctxsize = override_ctx
+    #if override_ctx:
+    #    model.ctxsize = override_ctx
     if override_rpc:
         rpcs = load_rpcs(settings.RPC_JSON)
         server_names = override_rpc.split(',')
@@ -618,7 +618,10 @@ def start_model(
             logger.warning("'--only-list-devices' specified. Gracefully exiting.")
             sys.exit(0)
 
-    cmd = build_command(binary, model, devices, override_ctx, debug)
+    ctx = None
+    if override_ctx
+        ctx = override_ctx
+    cmd = build_command(binary, model, devices, ctx, debug) # ctx == None will trigger the retrieve of the default value defined in the config.json
     logger.debug(f"Command: {cmd}")
 
     if dry_run:

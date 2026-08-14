@@ -7,7 +7,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
-                        "ctx": 512000,
                         "SAMPLERS": "0.6:0.95:0:0",
                         "RP": 1.0,
                         "PP": -1,
@@ -25,7 +24,6 @@
                 "Phi-4-reasoning-plus-UD-Q8_K_XL": {
                         "sizegb": 17,
                         "RPC_SERVERS": { },
-                        "ctx": 32768,
                         "SAMPLERS": "0.8:0.95:50:0.0",
                         "RP": 1.0,
                         "PP": -1,
@@ -43,7 +41,6 @@
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 3.9,
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:0.0",
                         "RP": 1.0,
                         "PP": -1,
@@ -61,7 +58,6 @@
                 "gemma-4-E4B-it-UD-Q8_K_XL": {
                         "sizegb": 8.1,
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:0.0",
                         "RP": 1.0,
                         "PP": -1,
@@ -79,7 +75,6 @@
                 "gemma-4-E4B-it-BF16": {
                         "sizegb": 14,
                         "RPC_SERVERS": { },
-                        "ctx": 131072,
                         "SAMPLERS": "1.0:0.95:64:0.0",
                         "RP": 1.0,
                         "PP": -1,
@@ -99,7 +94,6 @@
                         "RPC_SERVERS": { 
                                 "ids": [{"name": "mac1"}] 
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
                         "RP": 1.0,
                         "PP": -1,
@@ -119,7 +113,6 @@
                         "RPC_SERVERS": { 
                                 "ids": [{"name": "mac1"}] 
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
                         "RP": 1.0,
                         "PP": -1,
@@ -139,7 +132,6 @@
                         "RPC_SERVERS": { 
                                 "ids": [{"name": "mac1"}]
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
                         "RP": 1.0,
                         "PP": -1,
@@ -159,7 +151,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "1.0:0.95:64:-1",
                         "RP": 1.0,
                         "PP": -1,
@@ -179,7 +170,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"}]
                         },
-                        "ctx": 131072,
                         "SAMPLERS": "1.0:1.0:0:0.0",
                         "RP": 1.0,
                         "PP": -1,
@@ -199,7 +189,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
@@ -219,7 +208,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
@@ -237,7 +225,6 @@
                 "Qwen3.8-27B-UD-Q5_K_XL": {
                         "sizegb": 19,
                         "RPC_SERVERS": {},
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
@@ -255,7 +242,6 @@
                 "Qwen3.8-27B-UD-Q4_K_XL": {
                         "sizegb": 17,
                         "RPC_SERVERS": {},
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
@@ -275,7 +261,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}, {"name": "linux"} ]
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
@@ -293,7 +278,6 @@
                 "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
                         "sizegb": 21,
                         "RPC_SERVERS": {},
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
@@ -313,7 +297,6 @@
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
                         },
-                        "ctx": 262144,
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,

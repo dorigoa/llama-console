@@ -8,5 +8,6 @@
         "MODELS_JSON": "models.json",
         "RPC_JSON": "rpc.json",
         "LLAMA_LOG_FILE": "/tmp/llama-server.log",
-        "LLAMA_BOOT_LOG": "/tmp/llama-server.boot.log"
+        "LLAMA_BOOT_LOG": "/tmp/llama-server.boot.log",
+        "DEFAULT_CTX": 32768
 }

@@ -6,7 +6,7 @@ settings = get_settings()
 
 #___________________________________________________________________________________
 def build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None, verbose: bool = False) -> list[str]:
-    cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else model.ctxsize)]
+    cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else settings.DEFAULT_CTX)]
 
     #if model.fitt:
     #    cmd += ["-fitt", model.fitt]
