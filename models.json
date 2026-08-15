@@ -18,6 +18,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 1048576
                 },
                 "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q8_K_XL": {
@@ -36,6 +37,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 1048576
                 },
                 "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q4_K_XL": {
@@ -54,6 +56,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 1048576
                 },
                 "Phi-4-reasoning-plus-UD-Q8_K_XL": {
@@ -70,6 +73,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 32768
                 },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
@@ -86,6 +90,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 131072
                 },
                 "gemma-4-E4B-it-UD-Q8_K_XL": {
@@ -102,6 +107,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 131072
                 },
                 "gemma-4-E4B-it-BF16": {
@@ -118,25 +124,8 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 131072
-                },
-                "gemma-4-26B-A4B-it-UD-Q6_K_XL": {
-                        "sizegb": 22,
-                        "RPC_SERVERS": { 
-                                "ids": [{"name": "mac1"}] 
-                        },
-                        "SAMPLERS": "1.0:0.95:64:-1",
-                        "RP": 1.0,
-                        "PP": -1,
-                        "REAS": null,
-                        "PRES_THK": null,
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "MTP": true,
-                        "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
                         "sizegb": 26,
@@ -154,6 +143,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": "mtp-gemma-4-26B-A4B-it-Q8_0.gguf",
                         "native_ctx": 262144
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
@@ -172,6 +162,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": "mtp-gemma-4-31B-it-Q4_0.gguf",
                         "native_ctx": 262144
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
@@ -190,6 +181,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": "mtp-gemma-4-31B-it-Q8_0.gguf",
                         "native_ctx": 262144
                 },
                 "GPT-OSS-120B-MXFP4": {
@@ -207,6 +199,7 @@
                         "UB": 1024,
                         "B": 2048,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "KVQUANT": "q8_0",
                         "native_ctx": 131072
                 },
@@ -226,6 +219,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
                 "Qwen3.8-27B-UD-Q6_K_XL": {
@@ -242,6 +236,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },                
                 "Qwen3.8-27B-UD-Q5_K_XL": {
@@ -258,6 +253,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },                
                 "Qwen3.8-27B-UD-Q4_K_XL": {
@@ -274,6 +270,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-27B-MTP-UD-Q8_K_XL": {
@@ -292,6 +289,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
@@ -308,6 +306,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
@@ -326,6 +325,7 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
+                        "ext_mtp_head_file": null,
                         "native_ctx": 262144
                         
                 }

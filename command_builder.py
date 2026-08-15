@@ -65,6 +65,8 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         cmd += ["-b", str(model.b)]
     if model.mtp:
         cmd += ["--spec-type", "draft-mtp"]
+        if model.ext_mtp_head_file:
+            cmd += ["--model-draft", str(model.ext_mtp_head_file)]
     # Log file for detached execution (UI polls it)
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 

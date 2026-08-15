@@ -33,6 +33,7 @@ class Model:
     b: int
     kvquant: str
     mtp: bool
+    ext_mtp_head_file: Path | None
     native_ctx: int
     rep_pen: float
     pres_pen: float | None
@@ -185,8 +186,11 @@ def load_models(config_path: Path,
             size_gib = None
 
         mtp = False
+        ext_mtp_file = None
         if 'MTP' in spec and spec['MTP'] == True:
             mtp = True
+            if 'ext_mtp_head_file' in spec and spec['ext_mtp_head_file']:
+                ext_mtp_file = str(spec['ext_mtp_head_file'])
         pp = None
         if spec.get("PP") and spec.get("PP") > -1:
             pp = float( spec.get("PP") )
@@ -236,6 +240,7 @@ def load_models(config_path: Path,
                 ub=spec["UB"],
                 b=spec["B"],
                 mtp=mtp,
+                ext_mtp_head_file=base_dir / ext_mtp_file,
                 native_ctx=int(spec.get("native_ctx")), # this has to be defined in the models.json !!
                 rep_pen=rp,
                 pres_pen=pp
