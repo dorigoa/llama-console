@@ -481,8 +481,8 @@ class LlamaConsoleGUI:
                             #     self.server_checkboxes[name].value = False
 
                 with ui.row().classes('w-full items-center q-mt-sm gap-3'):
-                    ui.label('Force no MTP').classes('text-subtitle1')
-                    self.mtp_checkbox = ui.checkbox("No MTP")
+                    #ui.label('Force no MTP').classes('text-subtitle1')
+                    self.mtp_checkbox = ui.checkbox("Force No-MTP")
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.ctx_label = ui.label("Context: —").classes('text-subtitle1')
