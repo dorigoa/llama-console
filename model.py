@@ -242,7 +242,7 @@ def load_models(config_path: Path,
                 ub=spec["UB"],
                 b=spec["B"],
                 mtp=mtp,
-                native_ctx=int(spec.get("native_ctx", spec["ctx"])),
+                native_ctx=int(spec.get("native_ctx"), # this has to be defined in the models.json !!
                 rep_pen=rp,
                 pres_pen=pp
             )
