@@ -135,7 +135,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
@@ -153,7 +153,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
@@ -171,7 +171,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
@@ -189,7 +189,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },
                 "GPT-OSS-120B-MXFP4": {
@@ -225,7 +225,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },
                 "Qwen3.8-27B-UD-Q6_K_XL": {
@@ -241,7 +241,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },                
                 "Qwen3.8-27B-UD-Q5_K_XL": {
@@ -257,7 +257,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },                
                 "Qwen3.8-27B-UD-Q4_K_XL": {
@@ -273,7 +273,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-27B-MTP-UD-Q8_K_XL": {
