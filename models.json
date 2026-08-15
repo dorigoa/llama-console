@@ -146,7 +146,24 @@
                         "ext_mtp_head_file": "mtp-gemma-4-26B-A4B-it-Q8_0.gguf",
                         "native_ctx": 262144
                 },
-                "gemma-4-26B-A4B-it-UD-Q4_K_XL": {
+                "gemma-4-26B-A4B-it-UD-Q6_K_XL": {
+                        "sizegb": 22,
+                        "RPC_SERVERS": { },
+                        "SAMPLERS": "1.0:0.95:64:-1",
+                        "RP": 1.0,
+                        "PP": -1,
+                        "REAS": null,
+                        "PRES_THK": null,
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "MTP": false,
+                        "ext_mtp_head_file": null,
+                        "native_ctx": 262144
+                },
+                "gemma-4-26B-A4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 14,
                         "RPC_SERVERS": { },
                         "SAMPLERS": "1.0:0.95:64:-1",
