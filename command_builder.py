@@ -11,7 +11,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     #if model.fitt:
     #    cmd += ["-fitt", model.fitt]
 
-    if model.rpcservers:
+    if model.rpcservers and len(model.rpcservers):
         rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
         cmd += ["--rpc", rpc_list]
 

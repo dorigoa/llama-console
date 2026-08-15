@@ -486,19 +486,23 @@ def start_model(
     #if override_ctx:
     #    model.ctxsize = override_ctx
     if override_rpc:
-        rpcs = load_rpcs(settings.RPC_JSON)
-        server_names = override_rpc.split(',')
-        model.rpcservers = []
-        logger.debug(f"")
-        for name in server_names:
-            logger.debug(f"RPC Override: adding rpc {name}({rpcs[name].IP})")
-            model.rpcservers.append( rpcs[name] )
+        if override_rpc != "none":
+            rpcs = load_rpcs(settings.RPC_JSON)
+            server_names = override_rpc.split(',')
+            model.rpcservers = []
+            logger.debug(f"")
+            for name in server_names:
+                logger.debug(f"RPC Override: adding rpc {name}({rpcs[name].IP})")
+                model.rpcservers.append( rpcs[name] )
+        else:
+            model.rpcservers = None
+
 
 
     binary = settings.LLAMA_SERVER_BIN
     ssh_dest = _ssh_dest()
 
-    if only_check_rpc:
+    if only_check_rpc and model.rpcservers and len(model.rpcservers):
         # Check only: report which RPC servers are not running and exit.
         # Never start them (that's what --only-start-rpc is for).
         if not model.rpcservers:
