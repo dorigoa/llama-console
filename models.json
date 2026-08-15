@@ -17,7 +17,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": true,
+                        "MTP": false,
                         "ext_mtp_head_file": null,
                         "native_ctx": 1048576
                 },
