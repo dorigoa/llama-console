@@ -5,7 +5,7 @@ import json
 settings = get_settings()
 
 #___________________________________________________________________________________
-def build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None, verbose: bool = False) -> list[str]:
+def build_command(binary: str, model: Model, devices: str = "", ctx: int | None = None, nomtp: bool = False,verbose: bool = False) -> list[str]:
     cmd = [binary, "-m", str(model.model_path), "-c", str(ctx if ctx is not None else settings.DEFAULT_CTX)]
 
     #if model.fitt:
@@ -63,10 +63,11 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         cmd += ["-ub", str(model.ub)]
     if model.b:
         cmd += ["-b", str(model.b)]
-    if model.mtp:
-        cmd += ["--spec-type", "draft-mtp"]
-        if model.ext_mtp_head_file:
-            cmd += ["--model-draft", str(model.ext_mtp_head_file)]
+    if not nomtp:
+        if model.mtp:
+            cmd += ["--spec-type", "draft-mtp"]
+            if model.ext_mtp_head_file:
+                cmd += ["--model-draft", str(model.ext_mtp_head_file)]
     # Log file for detached execution (UI polls it)
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 

@@ -413,6 +413,7 @@ def start_model(
     override_devices: str | None = None,
     override_ctx: int | None = None,
     override_rpc: str | None = None,
+    nomtp: bool = False,
     as_json: bool = False,
     debug: bool = False
 ) -> None:
@@ -627,7 +628,7 @@ def start_model(
     ctx = None
     if override_ctx:
         ctx = override_ctx
-    cmd = build_command(binary, model, devices, ctx, debug) # ctx == None will trigger the retrieve of the default value defined in the config.json
+    cmd = build_command(binary, model, devices, ctx, nomtp, debug) # ctx == None will trigger the retrieve of the default value defined in the config.json
     logger.debug(f"Command: {cmd}")
 
     if dry_run:
@@ -660,9 +661,10 @@ def main() -> None:
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
     parser.add_argument("--override-rpc", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
+
     parser.add_argument("--json", action="store_true", help="Machine-readable output for --server-status and --list-models")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
-
+    parser.add_argument("--force-no-mtp", action="store_true", help="Disable MTP even if the model supports it")
 
     args = parser.parse_args()
 
@@ -692,6 +694,7 @@ def main() -> None:
         override_devices=args.override_devices,
         override_ctx=args.override_ctx,
         override_rpc=args.override_rpc,
+        nomtp=args.force_no_mtp,
         as_json=args.json,
         debug=args.debug
     )
