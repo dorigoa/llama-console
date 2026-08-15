@@ -167,6 +167,8 @@ def report_server_status(as_json: bool = False) -> bool:
         print(f"llama-server is NOT RUNNING on {info['where']}")
         return False
 
+    logger.debug(f"Dict INFO={info}")
+
     print(f"llama-server is RUNNING on {info['where']} (pid(s): {', '.join(info['pids'])})")
     if info["ready"]:
         print(f"Running model: {info['model']} - CTX Size: {info['ctx']} - Temp: {info['temperature']:.1f} - Quant: {info['quant']}")
