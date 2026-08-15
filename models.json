@@ -205,9 +205,7 @@
                 },
                 "Qwen3.8-27B-UD-Q6_K_XL": {
                         "sizegb": 24,
-                        "RPC_SERVERS": {
-                                "ids": [{"name": "mac1"}]
-                        },
+                        "RPC_SERVERS": {},
                         "SAMPLERS": "0.6:0.95:20:0.0",
                         "RP": 1.0,
                         "PP": 0.0,
