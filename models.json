@@ -18,7 +18,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
-                        "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
                 "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q8_K_XL": {
@@ -37,7 +36,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
-                        "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
                 "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q4_K_XL": {
@@ -56,7 +54,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
-                        "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
                 "Phi-4-reasoning-plus-UD-Q8_K_XL": {
@@ -73,7 +70,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 50,
                         "native_ctx": 32768
                 },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
@@ -90,7 +86,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
                 "gemma-4-E4B-it-UD-Q8_K_XL": {
@@ -107,7 +102,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
                 "gemma-4-E4B-it-BF16": {
@@ -124,7 +118,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 5,
                         "native_ctx": 131072
                 },
                 "gemma-4-26B-A4B-it-UD-Q6_K_XL": {
@@ -143,7 +136,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
@@ -162,7 +154,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
                 "gemma-4-31B-it-qat-UD-Q4_K_XL": {
@@ -181,7 +172,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
                 "gemma-4-31B-it-UD-Q8_K_XL": {
@@ -200,7 +190,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 15,
                         "native_ctx": 262144
                 },
                 "GPT-OSS-120B-MXFP4": {
@@ -219,7 +208,6 @@
                         "B": 2048,
                         "MTP": false,
                         "KVQUANT": "q8_0",
-                        "kv_gb_256_fp16": 9,
                         "native_ctx": 131072
                 },
                 "Qwen3.8-27B-UD-Q8_K_XL": {
@@ -238,7 +226,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },
                 "Qwen3.8-27B-UD-Q6_K_XL": {
@@ -255,7 +242,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },                
                 "Qwen3.8-27B-UD-Q5_K_XL": {
@@ -272,7 +258,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },                
                 "Qwen3.8-27B-UD-Q4_K_XL": {
@@ -289,7 +274,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-27B-MTP-UD-Q8_K_XL": {
@@ -308,7 +292,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": true,
-                        "kv_gb_256_fp16": 16,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
@@ -325,7 +308,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                 },
                 "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
@@ -344,7 +326,6 @@
                         "UB": null,
                         "B": null,
                         "MTP": false,
-                        "kv_gb_256_fp16": 5,
                         "native_ctx": 262144
                         
                 }
