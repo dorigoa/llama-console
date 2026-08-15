@@ -17,7 +17,45 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
+                        "kv_gb_256_fp16": 2,
+                        "native_ctx": 1048576
+                },
+                "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q8_K_XL": {
+                        "sizegb": 39,
+                        "RPC_SERVERS": {
+                                "ids": [{"name": "mac1"}, {"name": "linux"}]
+                        },
+                        "SAMPLERS": "0.6:0.95:0:0",
+                        "RP": 1.0,
+                        "PP": -1,
+                        "REAS": null,
+                        "PRES_THK": null,
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "MTP": true,
+                        "kv_gb_256_fp16": 2,
+                        "native_ctx": 1048576
+                },
+                "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q4_K_XL": {
+                        "sizegb": 26,
+                        "RPC_SERVERS": {
+                                "ids": [{"name": "mac1"}]
+                        },
+                        "SAMPLERS": "0.6:0.95:0:0",
+                        "RP": 1.0,
+                        "PP": -1,
+                        "REAS": null,
+                        "PRES_THK": null,
+                        "MMPROJ": null,
+                        "EXTRAS": null,
+                        "KVQUANT": null,
+                        "UB": null,
+                        "B": null,
+                        "MTP": true,
                         "kv_gb_256_fp16": 2,
                         "native_ctx": 1048576
                 },
