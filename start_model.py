@@ -619,7 +619,7 @@ def start_model(
             sys.exit(0)
 
     ctx = None
-    if override_ctx
+    if override_ctx:
         ctx = override_ctx
     cmd = build_command(binary, model, devices, ctx, debug) # ctx == None will trigger the retrieve of the default value defined in the config.json
     logger.debug(f"Command: {cmd}")
