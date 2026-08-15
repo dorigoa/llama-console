@@ -240,7 +240,7 @@ def load_models(config_path: Path,
                 ub=spec["UB"],
                 b=spec["B"],
                 mtp=mtp,
-                ext_mtp_head_file=base_dir / ext_mtp_file,
+                ext_mtp_head_file=base_dir / ext_mtp_file if ext_mtp_file else None,
                 native_ctx=int(spec.get("native_ctx")), # this has to be defined in the models.json !!
                 rep_pen=rp,
                 pres_pen=pp
