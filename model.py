@@ -223,26 +223,20 @@ def load_models(config_path: Path,
 
         models.append(
             Model(
-                #alias=str(spec["ALIAS"]),
                 model_name=name,
                 model_path=model_path,
                 size_gib=size_gib,
                 mmproj_path=Path(spec["MMPROJ"]) if spec["MMPROJ"] is not None else None,
-                #ctxsize=int(spec["ctx"]),
-                # temperature=float(spec["TEMP"]),
-                # top_p=float(spec["TOPP"]),
-                # top_k=int(spec["TOPK"]),
-                # min_p=float(spec["MINP"]),
                 samplers=spec["SAMPLERS"],
                 reasoning=reas_eff,
                 preserv_think=preserv_think,
                 last_started=0,
-                rpcservers=rpcs_for_this_model, #spec['RPC_SERVERS'],
+                rpcservers=rpcs_for_this_model,
                 kvquant=spec["KVQUANT"],
                 ub=spec["UB"],
                 b=spec["B"],
                 mtp=mtp,
-                native_ctx=int(spec.get("native_ctx"), # this has to be defined in the models.json !!
+                native_ctx=int(spec.get("native_ctx")), # this has to be defined in the models.json !!
                 rep_pen=rp,
                 pres_pen=pp
             )
