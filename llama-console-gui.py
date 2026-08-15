@@ -352,7 +352,7 @@ class LlamaConsoleGUI:
             temp_value = float(self.temp_slider.value)
             if abs(temp_value - float(spec["temperature"])) > 0.001:
                 args += ["--override-temp", f"{temp_value:.4f}"]
-            if self.mtp_checkbox.value():
+            if self.mtp_checkbox.value
                 args += ["--force-no-mtp"]
             args += ["--debug"]
 
