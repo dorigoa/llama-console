@@ -9,7 +9,7 @@ class ServerHostUnreachable(Exception):
     server process simply not running)."""
 
 #___________________________________________________________________________________
-def _ssh_dest(settings: Settings) -> str | None:
+def ssh_dest(settings: Settings) -> str | None:
     if not settings.LLAMA_SERVER_HOST:
         return None
     if settings.LLAMA_SERVER_USER:
