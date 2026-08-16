@@ -68,7 +68,7 @@ def server_pids(settings: Settings) -> list[str]:
 
     May raise ServerHostUnreachable (propagated from _run_on_server)."""
     #r = _run_on_server(f"pgrep -f -- '{_pgrep_pattern()}'")
-    r = _run_on_server(f"pgrep -f -- '{settings.LLAMA_SERVER_BIN}'")
+    r = run_on_server(settings, f"pgrep -f -- '{settings.LLAMA_SERVER_BIN}'")
     return [p for p in r.stdout.split() if p.strip().isdigit()]
 
 #___________________________________________________________________________________
@@ -87,7 +87,7 @@ def run_on_server(settings: Settings, shell_cmd: str, timeout: int = 15):# -> su
     r = remote_exec( argv, timeout )
 
     if not r:
-        raise ServerHostUnreachable(f"{_server_location()} did not answer within {timeout}s")
+        raise ServerHostUnreachable(f"{server_location(settings)} did not answer within {timeout}s")
 
     if ssh_dest and r.returncode == 255:
         detail = r.stderr.strip() or "connection failed"
@@ -101,8 +101,8 @@ def server_status(settings: Settings) -> dict:
 
     'running' says a process exists; 'ready' says it also answers /props (a
     freshly started server is RUNNING but not yet ready for a while)."""
-    info = {"where": _server_location(), "running": False, "ready": False, "pids": [], "quant": ""}
-    pids = _server_pids()
+    info = {"where": server_location(settings), "running": False, "ready": False, "pids": [], "quant": ""}
+    pids = server_pids(settings)
     if not pids:
         return info
 
