@@ -60,7 +60,7 @@ def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
 
 #___________________________________________________________________________________
 def server_location(settings: Settings) -> str:
-    return _ssh_dest(settings) or "localhost"
+    return ssh_dest(settings) or "localhost"
 
 #___________________________________________________________________________________
 def server_pids(settings: Settings) -> list[str]:
