@@ -13,12 +13,13 @@ import json
 import time
 import logzero
 import argparse
-import requests
+
 from pathlib import Path
 from logzero import logger
 
 from remote_cmd_executor import remote_exec
 from rpc import load_rpcs
+import utils
 
 # The loglevel must be set HERE, before the project imports below: command_builder
 # calls get_settings() at import time, and config_manager logs at info/debug level
@@ -40,125 +41,125 @@ _LIST_DEVICES_TIMEOUT = 60
 settings = get_settings()
 
 #___________________________________________________________________________________
-def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
+# def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
 
-    url = f"http://{endpoint}/props"
-    try:
-        response = requests.get(url)
-        response.raise_for_status()  # raise an exception for HTTP codes 4xx, 5xx
-        data = response.json()
-        # Let's make sure the structure is as expected
-        # if isinstance(data, dict) and 'models' in data and isinstance(data['models'], list) and len(data['models']) > 0 and 'data' in data and len(data['data']) > 0:
-        #     first_model = data['models'][0]
-        #     first_data  = data['data'][0]#['meta']#['n_ctx']
-        #     if isinstance(first_model, dict) and 'name' in first_model and isinstance(first_data, dict) and 'meta' in first_data:
-        #         return (first_model['name'], first_data['meta']['n_ctx'])
-        #     else:
-        #         return None
-        # else:
-        # logger.debug(f"data={data}")
-        if (
-            isinstance(data, dict)
-            and 'default_generation_settings' in data
-            and isinstance(data['default_generation_settings'], dict)
-            and 'params' in data['default_generation_settings']
-            and isinstance(data['default_generation_settings']['params'], dict)
-            and 'n_ctx' in data['default_generation_settings']
-            and 'temperature' in data['default_generation_settings']['params']
-            and 'model_alias' in data
-        ):
-            #model = data['model_alias']
-            model = data['model_path'].split('/')[-1].removesuffix(".gguf")
-            n_ctx = data['default_generation_settings']['n_ctx']
-            temp  = data['default_generation_settings']['params']['temperature']
-            quant = data['model_ftype']
-            return model, n_ctx, temp, quant
-        else:
-            raise ValueError("JSON response has a bad structure")
+#     url = f"http://{endpoint}/props"
+#     try:
+#         response = requests.get(url)
+#         response.raise_for_status()  # raise an exception for HTTP codes 4xx, 5xx
+#         data = response.json()
+#         # Let's make sure the structure is as expected
+#         # if isinstance(data, dict) and 'models' in data and isinstance(data['models'], list) and len(data['models']) > 0 and 'data' in data and len(data['data']) > 0:
+#         #     first_model = data['models'][0]
+#         #     first_data  = data['data'][0]#['meta']#['n_ctx']
+#         #     if isinstance(first_model, dict) and 'name' in first_model and isinstance(first_data, dict) and 'meta' in first_data:
+#         #         return (first_model['name'], first_data['meta']['n_ctx'])
+#         #     else:
+#         #         return None
+#         # else:
+#         # logger.debug(f"data={data}")
+#         if (
+#             isinstance(data, dict)
+#             and 'default_generation_settings' in data
+#             and isinstance(data['default_generation_settings'], dict)
+#             and 'params' in data['default_generation_settings']
+#             and isinstance(data['default_generation_settings']['params'], dict)
+#             and 'n_ctx' in data['default_generation_settings']
+#             and 'temperature' in data['default_generation_settings']['params']
+#             and 'model_alias' in data
+#         ):
+#             #model = data['model_alias']
+#             model = data['model_path'].split('/')[-1].removesuffix(".gguf")
+#             n_ctx = data['default_generation_settings']['n_ctx']
+#             temp  = data['default_generation_settings']['params']['temperature']
+#             quant = data['model_ftype']
+#             return model, n_ctx, temp, quant
+#         else:
+#             raise ValueError("JSON response has a bad structure")
         
-    except requests.exceptions.RequestException as e:
-        raise RuntimeError(f"HTTP request error: {e}") from e
-    except json.JSONDecodeError as e:
-        raise RuntimeError(f"JSON parsing error: {e}") from e
+#     except requests.exceptions.RequestException as e:
+#         raise RuntimeError(f"HTTP request error: {e}") from e
+#     except json.JSONDecodeError as e:
+#         raise RuntimeError(f"JSON parsing error: {e}") from e
 
 #___________________________________________________________________________________
-def _ssh_dest() -> str | None:
-    if not settings.LLAMA_SERVER_HOST:
-        return None
-    if settings.LLAMA_SERVER_USER:
-        return f"{settings.LLAMA_SERVER_USER}@{settings.LLAMA_SERVER_HOST}"
-    return settings.LLAMA_SERVER_HOST
+# def _ssh_dest() -> str | None:
+#     if not settings.LLAMA_SERVER_HOST:
+#         return None
+#     if settings.LLAMA_SERVER_USER:
+#         return f"{settings.LLAMA_SERVER_USER}@{settings.LLAMA_SERVER_HOST}"
+#     return settings.LLAMA_SERVER_HOST
+
+# #___________________________________________________________________________________
+# class ServerHostUnreachable(Exception):
+#     """Raised when LLAMA_SERVER_HOST cannot be contacted over SSH (vs. the
+#     server process simply not running)."""
+
+# #___________________________________________________________________________________
+# def _server_location() -> str:
+#     return _ssh_dest() or "localhost"
+
+# #___________________________________________________________________________________
+# def _run_on_server(shell_cmd: str, timeout: int = 15):# -> subprocess.CompletedProcess:
+#     """Run shell_cmd on LLAMA_SERVER_HOST via SSH if configured, else locally.
+
+#     Raises ServerHostUnreachable if SSH itself fails (connection refused,
+#     timeout, auth/host error). SSH reserves exit code 255 for its own failures,
+#     while pgrep/pkill only ever return 0/1/2/3, so 255 unambiguously means the
+#     host was not reached rather than 'no process found'."""
+#     ssh_dest = _ssh_dest()
+#     if ssh_dest:
+#         argv = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", ssh_dest, shell_cmd]
+#     else:
+#         argv = ["bash", "-c", shell_cmd]
+#     r = remote_exec( argv, timeout )
+
+#     if not r:
+#         raise ServerHostUnreachable(f"{_server_location()} did not answer within {timeout}s")
+
+#     if ssh_dest and r.returncode == 255:
+#         detail = r.stderr.strip() or "connection failed"
+#         raise ServerHostUnreachable(f"SSH error contacting {ssh_dest}: {detail}")
+#     return r
+
+# #___________________________________________________________________________________
+# def _server_pids() -> list[str]:
+#     """PIDs of the running llama-server process(es), or [] if none.
+
+#     May raise ServerHostUnreachable (propagated from _run_on_server)."""
+#     #r = _run_on_server(f"pgrep -f -- '{_pgrep_pattern()}'")
+#     r = _run_on_server(f"pgrep -f -- '{settings.LLAMA_SERVER_BIN}'")
+#     return [p for p in r.stdout.split() if p.strip().isdigit()]
 
 #___________________________________________________________________________________
-class ServerHostUnreachable(Exception):
-    """Raised when LLAMA_SERVER_HOST cannot be contacted over SSH (vs. the
-    server process simply not running)."""
+# def server_status() -> dict:
+#     """Structured status of llama-server: the single source of truth behind both
+#     the human-readable report and --json.
 
-#___________________________________________________________________________________
-def _server_location() -> str:
-    return _ssh_dest() or "localhost"
+#     'running' says a process exists; 'ready' says it also answers /props (a
+#     freshly started server is RUNNING but not yet ready for a while)."""
+#     info = {"where": _server_location(), "running": False, "ready": False, "pids": [], "quant": ""}
+#     pids = _server_pids()
+#     if not pids:
+#         return info
 
-#___________________________________________________________________________________
-def _run_on_server(shell_cmd: str, timeout: int = 15):# -> subprocess.CompletedProcess:
-    """Run shell_cmd on LLAMA_SERVER_HOST via SSH if configured, else locally.
-
-    Raises ServerHostUnreachable if SSH itself fails (connection refused,
-    timeout, auth/host error). SSH reserves exit code 255 for its own failures,
-    while pgrep/pkill only ever return 0/1/2/3, so 255 unambiguously means the
-    host was not reached rather than 'no process found'."""
-    ssh_dest = _ssh_dest()
-    if ssh_dest:
-        argv = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", ssh_dest, shell_cmd]
-    else:
-        argv = ["bash", "-c", shell_cmd]
-    r = remote_exec( argv, timeout )
-
-    if not r:
-        raise ServerHostUnreachable(f"{_server_location()} did not answer within {timeout}s")
-
-    if ssh_dest and r.returncode == 255:
-        detail = r.stderr.strip() or "connection failed"
-        raise ServerHostUnreachable(f"SSH error contacting {ssh_dest}: {detail}")
-    return r
-
-#___________________________________________________________________________________
-def _server_pids() -> list[str]:
-    """PIDs of the running llama-server process(es), or [] if none.
-
-    May raise ServerHostUnreachable (propagated from _run_on_server)."""
-    #r = _run_on_server(f"pgrep -f -- '{_pgrep_pattern()}'")
-    r = _run_on_server(f"pgrep -f -- '{settings.LLAMA_SERVER_BIN}'")
-    return [p for p in r.stdout.split() if p.strip().isdigit()]
-
-#___________________________________________________________________________________
-def server_status() -> dict:
-    """Structured status of llama-server: the single source of truth behind both
-    the human-readable report and --json.
-
-    'running' says a process exists; 'ready' says it also answers /props (a
-    freshly started server is RUNNING but not yet ready for a while)."""
-    info = {"where": _server_location(), "running": False, "ready": False, "pids": [], "quant": ""}
-    pids = _server_pids()
-    if not pids:
-        return info
-
-    info["running"] = True
-    info["pids"] = pids
-    info["quant"] = 'BOH'
-    try:
-        model, ctxsize, temp, quant = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
-    except (RuntimeError, ValueError) as e:
-        # ValueError too: _get_first_model_name raises it on an unexpected JSON
-        # shape, and it is not a subclass of RuntimeError.
-        info["error"] = str(e)
-    else:
-        info.update(ready=True, model=model, ctx=ctxsize, temperature=temp, quant=quant)
-    return info
+#     info["running"] = True
+#     info["pids"] = pids
+#     info["quant"] = 'BOH'
+#     try:
+#         model, ctxsize, temp, quant = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
+#     except (RuntimeError, ValueError) as e:
+#         # ValueError too: _get_first_model_name raises it on an unexpected JSON
+#         # shape, and it is not a subclass of RuntimeError.
+#         info["error"] = str(e)
+#     else:
+#         info.update(ready=True, model=model, ctx=ctxsize, temperature=temp, quant=quant)
+#     return info
 
 #___________________________________________________________________________________
 def report_server_status(as_json: bool = False) -> bool:
     """Print whether llama-server is running. Return True if running."""
-    info = server_status()
+    info = utils.server_status(settings)
     if as_json:
         print(json.dumps(info))
         return info["running"]
@@ -179,23 +180,23 @@ def report_server_status(as_json: bool = False) -> bool:
 #___________________________________________________________________________________
 def stop_server() -> bool:
     """Kill the llama-server process on the server. Return True if stopped."""
-    where = _server_location()
-    pids = _server_pids()
+    where = utils.server_location(settings)
+    pids = utils.server_pids(settings)
     if not pids:
         logger.warning(f"No llama-server process found on {where}.")
         return True
 
     pattern = settings.LLAMA_SERVER_BIN#_pgrep_pattern()
     logger.debug(f"Sending SIGTERM to llama-server on {where} (pid(s): {', '.join(pids)})...")
-    _run_on_server(f"pkill -TERM -f -- '{pattern}'")
+    utils.run_on_server(settings, f"pkill -TERM -f -- '{pattern}'")
 
     time.sleep(2)
-    pids = _server_pids()
+    pids = utils.server_pids(settings)
     if pids:
         logger.debug(f"Still running (pid(s): {', '.join(pids)}); sending SIGKILL...")
-        _run_on_server(f"pkill -KILL -f -- '{pattern}'")
+        utils.run_on_server(settings, f"pkill -KILL -f -- '{pattern}'")
         time.sleep(1)
-        pids = _server_pids()
+        pids = utils.server_pids(settings)
 
     if pids:
         logger.error(f"Error: could not stop llama-server on {where} (pid(s): {', '.join(pids)}).")
@@ -212,8 +213,8 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
     recreated on a server restart, and keeps streaming until the user hits Ctrl-C.
 
     Returns the tail/ssh exit code (0 on a clean Ctrl-C)."""
-    where = _server_location()
-    ssh_dest = _ssh_dest()
+    where = utils.server_location(settings)
+    ssh_dest = utils.ssh_dest(settings)
 
     tail_args = ["tail", "-n", str(int(lines))]
     if follow:
@@ -237,7 +238,7 @@ def tail_log(lines: int = 50, follow: bool = True) -> int:
     try:
         r = remote_exec(argv, timeout=None, capture_output=False)
         if not r:
-            raise ServerHostUnreachable(f"could not tail the log on {where}")
+            raise utils.ServerHostUnreachable(f"could not tail the log on {where}")
     except KeyboardInterrupt:
         return 0
     return r.returncode
@@ -248,7 +249,7 @@ def _run_server_action(action) -> "None":
     2 = LLAMA_SERVER_HOST unreachable."""
     try:
         ok = action()
-    except ServerHostUnreachable as e:
+    except utils.ServerHostUnreachable as e:
         logger.error(f"Error: host unreachable — {e}")
         sys.exit(2)
     sys.exit(0 if ok else 1)
@@ -295,7 +296,7 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
         argv = ["bash", "-c", remote_cmd]
     r = remote_exec( argv )
     if not r:
-        raise ServerHostUnreachable(f"timed out launching llama-server on {where}")
+        raise utils.ServerHostUnreachable(f"timed out launching llama-server on {where}")
     if r.returncode != 0:
         logger.error(f"Failed to launch llama-server on {where}: {r.stderr.strip()}")
         sys.exit(1)
@@ -305,8 +306,8 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
     for _ in range(10):
         time.sleep(1)
         try:
-            pids = _server_pids()
-        except ServerHostUnreachable as e:
+            pids = utils.server_pids(settings)
+        except utils.ServerHostUnreachable as e:
             logger.warning(f"Cannot verify server yet: {e}")
             continue
         if pids:
@@ -316,8 +317,8 @@ def _launch_detached(cmd: list[str], ssh_dest: str | None) -> None:
     # Not alive: it crashed at startup. Show the boot log so the user knows why.
     logger.error(f"llama-server did NOT stay up on {where}. Boot log ({settings.LLAMA_BOOT_LOG}):")
     try:
-        boot = _run_on_server(f"tail -n 40 {shlex.quote(settings.LLAMA_BOOT_LOG)} 2>/dev/null || true")
-    except ServerHostUnreachable as e:
+        boot = utils.run_on_server(settings, f"tail -n 40 {shlex.quote(settings.LLAMA_BOOT_LOG)} 2>/dev/null || true")
+    except utils.ServerHostUnreachable as e:
         # Don't let a second failure mask the launch failure we are reporting.
         logger.error(f"(boot log unavailable: {e})")
     else:
@@ -426,7 +427,7 @@ def start_model(
     if follow_log:
         try:
             rc = tail_log(lines=tail_lines, follow=True)
-        except ServerHostUnreachable as e:
+        except utils.ServerHostUnreachable as e:
             logger.error(f"Error: host unreachable — {e}")
             sys.exit(2)
         sys.exit(rc)
@@ -503,7 +504,7 @@ def start_model(
 
 
     binary = settings.LLAMA_SERVER_BIN
-    ssh_dest = _ssh_dest()
+    ssh_dest = utils.ssh_dest(settings)
 
     if only_check_rpc and model.rpcservers and len(model.rpcservers):
         # Check only: report which RPC servers are not running and exit.
@@ -562,13 +563,13 @@ def start_model(
         # cannot get an RPC device either. Both failures would only surface remotely,
         # in the boot log; refuse here instead.
         try:
-            running = _server_pids()
-        except ServerHostUnreachable as e:
+            running = utils.server_pids(settings)
+        except utils.ServerHostUnreachable as e:
             logger.error(f"Error: host unreachable — {e}")
             sys.exit(2)
         if running:
             logger.error(
-                f"llama-server is already RUNNING on {_server_location()} "
+                f"llama-server is already RUNNING on {utils.server_location(settings)} "
                 f"(pid(s): {', '.join(running)}); it holds port {settings.PORT_BIND} and, "
                 f"if it uses RPC, the rpc-server session too.\n"
                 f"  Stop it first:  {Path(sys.argv[0]).name} --kill-server"
@@ -706,6 +707,6 @@ if __name__ == "__main__":
     except ConfigError as e:
         logger.error(f"Configuration error: {e}")
         sys.exit(1)
-    except ServerHostUnreachable as e:
+    except utils.ServerHostUnreachable as e:
         logger.error(f"Error: host unreachable — {e}")
         sys.exit(2)
