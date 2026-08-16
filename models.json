@@ -383,7 +383,7 @@
                         "native_ctx": 262144
                         
                 },
-                "Qwen3.6-27B-Fable-Fus-711-UnHeretic-NM-DAU-NEO-MAX-NEO-MTP-Q6_0": {
+                "Qwen3.6-27B-Fable-Fus-711-UnHeretic-NM-DAU-NEO-MAX-NEO-MTP-Q6_K": {
                         "sizegb": 22,
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
@@ -403,7 +403,7 @@
                         "native_ctx": 262144
                         
                 },
-                "Qwen3.6-27B-Fable-Fus-711-UnHeretic-NM-DAU-NEO-MAX-NEO-MTP-Q4_0": {
+                "Qwen3.6-27B-Fable-Fus-711-UnHeretic-NM-DAU-NEO-MAX-NEO-MTP-Q4_K_M": {
                         "sizegb": 17,
                         "RPC_SERVERS": { },
                         "SAMPLERS": "0.6:0.95:20:0.0",
