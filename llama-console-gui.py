@@ -1,9 +1,13 @@
 """NiceGUI front-end for start_model.py.
 
-Everything this UI knows about models and about the server comes from
-`start_model.py --json`: the CLI is the single source of truth, and the two
-communicate over a real data structure instead of the printed text the UI used
-to slice by word position.
+Everything this UI knows about the *server* comes from `start_model.py --json`:
+the CLI is the single source of truth, and the two communicate over a real data
+structure instead of the printed text the UI used to slice by word position.
+
+The *model list*, on the other hand, is read straight from model.load_models():
+both processes would parse the same models.json anyway, so going through
+`--list-models --json` only added a subprocess spawn and a lossy dict round-trip
+in between. The UI now holds the Model objects themselves.
 """
 
 import asyncio
@@ -19,7 +23,7 @@ from logzero import logger
 from nicegui import app, context, ui
 
 from config_manager import get_settings
-from model import get_model_byname
+from model import Model, load_models as load_models_from_config
 
 settings = get_settings()
 
@@ -78,29 +82,45 @@ async def _run_json(args: list[str]) -> dict | None:
 
 
 #___________________________________________________________________________________
-# Model-list cache: --list-models is slow (SSH round-trips), so it runs once at
-# application boot and, after that, only when the user presses "Recheck models".
-# Every page (re)load reads this cache instead of spawning start_model.py again.
-_model_specs: dict[str, dict] | None = None
-_model_specs_lock = asyncio.Lock()
+# Model-list cache: loading the models is slow (one SSH round-trip per model, to
+# check that its file exists and how big it is), so it runs once at application
+# boot and, after that, only when the user presses "Recheck models". Every page
+# (re)load reads this cache instead of hitting the remote host again.
+_models: dict[str, Model] | None = None
+_models_lock = asyncio.Lock()
 
 
-async def fetch_model_specs(force: bool = False) -> tuple[dict[str, dict] | None, bool]:
-    """Return ({name: spec}, ok). Runs --list-models only when the cache is
-    empty or force=True; a failed forced refresh keeps the previous list."""
-    global _model_specs
-    async with _model_specs_lock:
-        if _model_specs is None or force:
-            data = await _run_json(["--list-models"])
-            if data is None:
-                return _model_specs, False
-            _model_specs = {m["name"]: m for m in data.get("models", [])}
-        return _model_specs, True
+async def fetch_models(force: bool = False) -> tuple[dict[str, Model] | None, bool]:
+    """Return ({name: Model}, ok). Reloads only when the cache is empty or
+    force=True; a failed forced reload keeps the previous list."""
+    global _models
+    async with _models_lock:
+        if _models is None or force:
+            try:
+                # load_models() is blocking (SSH), so it goes to a worker thread:
+                # on the event loop it would freeze every connected browser for
+                # the whole duration of the scan.
+                models = await asyncio.to_thread(
+                    load_models_from_config,
+                    Path(settings.MODELS_JSON),
+                    Path(settings.RPC_JSON),
+                    remote_host=settings.LLAMA_SERVER_HOST,
+                    remote_user=settings.LLAMA_SERVER_USER,
+                    check_remote_file=True,
+                )
+            except Exception:
+                # Deliberately broad, as the subprocess boundary used to be: a
+                # malformed models.json or an unreachable host must leave the
+                # console running (with the previous list) rather than kill it.
+                logger.exception("Could not load the model list")
+                return _models, False
+            _models = {m.model_name: m for m in models}
+        return _models, True
 
 
 # Kick the fetch off in the background at boot: pages opened before it finishes
 # just await the same in-flight call via the lock instead of starting their own.
-app.on_startup(lambda: asyncio.create_task(fetch_model_specs()))
+app.on_startup(lambda: asyncio.create_task(fetch_models()))
 
 
 #___________________________________________________________________________________
@@ -113,7 +133,7 @@ class LlamaConsoleGUI:
     """
 
     def __init__(self):
-        self.specs: dict[str, dict] = {}
+        self.models: dict[str, Model] = {}
         self.log_task: asyncio.Task | None = None
         self._status_busy = False
         self._start_busy = False
@@ -135,17 +155,16 @@ class LlamaConsoleGUI:
 
     # ---------------------------------------------------------------- status ---
     def _update_rpc_checkboxes( self ) -> None:
-        selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
-        #logger.debug(f"Selected model: {selected_model.model_name}")
+        # The selected model comes from the cache: re-reading models.json from
+        # disk on every selection change (get_model_byname) bought nothing.
+        selected_model = self.models.get(self.model_dropdown.value)
         self._uncheck_rpc_checkboxes()
-        
-        for cb_name in self.server_checkboxes:
-            #logger.debug(f"current cb_name=[{cb_name}]")
-            for rpc in selected_model.rpcservers:
-                #logger.debug(f"current rpc name=[{rpc.name}]")
-                if rpc.name == cb_name:
-                    #logger.debug(f"MATCH - settings checkbox to True")
-                    self.server_checkboxes[cb_name].value = True
+        if selected_model is None:
+            return
+
+        selected_rpcs = {rpc.name for rpc in selected_model.rpcservers or []}
+        for cb_name, checkbox in self.server_checkboxes.items():
+            checkbox.value = cb_name in selected_rpcs
 
     # ---------------------------------------------------------------- status ---
     def _uncheck_rpc_checkboxes(self):
@@ -154,8 +173,8 @@ class LlamaConsoleGUI:
 
     # ---------------------------------------------------------------- data ---
     async def load_models(self, force: bool = False) -> bool:
-        specs, ok = await fetch_model_specs(force)
-        if specs is None:
+        models, ok = await fetch_models(force)
+        if models is None:
             self.model_dropdown.options = {"": "No models found"}
             self.model_dropdown.update()
             ui.notify("Could not load the model list", type="negative")
@@ -164,8 +183,8 @@ class LlamaConsoleGUI:
             ui.notify("Could not reload the model list — keeping the previous one",
                       type="negative")
 
-        self.specs = specs
-        if not self.specs:
+        self.models = models
+        if not self.models:
             self.model_dropdown.options = {"": "No models found"}
             self.model_dropdown.update()
             return ok
@@ -173,15 +192,15 @@ class LlamaConsoleGUI:
         # Dict options: the value stays the bare model name, so nothing
         # downstream has to strip the ' (60 GiB - 2 RPC)' suffix back off.
         self.model_dropdown.options = {
-            name: f"{name} ({int(s['size_gib']) if s.get('size_gib') is not None else '?'} GiB"
-                  f" - {s['rpc_count']} RPC)"
-            for name, s in self.specs.items()
+            name: f"{name} ({int(m.size_gib) if m.size_gib is not None else '?'} GiB"
+                  f" - {len(m.rpcservers or [])} RPC)"
+            for name, m in self.models.items()
         }
         self.model_dropdown.props(remove='disable')
         self.model_dropdown.props('label="Model selector"')
         # Keep the current selection across a recheck when it still exists.
         previous = self.model_dropdown.value
-        selected = previous if previous in self.specs else next(iter(self.specs))
+        selected = previous if previous in self.models else next(iter(self.models))
         self.model_dropdown.set_value(selected)
         self.model_dropdown.update()
         self._apply_model_spec(selected)
@@ -189,7 +208,7 @@ class LlamaConsoleGUI:
         return ok
 
     async def recheck_models(self) -> None:
-        """Re-run --list-models on demand — the only trigger besides app boot."""
+        """Reload the models on demand — the only trigger besides app boot."""
         self.model_dropdown.props('disable')
         self.model_dropdown.props('label="Reloading models..."')
         ui.notify("Rechecking models...")
@@ -258,11 +277,11 @@ class LlamaConsoleGUI:
     # -------------------------------------------------------------- sliders ---
     def _apply_model_spec(self, model_name: str) -> None:
         """Point both sliders at the selected model's bounds and defaults."""
-        spec = self.specs.get(model_name)
-        if spec is None:
+        model = self.models.get(model_name)
+        if model is None:
             return
 
-        native_ctx = int(spec["native_ctx"])
+        native_ctx = model.native_ctx
         # min() guards a model whose native context is below the usual floor:
         # a slider with min > max cannot be dragged at all.
         ctx_min = min(_CTX_MIN, native_ctx)
@@ -278,7 +297,7 @@ class LlamaConsoleGUI:
 
         # NOTE: unchanged semantics — the model's configured temperature doubles
         # as the slider maximum, so it can only be lowered from here.
-        max_temp = float(spec["temperature"])
+        max_temp = model.temperature
         self.temp_slider.props['min'] = 0
         self.temp_slider.props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
@@ -318,8 +337,8 @@ class LlamaConsoleGUI:
             ui.notify("A model start is already in progress", type="warning")
             return
         model = self.model_dropdown.value
-        spec = self.specs.get(model)
-        if spec is None:
+        selected = self.models.get(model)
+        if selected is None:
             ui.notify("Please select a model first", type="warning")
             return
 
@@ -350,7 +369,7 @@ class LlamaConsoleGUI:
 
             # Only override the temperature if the user actually moved the slider.
             temp_value = float(self.temp_slider.value)
-            if abs(temp_value - float(spec["temperature"])) > 0.001:
+            if abs(temp_value - selected.temperature) > 0.001:
                 args += ["--override-temp", f"{temp_value:.4f}"]
             if self.mtp_checkbox.value:
                 args += ["--force-no-mtp"]
@@ -465,22 +484,14 @@ class LlamaConsoleGUI:
                 ui.button("Recheck models",
                           on_click=self.recheck_models).props('small outline')
 
-                # RPC server checkboxes — one per server defined in rpc.json
-
-                #selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
-
-                # if not selected_model:
-                #     selected_model = get_model_byname(self.model_dropdown.value, settings.MODELS_JSON, settings.RPC_JSON )
-
+                # RPC server checkboxes — one per server defined in rpc.json.
+                # They are ticked by _update_rpc_checkboxes() once a model is
+                # selected, which is the only place that knows the answer.
                 if RPC_SERVERS:
                     with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                         ui.label('RPC servers:').classes('text-subtitle1')
                         for name in RPC_SERVERS:
                             self.server_checkboxes[name] = ui.checkbox(name)
-                            # if name == selected_model.model_name:
-                            #     self.server_checkboxes[name].value = True
-                            # else:
-                            #     self.server_checkboxes[name].value = False
 
                 with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                     #ui.label('Force no MTP').classes('text-subtitle1')
@@ -545,7 +556,7 @@ def index() -> None:
     gui.build_ui()
     context.client.on_disconnect(gui.cleanup)
     # Models come from the app-level cache filled at boot, so a page (re)load
-    # no longer re-runs --list-models; only "Recheck models" forces it.
+    # no longer rescans them; only "Recheck models" forces it.
     ui.timer(0, gui.load_models, once=True)
     # Status polling: fires immediately on connect, then every 5 s, so the
     # user always sees whether (and what) the server is running.

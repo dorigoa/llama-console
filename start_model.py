@@ -223,7 +223,7 @@ def _list_devices(binary: str, rpc_list: str, ssh_dest: str | None) -> list[str]
 
     logger.debug(f"Running list-devices: {argv}")
     
-    result = remote_exec( argv, _LIST_DEVICES_TIMEOUT )#subprocess.run(argv, capture_output=True, text=True, timeout=_LIST_DEVICES_TIMEOUT)
+    result = remote_exec( argv, _LIST_DEVICES_TIMEOUT )
     if not result:
         logger.error(
                     f"list-devices timed out after {_LIST_DEVICES_TIMEOUT}s — the RPC server "
