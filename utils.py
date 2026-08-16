@@ -79,7 +79,7 @@ def run_on_server(settings: Settings, shell_cmd: str, timeout: int = 15):# -> su
     timeout, auth/host error). SSH reserves exit code 255 for its own failures,
     while pgrep/pkill only ever return 0/1/2/3, so 255 unambiguously means the
     host was not reached rather than 'no process found'."""
-    ssh_dest = _ssh_dest(settings)
+    ssh_dest = ssh_dest(settings)
     if ssh_dest:
         argv = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", ssh_dest, shell_cmd]
     else:
