@@ -7,10 +7,24 @@
                 "bin": "/opt/llama.cpp/ggml-rpc-server",
                 "remuser": "alvise"
         },
+        "mac2": {
+                "ip": "192.168.30.2",
+                "port": 50000,
+                "cachepath": "/Volumes/Home/llama-rpc-cache",
+                "bin": "/opt/llama.cpp/ggml-rpc-server",
+                "remuser": "alvise"
+        },
         "linux": {
                 "ip": "192.168.30.3",
                 "port": 50000,
                 "cachepath": "/nvme/llama-rpc-cache",
+                "bin": "/opt/llama.cpp/ggml-rpc-server",
+                "remuser": "alvise"
+        },
+        "macbook": {
+                "ip": "192.168.30.4",
+                "port": 50000,
+                "cachepath": "/Volumes/Home/llama-rpc-cache",
                 "bin": "/opt/llama.cpp/ggml-rpc-server",
                 "remuser": "alvise"
         }
