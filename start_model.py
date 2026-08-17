@@ -242,6 +242,8 @@ def _list_devices(binary: str, rpc_list: str, ssh_dest: str | None) -> list[str]
         if line.strip()
         and "Available" not in line
         and " 0 MiB free" not in line
+        and "BLAS" not in line
+        and "CPU" not in line
     ]
 
 #___________________________________________________________________________________
