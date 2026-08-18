@@ -10,7 +10,7 @@
 1. **Follow the model card values**, not generic heuristics ("low temperature for coding").
 2. **Temperature is not an absolute quantity**: it is relative to the distribution that
    particular model learned to produce. `T = 1.0` is the identity.
-3. **The values are a tuple**, not a single number. Taking only `temperature` and leaving
+3. **The samplers' values are a tuple**, not a single number. Taking only `temperature` and leaving
    `top_p` / `top_k` / `min_p` at the runtime defaults is the most common mistake.
 4. **llama.cpp defaults silently override the card** unless you set them explicitly —
    `--min-p` and `--top-k` in particular.
