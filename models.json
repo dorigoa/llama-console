@@ -59,23 +59,6 @@
                         "ext_mtp_head_file": null,
                         "native_ctx": 1048576
                 },
-                "Phi-4-reasoning-plus-UD-Q8_K_XL": {
-                        "sizegb": 17,
-                        "RPC_SERVERS": { },
-                        "SAMPLERS": "0.8:0.95:50:0.0",
-                        "RP": 1.0,
-                        "PP": -1,
-                        "REAS": null,
-                        "PRES_THK": null,
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "MTP": false,
-                        "ext_mtp_head_file": null,
-                        "native_ctx": 32768
-                },
                 "gemma-4-E4B-it-qat-UD-Q4_K_XL": {
                         "sizegb": 3.9,
                         "RPC_SERVERS": { },
