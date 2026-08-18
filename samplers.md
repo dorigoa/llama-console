@@ -70,8 +70,8 @@ Source: <https://platform.claude.com/docs/en/build-with-claude/thinking>
 
 | Model | Mode | temp | top_p | top_k | min_p | presence_pen. | rep_pen. |
 |---|---|---|---|---|---|---|---|
-| **Nemotron-3-Super-120B-A12B** | all | 1.0 | 0.95 | — | — | — | — |
-| **Nemotron-3.5-Lightning-30B-A3B** | all | 1.0 | 0.95 | — | — | — | — |
+| **Nemotron-3-Super-120B-A12B** | all | 1.0 | 0.95 | 0 † | 0.0 † | 0.0 † | 1.0 † |
+| **Nemotron-3.5-Lightning-30B-A3B** | all | 1.0 | 0.95 | 0 † | 0.0 † | 0.0 † | 1.0 † |
 | **Qwen3.6-27B** | thinking, general | 1.0 | 0.95 | 20 | 0.0 | 0.0 | 1.0 |
 | | thinking, precise coding | **0.6** | 0.95 | 20 | 0.0 | 0.0 | 1.0 |
 | | instruct (non-thinking) | 0.7 | 0.80 | 20 | 0.0 | 1.5 | 1.0 |
@@ -81,10 +81,19 @@ Source: <https://platform.claude.com/docs/en/build-with-claude/thinking>
 | | thinking, precise coding | **0.6** | 0.95 | 20 | 0.0 | 0.0 | 1.0 |
 | | instruct, general | 0.7 | 0.80 | 20 | 0.0 | 1.5 | 1.0 |
 | | instruct, reasoning | 1.0 | 1.00 | 40 | 0.0 | 2.0 | 1.0 |
-| **Qwen3-Coder-30B-A3B-Instruct** | single | 0.7 | 0.80 | 20 | 0.0 | — | **1.05** |
-| **GPT-OSS-120B** | single | 1.0 | 1.00 | **0 (off)** | — | 0 | **1.0 (forbidden)** |
-| **Gemma-4-12B / 26B-A4B / 31B** | all | 1.0 | 0.95 | **64** | — | — | — |
-| **Llama-3.3-70B-Instruct** | — | *(0.6)* | *(0.9)* | — | — | — | — |
+| **Qwen3-Coder-30B-A3B-Instruct** | single | 0.7 | 0.80 | 20 | 0.0 | 0.0 † | **1.05** |
+| **GPT-OSS-120B** | single | 1.0 | 1.00 | **0 (off)** | 0.0 † | 0 | **1.0 (forbidden)** |
+| **Gemma-4-12B / 26B-A4B / 31B** | all | 1.0 | 0.95 | **64** | 0.0 † | 0.0 † | 1.0 † |
+| **Llama-3.3-70B-Instruct** | — | *(0.6)* | *(0.9)* | 0 † | 0.0 † | 0.0 † | 1.0 † |
+
+**Legend**
+- **Bold** — value the vendor calls out specifically.
+- *Italics* — unofficial, inferred from the model lineage (see §3.1).
+- `†` — **the card is silent on this parameter.** The value shown is the neutral (no-op)
+  setting. Set it explicitly anyway: llama.cpp's defaults for `top_k` (40) and `min_p`
+  (0.05) are *not* neutral, and will silently truncate a distribution the vendor never
+  intended to truncate. Cards written against vLLM omit these parameters safely because
+  vLLM's defaults *are* neutral — that guarantee does not carry over to llama.cpp.
 
 *Italicised values = unofficial, see §3.1.*
 
