@@ -66,6 +66,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if not nomtp:
         if model.mtp:
             cmd += ["--spec-type", "draft-mtp"]
+            cmd += ["--spec-draft-n-max", "2"]
             if model.ext_mtp_head_file:
                 cmd += ["--model-draft", str(model.ext_mtp_head_file)]
     # Log file for detached execution (UI polls it)
