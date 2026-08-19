@@ -146,6 +146,7 @@ class LlamaConsoleGUI:
         self.status_quant_label = None
         self.model_dropdown = None
         self.ctx_slider = None
+        self.kv8_checkbox = None
         self.ctx_label = None
         self.temp_slider = None
         self.temp_label = None
@@ -358,6 +359,9 @@ class LlamaConsoleGUI:
             args = [model]
             ctx_value = int(self.ctx_slider.value)
             args += ["--override-ctx", str(ctx_value)]
+            if self.kv8_checkbox.value:
+                #args += ["--override-ctx", str(ctx_value)]
+                model.kvquant = "q8_0"
 
             override_rpc = []
             for cb_name in self.server_checkboxes:
@@ -373,7 +377,7 @@ class LlamaConsoleGUI:
                 args += ["--override-temp", f"{temp_value:.4f}"]
             if self.mtp_checkbox.value:
                 args += ["--force-no-mtp"]
-            args += ["--debug"]
+            #args += ["--debug"]
 
             ui.notify(f"Starting model {model} (ctx={ctx_value})...")
             # -u keeps the child's output unbuffered so lines arrive as they happen.
@@ -503,6 +507,9 @@ class LlamaConsoleGUI:
                         min=_CTX_MIN, max=262144, value=_CTX_MIN, step=_CTX_STEP,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
                     ).classes('flex-grow').props('color=green')
+
+                with ui.row().classes('w-full items-center q-mt-sm gap-3'):
+                    self.kv8_checkbox = ui.checkbox("KV Quant 8bit")
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.temp_label = ui.label("Temperature: —").classes('text-subtitle1')
