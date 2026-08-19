@@ -93,58 +93,54 @@ class Model:
         self._set_sampler(3, value)
 
 #___________________________________________________________________________________
-def _file_exists(path: Path, remote_host: str = "", remote_user: str = "") -> bool:
-    if remote_host:
-        dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
-        args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes",  "-o", "StrictHostKeyChecking=no", 
-                     dest, "test", "-f", str(path)]
-        logger.debug(f"Executing command {args}")
-        result = remote_exec( args )
-        if result.returncode > 1:
-            # returncode 0 = exists, 1 = not found (normal test -f); >1 = SSH error
-            raise RuntimeError(
-                f"SSH to {dest} failed (rc={result.returncode}): "
-                f"{result.stderr.strip() or '(no stderr)'}"
-            )
-        return result.returncode == 0
-    return path.exists()
+def _file_sizes_gib(paths: list[Path], remote_host: str = "", remote_user: str = "") -> dict[Path, float | None]:
+    """Return {path: size in GiB, or None if the file does not exist} for all `paths`.
 
-#___________________________________________________________________________________
-def _file_size_gib(path: Path, remote_host: str = "", remote_user: str = "") -> float | None:
-    """Return the size of `path` in GiB, or None if it does not exist.
+    Existence check and size are one operation: a missing file simply maps to None.
+    On a remote host ALL paths are resolved in a SINGLE ssh round-trip: the stat
+    commands (one line per path) are streamed over the connection's stdin to a
+    remote `sh -s`, and the output lines map back to `paths` by position. This
+    replaces the old per-model _file_exists + _file_size_gib pair, which cost
+    two ssh connections per model and made --list-models crawl.
 
-    Obtained from the remote host over SSH, analogously to _file_exists().
     Portable across Linux and macOS: tries GNU `stat -c %s`, then falls back to
-    BSD `stat -f %z`. The local branch uses pathlib. Raises RuntimeError on SSH
-    failure (rc > 1), as _file_exists does."""
-    if remote_host:
-        dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
-        q = shlex.quote(str(path))
-        # GNU coreutils: `stat -c %s`; BSD/macOS: `stat -f %z`. Try GNU, fall
-        # back to BSD. Return codes stay 0 = ok / 1 = not found / 255 = SSH error,
-        # so the (rc > 1) SSH-failure test below still holds for both variants.
-        remote_cmd = f"stat -c %s {q} 2>/dev/null || stat -f %z {q}"
-        args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no", dest, remote_cmd]
-        result = remote_exec( args )
+    BSD `stat -f %z`; a path where both fail prints MISSING. Raises RuntimeError
+    when the ssh transport itself fails."""
+    if not remote_host:
+        sizes: dict[Path, float | None] = {}
+        for p in paths:
+            try:
+                sizes[p] = p.stat().st_size / (1024 ** 3)
+            except OSError:
+                sizes[p] = None
+        return sizes
 
-        if result.returncode > 1:
-            # returncode 0 = ok, 1 = not found (both variants); >1 = SSH error
-            raise RuntimeError(
-                f"SSH to {dest} failed (rc={result.returncode}): "
-                f"{result.stderr.strip() or '(no stderr)'}"
-            )
-        if result.returncode == 1:
-            return None
-        out = result.stdout.strip()
-        if not out.isdigit():
-            return None
-        size_bytes = int(out)
-    else:
-        try:
-            size_bytes = path.stat().st_size
-        except OSError:
-            return None
-    return size_bytes / (1024 ** 3)
+    dest = f"{remote_user}@{remote_host}" if remote_user else remote_host
+    script = "".join(
+        f"stat -c %s {shlex.quote(str(p))} 2>/dev/null || "
+        f"stat -f %z {shlex.quote(str(p))} 2>/dev/null || echo MISSING\n"
+        for p in paths
+    )
+    args = ["ssh", "-o", "ConnectTimeout=10", "-o", "BatchMode=yes", "-o", "StrictHostKeyChecking=no",
+            dest, "sh -s"]
+    result = remote_exec( args, input=script )
+    # Every script line ends in `|| echo MISSING`, so the batch itself always
+    # exits 0: any non-zero rc (or a timeout, returned as None) is the ssh
+    # transport failing, not a missing file.
+    if result is None or result.returncode != 0:
+        rc = "timeout" if result is None else f"rc={result.returncode}"
+        stderr = (result.stderr.strip() if result else "") or "(no stderr)"
+        raise RuntimeError(f"SSH to {dest} failed ({rc}): {stderr}")
+
+    lines = result.stdout.splitlines()
+    if len(lines) != len(paths):
+        raise RuntimeError(
+            f"batched stat on {dest}: expected {len(paths)} output lines, got {len(lines)}"
+        )
+    return {
+        p: int(out) / (1024 ** 3) if out.strip().isdigit() else None
+        for p, out in zip(paths, lines)
+    }
 
 #___________________________________________________________________________________
 def load_models(config_path: Path, 
@@ -164,20 +160,28 @@ def load_models(config_path: Path,
 
     rpcs = load_rpcs( rpc_config_path )
 
-    for name, spec in models_section.items():
+    def _model_path(name: str) -> Path:
         filename = name if name.endswith(".gguf") else f"{name}.gguf"
-        model_path = base_dir / filename
+        return base_dir / filename
 
+    def _needs_check(name: str) -> bool:
         # When check_model_name is set, only check the remote file for that model;
-        # all others skip the SSH round-trip.
-        do_check = check_remote_file and (check_model_name is None or name == check_model_name)
+        # all others skip the check.
+        return check_remote_file and (check_model_name is None or name == check_model_name)
 
-        if do_check:
-            if not _file_exists(model_path, remote_host, remote_user):
+    # Resolve existence + size of every file to check in ONE batched call
+    # (a single ssh round-trip when remote), instead of two ssh per model.
+    paths_to_check = [_model_path(n) for n in models_section if _needs_check(n)]
+    sizes = _file_sizes_gib(paths_to_check, remote_host, remote_user) if paths_to_check else {}
+
+    for name, spec in models_section.items():
+        model_path = _model_path(name)
+
+        if _needs_check(name):
+            size_gib = sizes[model_path]
+            if size_gib is None:
                 logger.error(f"[SKIP] Model '{name}': file not found: {model_path}")
                 continue
-
-            size_gib = _file_size_gib(model_path, remote_host, remote_user)
         else:
             size_gib = None
 
