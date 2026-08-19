@@ -146,7 +146,7 @@ class LlamaConsoleGUI:
         self.status_quant_label = None
         self.model_dropdown = None
         self.ctx_slider = None
-        self.kv8_checkbox = None
+        self.kvquant_radio = None
         self.ctx_label = None
         self.temp_slider = None
         self.temp_label = None
@@ -359,10 +359,10 @@ class LlamaConsoleGUI:
             args = [model]
             ctx_value = int(self.ctx_slider.value)
             args += ["--override-ctx", str(ctx_value)]
-            if self.kv8_checkbox.value:
-                #args += ["--override-ctx", str(ctx_value)]
-                #model.kvquant = "q8_0"
-                args += ["--override-kvquant", "q8_0"]
+            # The radio value IS the --override-kvquant argument; "" means
+            # no override (keep the model's own KVQUANT from models.json).
+            if self.kvquant_radio.value:
+                args += ["--override-kvquant", self.kvquant_radio.value]
 
             override_rpc = []
             for cb_name in self.server_checkboxes:
@@ -508,7 +508,12 @@ class LlamaConsoleGUI:
                         min=_CTX_MIN, max=262144, value=_CTX_MIN, step=_CTX_STEP,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
                     ).classes('flex-grow').props('color=green')
-                    self.kv8_checkbox = ui.checkbox("KV Quant 8bit")
+                    with ui.row().classes('items-center gap-3'):
+                        ui.label('KV Quant:').classes('text-subtitle1')
+                        self.kvquant_radio = ui.radio(
+                            {"": "None", "q8_0": "8 bit", "q4_0": "4 bit"},
+                            value="",
+                        ).props('inline')
 
 #                with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                     
