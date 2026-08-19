@@ -9,17 +9,13 @@ from remote_cmd_executor import remote_exec
 from rpc import RpcServer,load_rpcs
 from errors import ConfigError
 
-
-
 #___________________________________________________________________________________
 @dataclass
 class Model:
-    #alias: str
     model_name: str
     model_path: Path
     size_gib: float | None
     mmproj_path: Path | None
-    #ctxsize: int
     # temperature / top_p / top_k / min_p are NOT stored fields: they are the
     # four values packed inside `samplers`, exposed by the properties further
     # down. Keeping them as fields too would duplicate the same data in two
@@ -31,7 +27,7 @@ class Model:
     rpcservers: list[RpcServer] | None
     ub: int
     b: int
-    kvquant: str
+    kvquant: str | None
     mtp: bool
     ext_mtp_head_file: Path | None
     native_ctx: int

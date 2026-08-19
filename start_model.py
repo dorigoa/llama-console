@@ -300,6 +300,7 @@ def start_model(
     override_devices: str | None = None,
     override_ctx: int | None = None,
     override_rpc: str | None = None,
+    override_kvq: str | None = None,
     nomtp: bool = False,
     as_json: bool = False,
     debug: bool = False
@@ -332,10 +333,8 @@ def start_model(
             print(json.dumps({"models": [
                 {
                     "name": m.model_name,
-                    #"alias": m.alias,
                     "size_gib": m.size_gib,
                     "rpc_count": len(m.rpcservers),
-                    #"ctx": m.ctxsize,
                     "native_ctx": m.native_ctx,
                     "temperature": m.temperature,
                     "top_p": m.top_p,
@@ -373,8 +372,8 @@ def start_model(
         model.top_k = override_top_k
     if override_min_p:
         model.min_p = override_min_p
-    #if override_ctx:
-    #    model.ctxsize = override_ctx
+    if override_kvq:
+        model.kvquant = override_kvq
     if override_rpc:
         if override_rpc != "none":
             rpcs = load_rpcs(settings.RPC_JSON)
@@ -548,6 +547,8 @@ def main() -> None:
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
     parser.add_argument("--override-rpc", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
+    parser.add_argument("--override-kvquant", type=str, default=None, metavar="STR")
+        
 
     parser.add_argument("--json", action="store_true", help="Machine-readable output for --server-status and --list-models")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
@@ -581,6 +582,7 @@ def main() -> None:
         override_devices=args.override_devices,
         override_ctx=args.override_ctx,
         override_rpc=args.override_rpc,
+        override_kvq=args.override_kvquant,
         nomtp=args.force_no_mtp,
         as_json=args.json,
         debug=args.debug

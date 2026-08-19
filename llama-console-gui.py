@@ -361,7 +361,8 @@ class LlamaConsoleGUI:
             args += ["--override-ctx", str(ctx_value)]
             if self.kv8_checkbox.value:
                 #args += ["--override-ctx", str(ctx_value)]
-                model.kvquant = "q8_0"
+                #model.kvquant = "q8_0"
+                args += ["--override-kvquant", "q8_0"]
 
             override_rpc = []
             for cb_name in self.server_checkboxes:
