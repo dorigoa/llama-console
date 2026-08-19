@@ -15,6 +15,7 @@ import logzero
 import argparse
 
 from pathlib import Path
+from dataclasses import dataclass
 from logzero import logger
 
 from remote_cmd_executor import remote_exec
@@ -281,53 +282,61 @@ def _report_missing_rpc_devices(model: Model, devices: list[str], ssh_dest: str 
             )
 
 #___________________________________________________________________________________
-def start_model(
-    model_name: str | None,
-    dry_run: bool = False,
-    only_rpc: bool = False,
-    only_check_rpc: bool = False,
-    only_list_devs: bool = False,
-    list_models: bool = False,
-    kill_server: bool = False,
-    server_status: bool = False,
-    follow_log: bool = False,
-    tail_lines: int = 50,
-    kill_rpc: bool = False,
-    override_temp: float | None = None,
-    override_top_p: float | None = None,
-    override_top_k: int | None = None,
-    override_min_p: float | None = None,
-    override_devices: str | None = None,
-    override_ctx: int | None = None,
-    override_rpc: str | None = None,
-    override_kvq: str | None = None,
-    nomtp: bool = False,
-    as_json: bool = False,
-    debug: bool = False
-) -> None:
-    if server_status:
-        _run_server_action(lambda: report_server_status(as_json=as_json))
+@dataclass(frozen=True)
+class LaunchOptions:
+    """Everything main() collects from the command line, as one immutable bag.
 
-    if kill_server:
+    Field names match the argparse dest names exactly, so main() can build this
+    with LaunchOptions(**vars(args)).
+    """
+    model_name: str | None = None
+    dry_run: bool = False
+    only_rpc: bool = False
+    only_check_rpc: bool = False
+    only_list_devs: bool = False
+    list_models: bool = False
+    kill_server: bool = False
+    server_status: bool = False
+    follow_log: bool = False
+    tail_lines: int = 50
+    kill_rpc: bool = False
+    override_temp: float | None = None
+    override_top_p: float | None = None
+    override_top_k: int | None = None
+    override_min_p: float | None = None
+    override_devices: str | None = None
+    override_ctx: int | None = None
+    override_rpc: str | None = None
+    override_kvq: str | None = None
+    nomtp: bool = False
+    as_json: bool = False
+    debug: bool = False
+
+#___________________________________________________________________________________
+def start_model(opts: LaunchOptions) -> None:
+    if opts.server_status:
+        _run_server_action(lambda: report_server_status(as_json=opts.as_json))
+
+    if opts.kill_server:
         _run_server_action(stop_server)
 
-    if follow_log:
+    if opts.follow_log:
         try:
-            rc = tail_log(lines=tail_lines, follow=True)
+            rc = tail_log(lines=opts.tail_lines, follow=True)
         except utils.ServerHostUnreachable as e:
             logger.error(f"Error: host unreachable — {e}")
             sys.exit(2)
         sys.exit(rc)
 
-    if only_check_rpc or only_list_devs or only_rpc:
+    if opts.only_check_rpc or opts.only_list_devs or opts.only_rpc:
         models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON), remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=False)
-    elif list_models:
+    elif opts.list_models:
         models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON), remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True)
     else:
-        models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON),remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True, check_model_name=model_name)
+        models = load_models(Path(settings.MODELS_JSON), Path(settings.RPC_JSON),remote_host=settings.LLAMA_SERVER_HOST, remote_user=settings.LLAMA_SERVER_USER, check_remote_file=True, check_model_name=opts.model_name)
 
-    if list_models:
-        if as_json:
+    if opts.list_models:
+        if opts.as_json:
             # Everything a UI needs about a model, in one call: without this the
             # GUI had to re-open and re-parse models.json on its own.
             print(json.dumps({"models": [
@@ -354,30 +363,30 @@ def start_model(
             )
         sys.exit(0)
 
-    if not model_name:
+    if not opts.model_name:
         logger.error("Error: model_name is required")
         sys.exit(1)
 
-    model = next((m for m in models if m.model_name == model_name), None)
+    model = next((m for m in models if m.model_name == opts.model_name), None)
     if model is None:
         available = "\n  ".join(m.model_name for m in models)
-        logger.error(f"Error: model '{model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}")
+        logger.error(f"Error: model '{opts.model_name}' not found in {settings.MODELS_JSON}.\n\nAvailable models:\n  {available}")
         sys.exit(1)
 
-    if override_temp:
-        model.temperature = override_temp
-    if override_top_p:
-        model.top_p = override_top_p
-    if override_top_k:
-        model.top_k = override_top_k
-    if override_min_p:
-        model.min_p = override_min_p
-    if override_kvq:
-        model.kvquant = override_kvq
-    if override_rpc:
-        if override_rpc != "none":
+    if opts.override_temp:
+        model.temperature = opts.override_temp
+    if opts.override_top_p:
+        model.top_p = opts.override_top_p
+    if opts.override_top_k:
+        model.top_k = opts.override_top_k
+    if opts.override_min_p:
+        model.min_p = opts.override_min_p
+    if opts.override_kvq:
+        model.kvquant = opts.override_kvq
+    if opts.override_rpc:
+        if opts.override_rpc != "none":
             rpcs = load_rpcs(settings.RPC_JSON)
-            server_names = override_rpc.split(',')
+            server_names = opts.override_rpc.split(',')
             model.rpcservers = []
             logger.debug(f"")
             for name in server_names:
@@ -391,7 +400,7 @@ def start_model(
     binary = settings.LLAMA_SERVER_BIN
     ssh_dest = utils.ssh_dest(settings)
 
-    if only_check_rpc and model.rpcservers and len(model.rpcservers):
+    if opts.only_check_rpc and model.rpcservers and len(model.rpcservers):
         # Check only: report which RPC servers are not running and exit.
         # Never start them (that's what --only-start-rpc is for).
         if not model.rpcservers:
@@ -406,7 +415,7 @@ def start_model(
         logger.info("All RPC servers reachable.")
         sys.exit(0)
 
-    if kill_rpc:
+    if opts.kill_rpc:
         # Kill rpc-server on every RPC node of the model (killall rpc-server),
         # originating from LLAMA_SERVER_HOST. Never starts anything.
         if not model.rpcservers:
@@ -442,7 +451,7 @@ def start_model(
             logger.error(f"Error: llama-server binary not found at '{binary}'")
             sys.exit(1)
 
-    if not dry_run and not only_rpc and not only_list_devs:
+    if not opts.dry_run and not opts.only_rpc and not opts.only_list_devs:
         # A second llama-server cannot bind PORT_BIND anyway, and while the running
         # one holds the ggml-rpc-server session (one client at a time) the new one
         # cannot get an RPC device either. Both failures would only surface remotely,
@@ -461,7 +470,7 @@ def start_model(
             )
             sys.exit(1)
 
-    if not dry_run and not only_list_devs and model.rpcservers and not override_devices:
+    if not opts.dry_run and not opts.only_list_devs and model.rpcservers and not opts.override_devices:
         # RPC probing/starting must originate from LLAMA_SERVER_HOST: only it can
         # reach the RPC network. When ssh_dest is None (local llama-server), the
         # operations run locally as before.
@@ -482,15 +491,15 @@ def start_model(
                 sys.exit(1)
 
         logger.info("All RPC servers reachable.")
-        if only_rpc:
+        if opts.only_rpc:
             logger.warning("'--only-start-rpc' specified. Gracefully exiting.")
             sys.exit(0)
 
     devices = ""
-    if dry_run:
+    if opts.dry_run:
         devices = "SKIP(DRYRUN)"
     else:
-        if not override_devices:
+        if not opts.override_devices:
             if model.rpcservers:
                 rpc_list = ",".join(f"{s.IP}:{s.PORT}" for s in model.rpcservers)
                 raw_devices = _list_devices(binary, rpc_list, ssh_dest)
@@ -500,24 +509,24 @@ def start_model(
                 # the only trace is 'invalid device: RPC0' in the boot log.
                 if not any(d.startswith("RPC") for d in raw_devices):
                     _report_missing_rpc_devices(model, raw_devices, ssh_dest)
-                    if not only_list_devs:
+                    if not opts.only_list_devs:
                         sys.exit(1)
                 devices = ",".join(raw_devices)
                 logger.info(f"Using devices: {devices or '(none)'}")
         else:
-            devices = override_devices
+            devices = opts.override_devices
 
-        if only_list_devs:
+        if opts.only_list_devs:
             logger.warning("'--only-list-devices' specified. Gracefully exiting.")
             sys.exit(0)
 
     ctx = None
-    if override_ctx:
-        ctx = override_ctx
-    cmd = build_command(binary, model, devices, ctx, nomtp, debug) # ctx == None will trigger the retrieve of the default value defined in the config.json
+    if opts.override_ctx:
+        ctx = opts.override_ctx
+    cmd = build_command(binary, model, devices, ctx, opts.nomtp, opts.debug) # ctx == None will trigger the retrieve of the default value defined in the config.json
     logger.debug(f"Command: {cmd}")
 
-    if dry_run:
+    if opts.dry_run:
         # Still show the command with --log-file for reference
         logger.info(f"Dry-run command: {' '.join(shlex.quote(a) for a in cmd)}")
         #logger.info ("  " + )
@@ -531,14 +540,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description="Launch llama-server for a model defined in models.json")
     parser.add_argument("model_name", nargs="?", help="Model name as listed in models.json (without .gguf extension)")
     parser.add_argument("--dry-run", action="store_true", help="Print the command without executing it")
-    parser.add_argument("--only-start-rpc", action="store_true", help="Just start the RPC remote servers and exit")
+    # dest= aligns each flag with its LaunchOptions field, so vars(args) maps 1:1.
+    parser.add_argument("--only-start-rpc", dest="only_rpc", action="store_true", help="Just start the RPC remote servers and exit")
     parser.add_argument("--only-check-rpc", action="store_true", help="Just check that RPC remote servers and reachable")
-    parser.add_argument("--only-list-devices", action="store_true", help="Just retrieve the list of GPU devices from local and remote RPC servers (does NOT start RPC servers)")
-    parser.add_argument("--kill-rpc-server", action="store_true", help="Run 'killall rpc-server' on every RPC node of the model (via LLAMA_SERVER_HOST) and exit")
+    parser.add_argument("--only-list-devices", dest="only_list_devs", action="store_true", help="Just retrieve the list of GPU devices from local and remote RPC servers (does NOT start RPC servers)")
+    parser.add_argument("--kill-rpc-server", dest="kill_rpc", action="store_true", help="Run 'killall rpc-server' on every RPC node of the model (via LLAMA_SERVER_HOST) and exit")
     parser.add_argument("--list-models", action="store_true", help="Print the available models and exit")
     parser.add_argument("--kill-server", action="store_true", help="Kill the llama-server process on LLAMA_SERVER_HOST and exit")
     parser.add_argument("--server-status", action="store_true", help="Check whether llama-server is running on LLAMA_SERVER_HOST and exit")
-    parser.add_argument("--tail-log", action="store_true", help=f"Follow (tail -F) llama-server's log file ({settings.LLAMA_LOG_FILE}) on LLAMA_SERVER_HOST until Ctrl-C, then exit")
+    parser.add_argument("--tail-log", dest="follow_log", action="store_true", help=f"Follow (tail -F) llama-server's log file ({settings.LLAMA_LOG_FILE}) on LLAMA_SERVER_HOST until Ctrl-C, then exit")
     parser.add_argument("--tail-lines", "-n", type=int, default=50, metavar="INT", help="Number of trailing log lines to show before following (default: 50)")
     parser.add_argument("--override-temp", type=float, default=None, metavar="FLOAT")
     parser.add_argument("--override-top-p", type=float, default=None, metavar="FLOAT")
@@ -547,12 +557,12 @@ def main() -> None:
     parser.add_argument("--override-devices", type=str, default=None, metavar="STR")
     parser.add_argument("--override-rpc", type=str, default=None, metavar="STR")
     parser.add_argument("--override-ctx", type=int, default=None, metavar="INT")
-    parser.add_argument("--override-kvquant", type=str, default=None, metavar="STR")
-        
+    parser.add_argument("--override-kvquant", dest="override_kvq", type=str, default=None, metavar="STR")
 
-    parser.add_argument("--json", action="store_true", help="Machine-readable output for --server-status and --list-models")
+
+    parser.add_argument("--json", dest="as_json", action="store_true", help="Machine-readable output for --server-status and --list-models")
     parser.add_argument("--debug", action="store_true", help="Print debug messages")
-    parser.add_argument("--force-no-mtp", action="store_true", help="Disable MTP even if the model supports it")
+    parser.add_argument("--force-no-mtp", dest="nomtp", action="store_true", help="Disable MTP even if the model supports it")
 
     args = parser.parse_args()
 
@@ -563,30 +573,7 @@ def main() -> None:
     # them made a normal run look completely silent.
     logzero.loglevel(logzero.DEBUG if args.debug else logzero.INFO)
 
-    start_model(
-        args.model_name,
-        dry_run=args.dry_run,
-        only_rpc=args.only_start_rpc,
-        only_check_rpc=args.only_check_rpc,
-        only_list_devs=args.only_list_devices,
-        list_models=args.list_models,
-        kill_server=args.kill_server,
-        server_status=args.server_status,
-        follow_log=args.tail_log,
-        tail_lines=args.tail_lines,
-        kill_rpc=args.kill_rpc_server,
-        override_temp=args.override_temp,
-        override_top_p=args.override_top_p,
-        override_top_k=args.override_top_k,
-        override_min_p=args.override_min_p,
-        override_devices=args.override_devices,
-        override_ctx=args.override_ctx,
-        override_rpc=args.override_rpc,
-        override_kvq=args.override_kvquant,
-        nomtp=args.force_no_mtp,
-        as_json=args.json,
-        debug=args.debug
-    )
+    start_model(LaunchOptions(**vars(args)))
 
 #___________________________________________________________________________________
 if __name__ == "__main__":
