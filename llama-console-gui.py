@@ -507,9 +507,10 @@ class LlamaConsoleGUI:
                         min=_CTX_MIN, max=262144, value=_CTX_MIN, step=_CTX_STEP,
                         on_change=lambda e: self.ctx_label.set_text(f"Context: {e.value:,}")
                     ).classes('flex-grow').props('color=green')
-
-                with ui.row().classes('w-full items-center q-mt-sm gap-3'):
                     self.kv8_checkbox = ui.checkbox("KV Quant 8bit")
+
+#                with ui.row().classes('w-full items-center q-mt-sm gap-3'):
+                    
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.temp_label = ui.label("Temperature: —").classes('text-subtitle1')
