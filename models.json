@@ -290,26 +290,7 @@
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
-                "Qwen3.6-27B-MTP-UD-Q8_K_XL": {
-                        "sizegb": 33,
-                        "RPC_SERVERS": {
-                                "ids": [{"name": "mac1"}, {"name": "linux"} ]
-                        },
-                        "SAMPLERS": "1.0:0.95:20:0.0",
-                        "RP": 1.0,
-                        "PP": 0.0,
-                        "REAS": null,
-                        "PRES_THK": true,
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "MTP": true,
-                        "ext_mtp_head_file": null,
-                        "native_ctx": 262144
-                },
-                "Qwen3.6-35B-A3B-UD-Q4_K_XL": {
+                "Qwen3.6-35B-A3B-MTP-UD-Q4_K_XL.gguf": {
                         "sizegb": 21,
                         "RPC_SERVERS": {},
                         "SAMPLERS": "1.0:0.95:20:0.0",
@@ -326,7 +307,7 @@
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
-                "Qwen3.6-35B-A3B-UD-Q8_K_XL": {
+                "Qwen3.6-35B-A3B-MTP-UD-Q8_K_XL.gguf": {
                         "sizegb": 36,
                         "RPC_SERVERS": {
                                 "ids": [{"name": "mac1"}]
