@@ -80,7 +80,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["-ctxcp", "8"]
     cmd += ["--reasoning-preserve"]
 
-    ct = f"{Path("chat-templates") / model.model_path.stem}.jinja"
+    ct = f"{Path('chat-templates') / model.model_path.stem}.jinja"
     if  ct.exists():
         # SCP chat template on remote host
         cmd = ["scp", "-p", "-o", "BatchMode=yes", str(ct), f"{settings.LLAMA_SERVER_HOST}:/tmp/"]
