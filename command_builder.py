@@ -1,4 +1,6 @@
 from config_manager import get_settings
+import subprocess
+import sys
 from model import Model
 import json
 
@@ -78,7 +80,11 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["-ctxcp", "8"]
     cmd += ["--reasoning-preserve"]
 
-    if ( model.model_path.parent / "chat-templates" / model.model_path.with_suffix(".jinja") ).exists():
-        cmd += ["--chat-template-file", f'{model.model_path.parent / "chat_template" / model.model_path.with_suffix(".jinja")}']
+    ct = f"{Path("chat-templates") / model.model_path.stem}.jinja"
+    if  ct.exists():
+        # SCP chat template on remote host
+        cmd = ["scp", "-p", "-o", "BatchMode=yes", str(ct), f"{settings.LLAMA_SERVER_HOST}:/tmp/"]
+        res = subprocess.run(cmd, capture_output=False, text=True, timeout=30)
+        cmd += ["--chat-template-file", f'{Path("/tmp") / model.model_path.stem }.jinja']
     
     return cmd
