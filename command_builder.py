@@ -85,6 +85,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if  ct.exists():
         # SCP chat template on remote host
         cmd = ["scp", "-p", "-o", "BatchMode=yes", str(ct), f"{settings.LLAMA_SERVER_HOST}:/tmp/"]
+        logger.debug(f"Executing command {cmd}")
         res = subprocess.run(cmd, capture_output=False, text=True, timeout=30)
         cmd += ["--chat-template-file", f'{Path("/tmp") / model.model_name}.jinja']
     
