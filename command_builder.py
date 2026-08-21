@@ -76,5 +76,6 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if verbose:
         cmd += ["--verbose"]
     cmd += ["-ctxcp", "8"]
+    cmd += ["--reasoning-preserve"]
     
     return cmd
