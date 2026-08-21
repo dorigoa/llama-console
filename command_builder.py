@@ -78,7 +78,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["-ctxcp", "8"]
     cmd += ["--reasoning-preserve"]
 
-    if ( model.model_path.parent / "chat_template" / model.model_path.with_suffix(".jinja") ).exists():
+    if ( model.model_path.parent / "chat-templates" / model.model_path.with_suffix(".jinja") ).exists():
         cmd += ["--chat-template-file", f'{model.model_path.parent / "chat_template" / model.model_path.with_suffix(".jinja")}']
     
     return cmd
