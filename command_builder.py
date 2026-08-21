@@ -4,6 +4,7 @@ import subprocess
 import sys
 from model import Model
 import json
+from logzero import logger
 
 settings = get_settings()
 
