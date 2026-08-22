@@ -464,18 +464,21 @@ class LlamaConsoleGUI:
                     #     'font-size: 0.9rem; font-weight: 600; white-space: nowrap;'
                     # )
 
-                ui.button("Refresh", on_click=self.refresh).props('outline small')
+                ui.button("Refresh", on_click=self.refresh).props('outline small').classes('q-mt-md')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
                 ui.label("Model Control").classes('text-h6')
 
-                with ui.row().classes('w-full items-center q-mb-md'):
+                # no-wrap: a wrapping row would let a long model name push
+                # START/STOP onto the next line; with the select free to
+                # shrink (min-w-0) the buttons always stay on the same row.
+                with ui.row().classes('w-full items-center q-mb-md no-wrap'):
                     self.model_dropdown = ui.select(
                         options={"": "Loading models..."},
                         value="",
                         label="Loading models...",
                         on_change=self._on_model_change,
-                    ).props('disable').classes('flex-grow')
+                    ).props('disable').classes('flex-grow min-w-0 model-select')
 
                     self.start_button = ui.button(
                         "START", on_click=self.start_selected_model).props('color=green')
@@ -534,6 +537,13 @@ class LlamaConsoleGUI:
 
         ui.add_head_html('''
 <style>
+/* The selected value is a <span class="ellipsis"> inside a flex row, so like
+   every flex item it carries min-width: auto and refuses to shrink — the
+   ellipsis could never trigger. Freeing it lets long model names truncate
+   instead of stretching the select. */
+.model-select .q-field__native .ellipsis {
+    min-width: 0;
+}
 .custom-log {
     scrollbar-width: thin !important;
     scrollbar-color: #4caf50 #1a1a1a !important;
