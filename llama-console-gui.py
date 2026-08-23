@@ -141,6 +141,8 @@ class LlamaConsoleGUI:
 
         self.status_server_label = None
         self.status_model_label = None
+        self.status_model_name = ""
+        self.status_model_copy = None
         self.status_ctx_label = None
         self.status_temp_label = None
         self.model_dropdown = None
@@ -252,24 +254,74 @@ class LlamaConsoleGUI:
         self.status_server_label.style(f"color: {color};")
 
         if running and info.get("ready"):
-            self.status_model_label.set_text(f" - Model   : {info['model'].strip()}")
+            # Keep the bare name around: only it (not the " - Model   : "
+            # prefix) is what gets copied to the clipboard.
+            self.status_model_name = str(info.get("model") or "").strip()
+            self.status_model_label.set_text(f" - Model   : {self.status_model_name}")
             c = (str(info['ctx'])).strip()
             self.status_ctx_label.set_text(  f" - Context : {c} tokens")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
             self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
         elif running:
+            self.status_model_name = ""
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
             self.status_temp_label.set_text("")
         else:
+            self.status_model_name = ""
             self.status_model_label.set_text("")
             self.status_ctx_label.set_text("")
             self.status_temp_label.set_text("")
+        # Nothing to copy unless a model name is actually on display.
+        if self.status_model_name:
+            self.status_model_copy.classes(remove='q-hidden')
+        else:
+            self.status_model_copy.classes(add='q-hidden')
 
     async def refresh(self) -> None:
         await self.update_status()
         ui.notify("Status updated")
+
+    async def _copy_model_name(self) -> None:
+        """Copy the running model's name to the OS clipboard."""
+        if not self.status_model_name:
+            ui.notify("No model name to copy", type="warning")
+            return
+        # navigator.clipboard only exists in secure contexts (https or
+        # localhost), but this console is usually reached over plain http on
+        # the LAN — so fall back to the deprecated, yet still universally
+        # working, execCommand copy.
+        js = f"""
+        (async () => {{
+            const text = {json.dumps(self.status_model_name)};
+            if (navigator.clipboard && window.isSecureContext) {{
+                try {{
+                    await navigator.clipboard.writeText(text);
+                    return true;
+                }} catch (e) {{}}
+            }}
+            const ta = document.createElement('textarea');
+            ta.value = text;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.focus();
+            ta.select();
+            let ok = false;
+            try {{ ok = document.execCommand('copy'); }} catch (e) {{}}
+            document.body.removeChild(ta);
+            return ok;
+        }})()
+        """
+        try:
+            ok = bool(await ui.run_javascript(js))
+        except Exception:
+            ok = False
+        if ok:
+            ui.notify("Model name copied to clipboard", type="positive")
+        else:
+            ui.notify("Copy to clipboard failed", type="negative")
 
     # -------------------------------------------------------------- sliders ---
     def _apply_model_spec(self, model_name: str) -> None:
@@ -450,7 +502,15 @@ class LlamaConsoleGUI:
 
             with ui.column().classes('w-full max-w-2xl gap-1 q-mb-4 pr-4'):
                 self.status_server_label = ui.label("Checking llama-server status...")
-                self.status_model_label = ui.label("")
+                # The model name gets its own row so that a copy icon can sit
+                # right after it; the icon is invisible until the row is hovered
+                # (see the .model-copy-icon rules in the head HTML below).
+                with ui.row().classes('model-status-row items-center gap-1'):
+                    self.status_model_label = ui.label("")
+                    self.status_model_copy = ui.icon('content_copy').classes(
+                        'model-copy-icon cursor-pointer q-hidden'
+                    ).tooltip('Copy model name')
+                    self.status_model_copy.on('click', self._copy_model_name)
                 self.status_ctx_label = ui.label("")
                 self.status_temp_label = ui.label("")
                 for label in (self.status_server_label, self.status_model_label,
@@ -553,6 +613,17 @@ class LlamaConsoleGUI:
 }
 .custom-log::-webkit-scrollbar-thumb:hover {
     background: #66bb6a !important;
+}
+/* Copy icon next to the model name: hidden until the row is hovered. */
+.model-copy-icon {
+    opacity: 0;
+    transition: opacity 0.15s ease-in-out;
+}
+.model-status-row:hover .model-copy-icon {
+    opacity: 0.75;
+}
+.model-copy-icon:hover {
+    opacity: 1;
 }
 </style>
 ''')
