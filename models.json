@@ -24,7 +24,7 @@
                 "NVIDIA-Nemotron-3.5-Lightning-30B-A3B-UD-Q8_K_XL": {
                         "sizegb": 39,
                         "RPC_SERVERS": {
-                                "ids": [{"name": "mac1"}, {"name": "linux"}]
+                                "ids": [{"name": "mac1"}]
                         },
                         "SAMPLERS": "0.6:0.95:0:0",
                         "RP": 1.0,
