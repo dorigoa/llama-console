@@ -303,7 +303,7 @@
                         "KVQUANT": "q8_0",
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                 },
@@ -322,7 +322,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                         
@@ -342,7 +342,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                         
@@ -362,7 +362,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                         
@@ -380,7 +380,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": false,
+                        "MTP": true,
                         "ext_mtp_head_file": null,
                         "native_ctx": 262144
                         
