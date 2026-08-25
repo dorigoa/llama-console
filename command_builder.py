@@ -5,7 +5,7 @@ import sys
 from model import Model
 import json
 from logzero import logger
-import psutil
+#import psutil
 
 settings = get_settings()
 
@@ -82,7 +82,8 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         cmd += ["--verbose"]
     cmd += ["-ctxcp", "8"]
     cmd += ["--reasoning-preserve"]
-    cmd += ["--threads", str(int(0.8*psutil.cpu_count(logical=False)))]
+    # Must retrieve the number of cores on the remote node, here is useless
+    #cmd += ["--threads", str(int(0.8*psutil.cpu_count(logical=False)))]
 
     ct = Path(f"{Path('./chat-templates') / model.model_name}.jinja")
     logger.debug(f"Checking existance of file {ct}")
