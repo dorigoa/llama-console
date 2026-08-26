@@ -356,8 +356,10 @@ class LlamaConsoleGUI:
 
         if model.mtp:
             self.mtp_checkbox.enable()
+            self.mtp_checkbox.text="Force No-MTP (this is a mtp-enable model)"
         else:
             self.mtp_checkbox.disable()
+            self.mtp_checkbox.text="Force No-MTP"
 
         self._update_rpc_checkboxes( )
         
