@@ -352,6 +352,11 @@ class LlamaConsoleGUI:
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
 
+        if model.mtp:
+            self.mtp_checkbox.disable()
+        else:
+            self.mtp_checkbox.enable()
+
         self._update_rpc_checkboxes( )
         
 
