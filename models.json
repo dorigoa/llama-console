@@ -125,7 +125,7 @@
                         "KVQUANT": null,
                         "UB": null,
                         "B": null,
-                        "MTP": true,
+                        "MTP": false,
                         "ext_mtp_head_file": "mtp-gemma-4-26B-A4B-it-Q8_0.gguf",
                         "native_ctx": 262144
                 },
