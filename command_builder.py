@@ -71,10 +71,11 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if not nomtp:
         if model.mtp:
             cmd += ["--spec-type", "draft-mtp"]
-            cmd += ["--spec-draft-n-max", "4"]
-            cmd += ["--spec-draft-n-min", "2"]
+            #cmd += ["--spec-draft-n-max", "4"]
+            #cmd += ["--spec-draft-n-min", "2"]
             if model.ext_mtp_head_file:
                 cmd += ["--model-draft", str(model.ext_mtp_head_file)]
+                cmd += ["--spec-draft-n-min", "2"]
     # Log file for detached execution (UI polls it)
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 
