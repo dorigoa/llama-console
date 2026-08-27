@@ -265,10 +265,10 @@ class LlamaConsoleGUI:
             self.status_ctx_label.set_text(  f" - Context : {c} tokens")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
-            self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
+            self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):}")
             self.status_topk_label.set_text( f" - Top-K   : {float(info['top_k'])}")
-            self.status_topp_label.set_text( f" - Top-P   : {float(info['top_p']):.1f}")
-            self.status_minp_label.set_text( f" - Min-P   : {float(info['min_p']):.1f}")
+            self.status_topp_label.set_text( f" - Top-P   : {float(info['top_p']):.2f}")
+            self.status_minp_label.set_text( f" - Min-P   : {float(info['min_p']):.2f}")
                                     
         elif running:
             self.status_model_name = ""
