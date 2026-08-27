@@ -145,6 +145,9 @@ class LlamaConsoleGUI:
         self.status_model_copy = None
         self.status_ctx_label = None
         self.status_temp_label = None
+        self.status_topk_label = None
+        self.status_topp_label = None
+        self.status_minp_label = None
         self.model_dropdown = None
         self.ctx_slider = None
         self.kvquant_radio = None
@@ -263,16 +266,26 @@ class LlamaConsoleGUI:
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
             self.status_temp_label.set_text( f" - Temp    : {float(info['temperature']):.1f}")
+            self.status_topk_label.set_text( f" - Top-K   : {float(info['top_k'])}")
+            self.status_topp_label.set_text( f" - Top-P   : {float(info['top_p']):.1f}")
+            self.status_minp_label.set_text( f" - Min-P   : {float(info['min_p']):.1f}")
+                                    
         elif running:
             self.status_model_name = ""
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
             self.status_temp_label.set_text("")
+            self.status_topp_label.set_text("")
+            self.status_topk_label.set_text("")
+            self.status_minp_label.set_text("")
         else:
             self.status_model_name = ""
             self.status_model_label.set_text("")
             self.status_ctx_label.set_text("")
             self.status_temp_label.set_text("")
+            self.status_topp_label.set_text("")
+            self.status_topk_label.set_text("")
+            self.status_minp_label.set_text("")
         # Nothing to copy unless a model name is actually on display.
         if self.status_model_name:
             self.status_model_copy.classes(remove='q-hidden')
@@ -351,6 +364,15 @@ class LlamaConsoleGUI:
         self.temp_slider.props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
+
+        logger.debug(f"Model MTP={model.mtp}")
+
+        if model.mtp:
+            self.mtp_checkbox.enable()
+            self.mtp_checkbox.text="Force No-MTP (this is a mtp-enabled model)"
+        else:
+            self.mtp_checkbox.disable()
+            self.mtp_checkbox.text="Force No-MTP"
 
         self._update_rpc_checkboxes( )
         
@@ -513,11 +535,19 @@ class LlamaConsoleGUI:
                     self.status_model_copy.on('click', self._copy_model_name)
                 self.status_ctx_label = ui.label("")
                 self.status_temp_label = ui.label("")
+                self.status_topk_label = ui.label("")
+                self.status_topp_label = ui.label("")
+                self.status_minp_label = ui.label("")
+                                
                 for label in (self.status_server_label, self.status_model_label,
-                              self.status_ctx_label, self.status_temp_label):
+                              self.status_ctx_label, self.status_temp_label, 
+                              self.status_topk_label, self.status_minp_label,
+                              self.status_topp_label):
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
                 for label in (self.status_model_label,
-                              self.status_ctx_label, self.status_temp_label):
+                              self.status_ctx_label, self.status_temp_label, 
+                              self.status_topk_label, self.status_minp_label,
+                              self.status_topp_label):
                     label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: pre;')
                     # label.style(
                     #     'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
