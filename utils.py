@@ -17,7 +17,7 @@ def ssh_dest(settings: Settings) -> str | None:
     return settings.LLAMA_SERVER_HOST
 
 #___________________________________________________________________________________
-def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
+def _get_first_model_name(endpoint: str) -> tuple[str, int, float, int, float, float, str] | None:
 
     url = f"http://{endpoint}/props"
     try:
@@ -42,14 +42,21 @@ def _get_first_model_name(endpoint: str) -> tuple[str,int, float] | None:
             and isinstance(data['default_generation_settings']['params'], dict)
             and 'n_ctx' in data['default_generation_settings']
             and 'temperature' in data['default_generation_settings']['params']
+            and 'top_k' in data['default_generation_settings']['params']
+            and 'top_p' in data['default_generation_settings']['params']
+            and 'min_p' in data['default_generation_settings']['params']
             and 'model_alias' in data
         ):
             #model = data['model_alias']
             model = data['model_path'].split('/')[-1].removesuffix(".gguf")
             n_ctx = data['default_generation_settings']['n_ctx']
-            temp  = data['default_generation_settings']['params']['temperature']
+            params = data['default_generation_settings']['params']
+            temp  = params['temperature']
+            top_k = params['top_k']
+            top_p = params['top_p']
+            min_p = params['min_p']
             quant = data['model_ftype']
-            return model, n_ctx, temp, quant
+            return model, n_ctx, temp, top_k, top_p, min_p, quant
         else:
             raise ValueError("JSON response has a bad structure")
         
@@ -110,11 +117,11 @@ def server_status(settings: Settings) -> dict:
     info["pids"] = pids
     info["quant"] = 'BOH'
     try:
-        model, ctxsize, temp, quant = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
+        model, ctxsize, temp, top_k, top_p, min_p, quant = _get_first_model_name(f"{settings.LLAMA_SERVER_HOST}:{settings.PORT_BIND}")
     except (RuntimeError, ValueError) as e:
         # ValueError too: _get_first_model_name raises it on an unexpected JSON
         # shape, and it is not a subclass of RuntimeError.
         info["error"] = str(e)
     else:
-        info.update(ready=True, model=model, ctx=ctxsize, temperature=temp, quant=quant)
+        info.update(ready=True, model=model, ctx=ctxsize, temperature=temp, top_k=top_k, top_p=top_p, min_p=min_p, quant=quant)
     return info
