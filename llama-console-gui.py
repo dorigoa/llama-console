@@ -367,7 +367,7 @@ class LlamaConsoleGUI:
         self.temp_slider.props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
-        self.samplers_label.set_text(f"{max_temp:.2f};{topp:.2f};{topk};{minp:.2f}")
+        self.samplers_label.set_text(f"Samplers: {max_temp:.2f};{topp:.2f};{topk};{minp:.2f}")
 
         logger.debug(f"Model MTP={model.mtp}")
 
@@ -570,7 +570,7 @@ class LlamaConsoleGUI:
                         "START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
 
-                self.samplers_label = ui.label("Samplers: ").classes("text-h6")
+                self.samplers_label = ui.label("Samplers: ").classes("text-h8")
                 self.samplers_label.set_text("Samplers: --;--;--;--")
 
                 ui.button("Recheck models",
