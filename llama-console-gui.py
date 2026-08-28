@@ -141,11 +141,13 @@ class LlamaConsoleGUI:
 
         self.status_server_label = None
         self.samplers_label = None
+        self.samplers_tip = None
         self.status_model_label = None
         self.status_model_name = ""
         self.status_model_copy = None
         self.status_ctx_label = None
         self.status_samplers_label = None
+        self.status_samplers_tip = None
         # self.status_topk_label = None
         # self.status_topp_label = None
         # self.status_minp_label = None
@@ -158,6 +160,58 @@ class LlamaConsoleGUI:
         self.log_window = None
         self.stop_log_button = None
         self.server_checkboxes: dict[str, ui.checkbox] = {}
+
+    # -------------------------------------------------------------- samplers ---
+    # The four values packed into the "Samplers:" label, in the order they are
+    # printed, each with the one-line explanation the hover tooltip shows.
+    _SAMPLER_HINTS = (
+        ("temperature", "scales the logits — below 1.00 sharpens the model's distribution, "
+                        "above 1.00 flattens it"),
+        ("top_p",       "nucleus sampling: keeps the most likely tokens up to this cumulative "
+                        "probability"),
+        ("top_k",       "keeps only the k most likely tokens (0 disables the cut)"),
+        ("min_p",       "drops every token below this fraction of the top token's probability"),
+    )
+
+    def _samplers_description(self, values: tuple[str, str, str, str], header: str) -> str:
+        """Spell the four packed values out, one parameter per line."""
+        lines = [header]
+        lines += [f"{name} = {value}  —  {hint}"
+                  for (name, hint), value in zip(self._SAMPLER_HINTS, values)]
+        return "\n".join(lines)
+
+    def _set_samplers(self, values: tuple[str, str, str, str] | None = None) -> None:
+        """Write the "Samplers:" label together with its hover description.
+
+        `values` holds temperature, top_p, top_k and min_p already formatted for
+        display, or is None while no model has been selected yet. The tooltip
+        that follows the mouse reads its text from a hidden sibling label (see
+        the #cursor-tip rules and script in the head HTML), so both are written
+        here: the description can never fall out of sync with the numbers.
+        """
+        shown = values or ("--", "--", "--", "--")
+        self.samplers_label.set_text("Samplers: " + ";".join(shown))
+
+        description = self._samplers_description(
+            shown, "Sampling parameters of the selected model, in the order shown:")
+        if values is None:
+            description += "\n(the values appear once a model is selected)"
+        self.samplers_tip.set_text(description)
+
+    def _set_status_samplers(self, values: tuple[str, str, str, str] | None = None) -> None:
+        """Same, for the status line: what the *running* server was started with.
+
+        `values` is None whenever there is nothing to report (no server, or one
+        still starting up): the line then goes blank, and the empty host is left
+        with no width to hover.
+        """
+        if values is None:
+            self.status_samplers_label.set_text("")
+            self.status_samplers_tip.set_text("")
+            return
+        self.status_samplers_label.set_text(" - Samplers: " + ";".join(values))
+        self.status_samplers_tip.set_text(self._samplers_description(
+            values, "Sampling parameters the running server was started with:"))
 
     # ---------------------------------------------------------------- status ---
     def _update_rpc_checkboxes( self ) -> None:
@@ -263,7 +317,10 @@ class LlamaConsoleGUI:
             self.status_ctx_label.set_text(  f" - Context : {c} tokens")
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
-            self.status_samplers_label.set_text( f" - Samplers: {float(info['temperature']):.1f};{float(info['top_p']):.2f};{int(info['top_k'])};{float(info['min_p']):.2f}")
+            self._set_status_samplers((f"{float(info['temperature']):.1f}",
+                                       f"{float(info['top_p']):.2f}",
+                                       f"{int(info['top_k'])}",
+                                       f"{float(info['min_p']):.2f}"))
             # self.status_topk_label.set_text( f" - Top-K   : {float(info['top_k'])}")
             # self.status_topp_label.set_text( f" - Top-P   : {float(info['top_p']):.2f}")
             # self.status_minp_label.set_text( f" - Min-P   : {float(info['min_p']):.2f}")
@@ -272,7 +329,7 @@ class LlamaConsoleGUI:
             self.status_model_name = ""
             self.status_model_label.set_text("Model: (starting up...)")
             self.status_ctx_label.set_text("")
-            self.status_samplers_label.set_text("")
+            self._set_status_samplers()
             # self.status_topp_label.set_text("")
             # self.status_topk_label.set_text("")
             # self.status_minp_label.set_text("")
@@ -280,7 +337,7 @@ class LlamaConsoleGUI:
             self.status_model_name = ""
             self.status_model_label.set_text("")
             self.status_ctx_label.set_text("")
-            self.status_samplers_label.set_text("")
+            self._set_status_samplers()
             # self.status_topp_label.set_text("")
             # self.status_topk_label.set_text("")
             # self.status_minp_label.set_text("")
@@ -367,7 +424,7 @@ class LlamaConsoleGUI:
         self.temp_slider.props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
-        self.samplers_label.set_text(f"Samplers: {max_temp:.2f};{topp:.2f};{topk};{minp:.2f}")
+        self._set_samplers((f"{max_temp:.2f}", f"{topp:.2f}", f"{topk}", f"{minp:.2f}"))
 
         logger.debug(f"Model MTP={model.mtp}")
 
@@ -538,7 +595,12 @@ class LlamaConsoleGUI:
                     ).tooltip('Copy model name')
                     self.status_model_copy.on('click', self._copy_model_name)
                 self.status_ctx_label = ui.label("")
-                self.status_samplers_label = ui.label("")
+                # Same cursor-following tooltip as the label in the card below;
+                # while nothing is running both stay empty, and an empty host
+                # has no width left to hover.
+                with ui.element('div').classes('cursor-tip-host'):
+                    self.status_samplers_label = ui.label("")
+                    self.status_samplers_tip = ui.label("").classes('cursor-tip-text')
                 # self.status_topk_label = ui.label("")
                 # self.status_topp_label = ui.label("")
                 # self.status_minp_label = ui.label("")
@@ -570,8 +632,13 @@ class LlamaConsoleGUI:
                         "START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
 
-                self.samplers_label = ui.label("Samplers: ").classes("text-h8")
-                self.samplers_label.set_text("Samplers: --;--;--;--")
+                # The host div is what the cursor-following tooltip reacts to:
+                # hovering it pops up the text of the .cursor-tip-text child,
+                # which CSS keeps out of the page. _set_samplers() fills both.
+                with ui.element('div').classes('cursor-tip-host'):
+                    self.samplers_label = ui.label().classes("text-h8")
+                    self.samplers_tip = ui.label().classes('cursor-tip-text')
+                self._set_samplers()
 
                 ui.button("Recheck models",
                           on_click=self.recheck_models).props('small outline')
@@ -660,7 +727,123 @@ class LlamaConsoleGUI:
 .model-copy-icon:hover {
     opacity: 1;
 }
+/* Cursor-following tooltip. An element opts in by carrying .cursor-tip-host
+   and a .cursor-tip-text child holding the text to show; the child is hidden
+   here and read by the script below, which parks #cursor-tip next to the
+   pointer. fit-content keeps the hover area on the text instead of stretching
+   it across the whole card row. */
+.cursor-tip-host {
+    width: fit-content;
+    cursor: help;
+}
+.cursor-tip-text {
+    display: none;
+}
+#cursor-tip {
+    position: fixed;
+    left: 0;
+    top: 0;
+    z-index: 10000;
+    max-width: 30rem;
+    padding: 8px 10px;
+    border: 1px solid rgba(255, 255, 255, 0.18);
+    border-radius: 6px;
+    background: rgba(28, 28, 28, 0.97);
+    color: #e8e8e8;
+    font-size: 0.8rem;
+    line-height: 1.35;
+    /* pre-line: the text arrives as one string with newlines between the
+       parameters. */
+    white-space: pre-line;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.45);
+    /* Never let the tooltip take the mouse it is chasing: without this it
+       lands under the pointer and flickers itself away. */
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.12s ease-in-out;
+}
+#cursor-tip.visible {
+    opacity: 1;
+}
 </style>
+<script>
+(() => {
+    // add_head_html() runs per page, this listener set only needs to exist once.
+    if (window.__cursorTipReady) return;
+    window.__cursorTipReady = true;
+
+    const OFFSET_X = 16;
+    const OFFSET_Y = 18;
+    const MARGIN = 8;
+    let tip = null;
+    let host = null;
+
+    // Created lazily: the head script runs before <body> exists, and Vue
+    // replaces the page content afterwards anyway.
+    const getTip = () => {
+        if (!tip || !tip.isConnected) {
+            tip = document.createElement('div');
+            tip.id = 'cursor-tip';
+            document.body.appendChild(tip);
+        }
+        return tip;
+    };
+
+    const place = (event) => {
+        const box = getTip().getBoundingClientRect();
+        let x = event.clientX + OFFSET_X;
+        let y = event.clientY + OFFSET_Y;
+        // Flip to the other side of the pointer rather than run off-screen.
+        if (x + box.width > window.innerWidth - MARGIN) {
+            x = event.clientX - OFFSET_X - box.width;
+        }
+        if (y + box.height > window.innerHeight - MARGIN) {
+            y = event.clientY - OFFSET_Y - box.height;
+        }
+        tip.style.left = Math.max(MARGIN, x) + 'px';
+        tip.style.top = Math.max(MARGIN, y) + 'px';
+    };
+
+    const hide = () => {
+        host = null;
+        if (tip) tip.classList.remove('visible');
+    };
+
+    document.addEventListener('mouseover', (event) => {
+        const found = event.target.closest && event.target.closest('.cursor-tip-host');
+        if (!found) {
+            if (host) hide();
+            return;
+        }
+        if (found === host) return;
+        const source = found.querySelector('.cursor-tip-text');
+        const text = source ? source.textContent.trim() : '';
+        if (!text) { hide(); return; }
+        host = found;
+        getTip().textContent = text;
+        // Position first, show second: otherwise the tooltip flashes at the
+        // top-left corner on the frame before the first mousemove.
+        place(event);
+        tip.classList.add('visible');
+    });
+
+    document.addEventListener('mousemove', (event) => {
+        if (!host) return;
+        // The host can be re-rendered out of the DOM while hovered (every
+        // model change rebuilds the label's text).
+        if (!host.isConnected) { hide(); return; }
+        place(event);
+    });
+
+    document.addEventListener('mouseout', (event) => {
+        if (host && !host.contains(event.relatedTarget)) hide();
+    });
+
+    // Scrolling moves the text out from under a pointer that never moved.
+    document.addEventListener('scroll', hide, true);
+    window.addEventListener('blur', hide);
+})();
+</script>
 ''')
 
 #___________________________________________________________________________________
