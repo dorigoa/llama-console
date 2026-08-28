@@ -140,6 +140,7 @@ class LlamaConsoleGUI:
         self.start_button = None
 
         self.status_server_label = None
+        self.samplers_label = None
         self.status_model_label = None
         self.status_model_name = ""
         self.status_model_copy = None
@@ -357,10 +358,16 @@ class LlamaConsoleGUI:
         # NOTE: unchanged semantics — the model's configured temperature doubles
         # as the slider maximum, so it can only be lowered from here.
         max_temp = model.temperature
+
+        topp = model.top_p
+        topk = model.top_k
+        minp = model.min_p
+
         self.temp_slider.props['min'] = 0
         self.temp_slider.props['max'] = max_temp
         self.temp_slider.set_value(max_temp)
         self.temp_label.set_text(f"Temperature: {max_temp:.2f}  (max: {max_temp:.2f})")
+        self.samplers_label.set_text(f"{max_temp:.2f};{topp:.2f};{topk};{minp:.2f}")
 
         logger.debug(f"Model MTP={model.mtp}")
 
@@ -537,20 +544,12 @@ class LlamaConsoleGUI:
                 # self.status_minp_label = ui.label("")
                                 
                 for label in (self.status_server_label, self.status_model_label,
-                              self.status_ctx_label, self.status_samplers_label):#, 
-                              #self.status_topk_label, self.status_minp_label,
-                              #self.status_topp_label):
+                              self.status_ctx_label, self.status_samplers_label):
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
                 for label in (self.status_model_label,
-                              self.status_ctx_label, self.status_samplers_label):#, 
-                            #   self.status_topk_label, self.status_minp_label,
-                            #   self.status_topp_label):
+                              self.status_ctx_label, self.status_samplers_label):
                     label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: pre;')
-                    # label.style(
-                    #     'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
-                    #     'font-size: 0.9rem; font-weight: 600; white-space: nowrap;'
-                    # )
-
+                    
                 ui.button("Refresh", on_click=self.refresh).props('outline small').classes('q-mt-md')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
@@ -571,6 +570,9 @@ class LlamaConsoleGUI:
                         "START", on_click=self.start_selected_model).props('color=green')
                     ui.button("STOP", on_click=self.stop_server).props('color=red')
 
+                self.samplers_label = ui.label("Samplers: ").classes("text-h6")
+                self.samplers_label.set_text("Samplers: --;--;--;--")
+
                 ui.button("Recheck models",
                           on_click=self.recheck_models).props('small outline')
 
@@ -584,7 +586,6 @@ class LlamaConsoleGUI:
                             self.server_checkboxes[name] = ui.checkbox(name)
 
                 with ui.row().classes('w-full items-center q-mt-sm gap-3'):
-                    #ui.label('Force no MTP').classes('text-subtitle1')
                     self.mtp_checkbox = ui.checkbox("Force No-MTP")
 
                 with ui.column().classes('w-full q-mt-sm'):
@@ -599,9 +600,6 @@ class LlamaConsoleGUI:
                             {"": "None", "q8_0": "8 bit", "q4_0": "4 bit"},
                             value="",
                         ).props('inline')
-
-#                with ui.row().classes('w-full items-center q-mt-sm gap-3'):
-                    
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.temp_label = ui.label("Temperature: —").classes('text-subtitle1')
