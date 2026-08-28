@@ -608,6 +608,9 @@ class LlamaConsoleGUI:
                 for label in (self.status_server_label, self.status_model_label,
                               self.status_ctx_label, self.status_samplers_label):
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
+
+                self.status_server_label.style('font-size: 1.2rem; font-weight: 850; white-space: nowrap;')
+
                 for label in (self.status_model_label,
                               self.status_ctx_label, self.status_samplers_label):
                     label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: pre;')
