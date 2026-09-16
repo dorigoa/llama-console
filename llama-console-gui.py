@@ -263,26 +263,17 @@ class LlamaConsoleGUI:
             # Rounded: llama-server reports the float32 round-trip of 0.6 as
             # 0.6000000238418579.
             self.status_samplers_label.set_text( f" - Samplers: {float(info['temperature']):.1f};{float(info['top_p']):.2f};{int(info['top_k'])};{float(info['min_p']):.2f}")
-            # self.status_topk_label.set_text( f" - Top-K   : {float(info['top_k'])}")
-            # self.status_topp_label.set_text( f" - Top-P   : {float(info['top_p']):.2f}")
-            # self.status_minp_label.set_text( f" - Min-P   : {float(info['min_p']):.2f}")
                                     
         elif running:
             self.status_model_name = ""
-            self.status_model_label.set_text("Model: (starting up...)")
+            self.status_model_label.set_text("Model: (Loading model...)")
             self.status_ctx_label.set_text("")
             self.status_samplers_label.set_text("")
-            # self.status_topp_label.set_text("")
-            # self.status_topk_label.set_text("")
-            # self.status_minp_label.set_text("")
         else:
             self.status_model_name = ""
             self.status_model_label.set_text("")
             self.status_ctx_label.set_text("")
             self.status_samplers_label.set_text("")
-            # self.status_topp_label.set_text("")
-            # self.status_topk_label.set_text("")
-            # self.status_minp_label.set_text("")
         # Nothing to copy unless a model name is actually on display.
         if self.status_model_name:
             self.status_model_copy.classes(remove='q-hidden')
@@ -532,9 +523,6 @@ class LlamaConsoleGUI:
                     self.status_model_copy.on('click', self._copy_model_name)
                 self.status_ctx_label = ui.label("")
                 self.status_samplers_label = ui.label("")
-                # self.status_topk_label = ui.label("")
-                # self.status_topp_label = ui.label("")
-                # self.status_minp_label = ui.label("")
                                 
                 for label in (self.status_server_label, self.status_model_label,
                               self.status_ctx_label, self.status_samplers_label):#, 
@@ -543,14 +531,8 @@ class LlamaConsoleGUI:
                     label.style('font-size: 0.9rem; font-weight: 600; white-space: nowrap;')
                 for label in (self.status_model_label,
                               self.status_ctx_label, self.status_samplers_label):#, 
-                            #   self.status_topk_label, self.status_minp_label,
-                            #   self.status_topp_label):
                     label.classes('font-mono').style('font-size: 0.9rem; font-weight: 600; white-space: pre;')
-                    # label.style(
-                    #     'font-family: "JetBrains Mono", "Fira Code", "DejaVu Sans Mono", Menlo, Consolas, monospace; '
-                    #     'font-size: 0.9rem; font-weight: 600; white-space: nowrap;'
-                    # )
-
+                
                 ui.button("Refresh", on_click=self.refresh).props('outline small').classes('q-mt-md')
 
             with ui.card().classes('w-full max-w-2xl p-4'):
@@ -598,10 +580,7 @@ class LlamaConsoleGUI:
                         self.kvquant_radio = ui.radio(
                             {"": "None", "q8_0": "8 bit", "q4_0": "4 bit"},
                             value="",
-                        ).props('inline')
-
-#                with ui.row().classes('w-full items-center q-mt-sm gap-3'):
-                    
+                        ).props('inline')                    
 
                 with ui.column().classes('w-full q-mt-sm'):
                     self.temp_label = ui.label("Temperature: —").classes('text-subtitle1')
