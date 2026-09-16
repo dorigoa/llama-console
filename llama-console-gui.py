@@ -266,7 +266,7 @@ class LlamaConsoleGUI:
                                     
         elif running:
             self.status_model_name = ""
-            self.status_model_label.set_text("Model: (Loading model...)")
+            self.status_model_label.set_text("Model: (Loading...)")
             self.status_ctx_label.set_text("")
             self.status_samplers_label.set_text("")
         else:
