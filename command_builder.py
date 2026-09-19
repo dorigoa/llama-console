@@ -27,7 +27,7 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
         cmd += ["--mmproj", str(model.mmproj_path)]
 
     data = None
-    data = {"enable_thinking":true}
+    data = {"enable_thinking": True}
     if model.reasoning:
         data['reasoning_effort'] = model.reasoning
 
