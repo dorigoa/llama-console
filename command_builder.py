@@ -41,6 +41,8 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     cmd += ["--port", str(settings.PORT_BIND)]
     cmd += ["--split-mode", "layer"]
     cmd += ["--metrics"]
+    cmd += ["--metrics"]
+    cmd += ["--no-context-shift"]
     cmd += ["--jinja"]
     cmd += ["-fa", "on"]
     cmd += ["-fit", "on"] # Using "on" makes the rpc/Vulkan on PC with 2 NVidia cards crash
@@ -72,21 +74,18 @@ def build_command(binary: str, model: Model, devices: str = "", ctx: int | None 
     if not nomtp:
         if model.mtp:
             cmd += ["--spec-type", "draft-mtp"]
-            #cmd += ["--spec-draft-n-max", "4"]
-            #cmd += ["--spec-draft-n-min", "2"]
             if model.ext_mtp_head_file:
                 cmd += ["--model-draft", str(model.ext_mtp_head_file)]
                 cmd += ["--spec-draft-n-min", "2"]
-    # Log file for detached execution (UI polls it)
     cmd += ["--log-file", settings.LLAMA_LOG_FILE]
 
     if verbose:
         cmd += ["--verbose"]
     cmd += ["-ctxcp", "8"]
-    cmd += ["--reasoning-preserve"]
-    # Must retrieve the number of cores on the remote node, here is useless
-    #cmd += ["--threads", str(int(0.8*psutil.cpu_count(logical=False)))]
-
+    #cmd += ["--reasoning-preserve"]
+    cmd += ["--reasoning", "on"]
+    cmd += ["--load-mode", "mmap+mlock"]
+    
     ct = Path(f"{Path('./chat-templates') / model.model_name}.jinja")
     logger.debug(f"Checking existance of file {ct}")
     if  ct.exists():
