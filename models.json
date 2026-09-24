@@ -93,23 +93,6 @@
                         "ext_mtp_head_file": null,
                         "native_ctx": 131072
                 },
-                "gemma-4-E4B-it-BF16": {
-                        "sizegb": 14,
-                        "RPC_SERVERS": { },
-                        "SAMPLERS": "1.0:0.95:64:0.0",
-                        "RP": 1.0,
-                        "PP": -1,
-                        "REAS": null,
-                        "PRES_THK": null,
-                        "MMPROJ": null,
-                        "EXTRAS": null,
-                        "KVQUANT": null,
-                        "UB": null,
-                        "B": null,
-                        "MTP": false,
-                        "ext_mtp_head_file": null,
-                        "native_ctx": 131072
-                },
                 "gemma-4-26B-A4B-it-UD-Q8_K_XL": {
                         "sizegb": 26,
                         "RPC_SERVERS": { 
